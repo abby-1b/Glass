@@ -1,0 +1,47 @@
+{
+	"ignorePatterns": ["**/*.js"],
+    "env": {
+        "browser": true,
+        "commonjs": true,
+        "es2021": true
+    },
+    "extends": [
+        "eslint:recommended",
+        "plugin:@typescript-eslint/recommended"
+    ],
+    "parser": "@typescript-eslint/parser",
+    "parserOptions": {
+        "ecmaVersion": 13
+		//"project": ["tsconfig.json"] // Enable this again when done with normal errors.
+    },
+    "plugins": [
+        "@typescript-eslint",
+		"no-closure"
+    ],
+    "rules": {
+		"@typescript-eslint/no-explicit-any": "error",
+		"@typescript-eslint/no-unsafe-call": "error",
+		"@typescript-eslint/no-unsafe-member-access": "error",
+		"@typescript-eslint/no-unsafe-argument": "error",
+		"@typescript-eslint/no-unsafe-assignment": "error",
+		"@typescript-eslint/no-empty-function": "off",
+		"@typescript-eslint/no-unused-vars": "off",
+		//"no-closure/no-tagged-closures": "error",
+        "indent": [
+            "error",
+            "tab"
+        ],
+        "linebreak-style": [
+            "error",
+            "unix"
+        ],
+        "quotes": [
+            "error",
+            "double"
+        ],
+        "semi": [
+            "error",
+            "never"
+        ]
+    }
+}
