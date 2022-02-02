@@ -1,0 +1,14 @@
+( TO-DO )
+
+[x] Figure out camera
+[ ] Figure out scenes
+	[ ] SceneRenderer (to render a scene to another)
+	[ ] Each scene has only one (active) camera
+[x] Sprite
+[ ] PhysicsActor
+[ ] TileMap
+[ ] Make physics work
+	[ ] Physics types
+		[ ] None (just the loop, friction, and inertia)
+		[ ] Soft
+		[ ] Hard

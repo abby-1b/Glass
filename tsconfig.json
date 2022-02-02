@@ -1,0 +1,14 @@
+{
+	"compilerOptions": {
+		"target": "es6",
+		"module": "commonjs",
+		"allowJs": false,
+		"checkJs": false,
+		"outDir": "./DELETE_THIS_FOLDER",
+		"forceConsistentCasingInFileNames": true,
+		"strict": true,
+		"strictPropertyInitialization": false
+	},
+	"exclude": [ "node_modules" ],
+	"filesGlob": [ "./Drops/**/*.ts" ],
+}
