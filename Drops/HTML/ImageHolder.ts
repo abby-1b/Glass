@@ -4,10 +4,10 @@ const IMAGE_LOAD_TIMEOUT = 10
 let _ImageLoadTimeoutCount: number = IMAGE_LOAD_TIMEOUT + 1
 
 class ImageHolder {
-	static imageElements: Array<ImageTemplate> = []
-	static imageIndexes: {[key: string]: number} = {}
+	private static imageElements: Array<ImageTemplate> = []
+	private static imageIndexes: {[key: string]: number} = {}
 
-	static holdURL(url: string): number {
+	public static holdURL(url: string): number {
 		const i: HTMLImageElement = document.createElement("img")
 		const dict: ImageTemplate = {img: i, width: 1, height: 1, complete: false, glTex: null}
 		if (Surface.texture instanceof TextureWebGL) {
@@ -42,7 +42,7 @@ class ImageHolder {
 		return (this.imageIndexes[url] = this.imageElements.push(dict) - 1)
 	}
 
-	static allLoaded(): boolean {
+	public static allLoaded(): boolean {
 		for (let i = 0; i < this.imageElements.length; i++) {
 			if (!this.imageElements[i].complete) return false
 		}

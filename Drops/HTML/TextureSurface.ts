@@ -1,25 +1,25 @@
 class Texture {
-	el: HTMLCanvasElement
+	public el: HTMLCanvasElement
 
-	width: number
-	height: number
+	public width: number
+	public height: number
 
-	translation: [number, number] = [0, 0]
+	protected translation: [number, number] = [0, 0]
 
-	currentColor: [number, number, number, number] = [0, 0, 0, 0]
+	public currentColor: [number, number, number, number] = [0, 0, 0, 0]
 	
-	static BLEND_NORMAL = 0
-	static BLEND_ADD = 1
+	public static BLEND_NORMAL = 0
+	public static BLEND_ADD = 1
 
-	static canGL(): boolean {
+	public static canGL(): boolean {
 		return false//!!document.createElement("canvas").getContext("webgl2")
 	}
 
-	static new(width: number, height: number, webGL = false) {
+	public static new(width: number, height: number, webGL = false) {
 		return this.canGL() && webGL ? new TextureWebGL(width, height) : new TextureCanvas(width, height)
 	}
 
-	constructor(width: number, height: number) {
+	public constructor(width: number, height: number) {
 		this.el = document.createElement("canvas")
 		this.el.width = width
 		this.el.height = height
@@ -56,9 +56,9 @@ class Texture {
 }
 
 class TextureCanvas extends Texture {
-	ctx: CanvasRenderingContext2D
+	public ctx: CanvasRenderingContext2D
 
-	constructor(width: number, height: number, glContext = false) {
+	public constructor(width: number, height: number, glContext = false) {
 		super(width, height)
 		if (!glContext) {
 			const context = this.el.getContext("2d")
@@ -67,31 +67,31 @@ class TextureCanvas extends Texture {
 		}
 	}
 
-	background(): void {
+	public background(): void {
 		// this.ctx.fillStyle = "rgba(" + this.currentColor + ")"
 		this.ctx.fillRect(0, 0, this.width, this.height)
 	}
 
-	resize(width: number, height: number) {
+	public resize(width: number, height: number) {
 		this.width = width
 		this.height = height
 		this.el.width = this.width
 		this.el.height = this.height
 	}
 
-	translate(x: number, y: number) {
+	public translate(x: number, y: number) {
 		this.translation[0] += x
 		this.translation[1] += y
 	}
 
-	resetTranslate() {
+	public resetTranslate() {
 		this.translation[0] = 0
 		this.translation[1] = 0
 	}
 
-	colorf(r: number, g: number, b: number, a: number) {
+	public colorf(r: number, g: number, b: number, a: number) {
 		// this.currentColor = [r, g, b, a]
-		this.ctx.fillStyle = "rgba(" + [r, g, b, a] + ")"
+		this.ctx.fillStyle = "rgba(" + [r, g, b, a / 255] + ")"
 	}
 
 	public drawImage(sourceImg: Img, pos: Vec2, scale = 1) {
@@ -100,22 +100,24 @@ class TextureCanvas extends Texture {
 	}
 
 	public rect(x: number, y: number, w: number, h: number) {
-		this.ctx.fillRect(x, y, w, h)
+		this.ctx.beginPath()
+		this.ctx.rect(x, y, w, h)
+		this.ctx.stroke()
 	}
 }
 
 class TextureWebGL extends TextureCanvas {
-	gl: WebGL2RenderingContext
+	public gl: WebGL2RenderingContext
 
-	secondStepBlur = false
-	secondStepCanvas: HTMLCanvasElement
-	secondStepCtx: CanvasRenderingContext2D
+	public secondStepBlur = false
+	public secondStepCanvas: HTMLCanvasElement
+	private secondStepCtx: CanvasRenderingContext2D
 
-	glParams: { [key: string]: WebGLUniformLocation }
+	private glParams: { [key: string]: WebGLUniformLocation }
 
-	shader: WebGLProgram
+	private shader: WebGLProgram
 
-	constructor(width: number, height: number) {
+	public constructor(width: number, height: number) {
 		super(width, height, true)
 
 		const gl = this.el.getContext("webgl2", {antialias: false, alpha: true})
@@ -182,7 +184,7 @@ class TextureWebGL extends TextureCanvas {
 		}
 	}
 
-	buildShader(vertex: string, fragment: string) {
+	private buildShader(vertex: string, fragment: string) {
 		const program = this.gl.createProgram()
 		if (!program) return
 	
@@ -213,24 +215,24 @@ class TextureWebGL extends TextureCanvas {
 		return program
 	}
 
-	background(): void {
+	public background(): void {
 		this.gl.clearColor(this.currentColor[0] / 255, this.currentColor[1] / 255, this.currentColor[2] / 255, this.currentColor[3] / 255)
 		this.gl.clear(this.gl.COLOR_BUFFER_BIT)
 	}
 
-	translate(x: number, y: number) {
+	public translate(x: number, y: number) {
 		this.translation[0] += x
 		this.translation[1] += y
 		this.gl.uniform2fv(this.glParams.vOffs, this.translation)
 	}
 
-	resetTranslation() {
+	public resetTranslation() {
 		this.translation[0] = 0
 		this.translation[1] = 0
 		this.gl.uniform2fv(this.glParams.vOffs, this.translation)
 	}
 
-	resize(width: number, height: number) {
+	public resize(width: number, height: number) {
 		this.width = width
 		this.height = height
 		this.el.width = this.width
@@ -300,7 +302,7 @@ class TextureWebGL extends TextureCanvas {
 	 * @param x X Position to draw at
 	 * @param y Y Position to draw at
 	 */
-	point(x: number, y: number) {
+	public point(x: number, y: number) {
 		this.gl.bufferData(this.gl.ARRAY_BUFFER, new Float32Array([
 			Math.floor(x + 1), Math.floor(y)
 		]), this.gl.DYNAMIC_DRAW)
@@ -315,7 +317,7 @@ class TextureWebGL extends TextureCanvas {
 	 * @param w Width of the rectangle
 	 * @param h Height of the rectangle
 	 */
-	line(x1: number, y1: number, x2: number, y2: number) {
+	public line(x1: number, y1: number, x2: number, y2: number) {
 		this.gl.bufferData(this.gl.ARRAY_BUFFER, new Float32Array([
 			Math.floor(x1), Math.floor(y1), Math.floor(x2 + 1), Math.floor(y2 + 1)
 		]), this.gl.DYNAMIC_DRAW)
@@ -330,7 +332,7 @@ class TextureWebGL extends TextureCanvas {
 	 * @param w Width of the rectangle
 	 * @param h Height of the rectangle
 	 */
-	rect(x: number, y: number, w: number, h: number) {
+	public rect(x: number, y: number, w: number, h: number) {
 		x = Math.floor(x + 1)
 		y = Math.floor(y)
 		w = Math.floor(w - 1)
@@ -353,7 +355,7 @@ class TextureWebGL extends TextureCanvas {
 	 * @param w Width of the rectangle
 	 * @param h Height of the rectangle
 	 */
-	fillRect(x: number, y: number, w: number, h: number) {
+	public fillRect(x: number, y: number, w: number, h: number) {
 		this.gl.bufferData(this.gl.ARRAY_BUFFER, new Float32Array([
 			x, y, x + w, y,
 			x, y + h, x + w, y + h
@@ -366,7 +368,7 @@ class TextureWebGL extends TextureCanvas {
 	 * Changes the blend mode
 	 * @param t Blend mode to switch to.
 	 */
-	blend(t: number) {
+	public blend(t: number) {
 		this.gl.blendFuncSeparate(this.gl.SRC_ALPHA, this.gl.ONE_MINUS_SRC_ALPHA, this.gl.ONE, this.gl.ONE_MINUS_SRC_ALPHA)
 		switch (t) {
 		case 0: // Normal
@@ -380,18 +382,18 @@ class TextureWebGL extends TextureCanvas {
 }
 
 class Surface {
-	static desiredSize = -1
-	static ready = false
+	public static desiredSize = -1
+	public static ready = false
 
 	private static bgColor: [number, number, number] = [0, 0, 0]
 
-	static frameRate = 60
-	static frameLastMoment = window.performance.now()
-	static frameCount = 0
+	public static frameRate = 60
+	private static frameLastMoment = window.performance.now()
+	public static frameCount = 0
 
-	static texture: Texture
+	public static texture: Texture
 
-	static setup() {
+	public static setup() {
 		this.texture = Texture.new(this.desiredSize, this.desiredSize, true)
 		const resizeFn = (): void => {
 			this.texture.resize(
@@ -407,16 +409,16 @@ class Surface {
 		this.texture.el.style.width = "100vw"
 		this.texture.el.style.height = "100vh"
 
-		HTML.setup(this)
+		HTML.setup()
 	}
 
-	static frameSetup() {
+	public static frameSetup() {
 		this.texture.colorf(...this.bgColor, 255)
 		this.texture.background()
 	}
-	static frameEnd() { this.frameCount++ }
+	public static frameEnd() { this.frameCount++ }
 
-	static calculateFramerate() {
+	public static calculateFramerate() {
 		// Calculate framerate
 		const currTime = window.performance.now()
 		const deltaTime = (currTime - this.frameLastMoment)
@@ -428,11 +430,11 @@ class Surface {
 	 * Sets the background color.
 	 * @param color Color to set
 	 */
-	static backgroundColor(color: [number, number, number]): void {
+	public static backgroundColor(color: [number, number, number]): void {
 		this.bgColor = color
 	}
 
-	static viewport(x: number, y: number, w: number, h: number) {
+	public static viewport(x: number, y: number, w: number, h: number) {
 		if (this.texture instanceof TextureCanvas) {
 			this.texture.ctx.save()
 			this.texture.ctx.beginPath()
@@ -440,7 +442,7 @@ class Surface {
 			this.texture.ctx.clip()
 		}
 	}
-	static resetViewport() {
+	public static resetViewport() {
 		if (this.texture instanceof TextureCanvas) {
 			this.texture.ctx.restore()
 		}

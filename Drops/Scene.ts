@@ -1,29 +1,29 @@
 class Scene {
-	parent: Glass
-	objects: Array<Sprite> = []
-	maxSortPerFrame = 1
-	sortIdx = 0
+	public parent: Glass
+	private objects: Array<Sprite> = []
+	private maxSortPerFrame = 1
+	private sortIdx = 0
 
-	pos: Vec2 = new Vec2(0, 0)
-	width = -1
-	height = -1
+	public pos: Vec2 = new Vec2(0, 0)
+	public width = -1
+	public height = -1
 
-	gravity: Vec2 = new Vec2(0.0, 0.015)
-	friction: Vec2 = new Vec2(0.9, 0.997)
-	groundFriction: Vec2 = new Vec2(0.9, 0.997)
+	private gravity: Vec2 = new Vec2(0.0, 0.015)
+	private friction: Vec2 = new Vec2(0.9, 0.997)
+	private groundFriction: Vec2 = new Vec2(0.9, 0.997)
 
 	// TODO: Implement different collision types
 	// Bits:
 	//   0: Physics loop (Inertia and friction)
 	//   1: Soft (Pushing things around)
 	//   2: Hard (Normal physics)
-	enable = 3
+	// private enable = 3
 
-	constructor(parent: Glass) {
+	public constructor(parent: Glass) {
 		this.parent = parent
 	}
 
-	draw() {
+	public draw() {
 		Surface.viewport(this.pos.x, this.pos.y, this.width, this.height)
 		// Sort objects
 		if (this.objects.length > 1) {
@@ -47,7 +47,7 @@ class Scene {
 		Surface.resetViewport()
 	}
 
-	doPhysics() {
+	public doPhysics() {
 		// Loop through all objects, and then again for PhysicsActors
 		for (let o = 0; o < this.objects.length; o++) {
 			// TODO: physics
@@ -64,7 +64,7 @@ class Scene {
 	 * @param obj Object to be added. Can be of any library type, such as a Sprite, PhysicsActor, Tile, TileMap, ect.
 	 * @returns The added object.
 	 */
-	nObj(obj: Sprite): Sprite {
+	public nObj(obj: Sprite): Sprite {
 		// TODO: tilemaps
 		// if (obj instanceof TileMap)
 		// 	return this.objects[this.objects.push(obj) - 1]
@@ -79,7 +79,7 @@ class Scene {
 	 * @param obj Object to be removed
 	 * @returns The removed object
 	 */
-	rObj(obj: Sprite) {
+	public rObj(obj: Sprite) {
 		return this.rObjIdx(this.objects.indexOf(obj))
 	}
 
@@ -88,11 +88,11 @@ class Scene {
 	 * @param idx Index to remove
 	 * @returns The removed object
 	 */
-	rObjIdx(idx: number) {
+	public rObjIdx(idx: number) {
 		return this.objects.splice(idx, 1)
 	}
 
-	shiftObjects(x: number, y: number) {
+	public shiftObjects(x: number, y: number) {
 		// TODO: camera
 		// this.camera.pos.x += x
 		// this.camera.pos.y += y

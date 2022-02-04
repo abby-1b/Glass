@@ -1,18 +1,18 @@
 class Img {
-	width: number
-	height: number
+	public width: number
+	public height: number
 
-	img: HTMLImageElement | HTMLCanvasElement
+	public img: HTMLImageElement | HTMLCanvasElement
 
-	isLoaded = false
-	onLoadFn: (arg0: Img) => void
+	public isLoaded = false
+	public onLoadFn: (arg0: Img) => void
 
-	constructor(width: number, height: number) {
+	public constructor(width: number, height: number) {
 		this.width = width
 		this.height = height
 	}
 
-	loaded(fn: (arg0: Img) => void) {
+	public loaded(fn: (arg0: Img) => void) {
 		if (this.isLoaded)
 			fn(this)
 		else
@@ -21,7 +21,7 @@ class Img {
 }
 
 class ImgURL extends Img {
-	constructor(url: string) {
+	public constructor(url: string) {
 		super(-1, -1)
 		this.img = new Image()
 		this.img.onload = () => {

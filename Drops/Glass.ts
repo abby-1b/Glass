@@ -2,8 +2,8 @@
 type CallbackFunction = () => void
 
 class Glass {
-	public  scene: Scene
-	private control: Control
+	public scene: Scene
+	public control: Control
 
 	private initFn     : CallbackFunction = () => void 0
 	private preFrameFn : CallbackFunction = () => void 0
@@ -15,7 +15,7 @@ class Glass {
 	 * @param height Height (in pixels) of the game. The width is dynamic.
 	 * @param backgroundColor Background color for when something is transparent.
 	 */
-	constructor(desiredSize: number, backgroundColor: [number, number, number]) {
+	public constructor(desiredSize: number, backgroundColor: [number, number, number]) {
 		Surface.desiredSize = desiredSize
 		Surface.backgroundColor(backgroundColor)
 
@@ -33,7 +33,7 @@ class Glass {
 	 * Init, runs when everything is ready; in this case, instantly.
 	 * @param fn Function to be ran when everything is ready
 	 */
-	init(fn: CallbackFunction) {
+	public init(fn: CallbackFunction) {
 		this.initFn = fn
 		this._init()
 	}
@@ -68,7 +68,7 @@ class Glass {
 	 * Runs this function before every frame, when sprites are about to be rendered
 	 * @param fn Function to be ram
 	 */
-	preFrame(fn: CallbackFunction) {
+	public preFrame(fn: CallbackFunction) {
 		this.preFrameFn = fn
 	}
 
@@ -76,7 +76,7 @@ class Glass {
 	 * Runs this function at the end of every frame
 	 * @param fn Function to be ran
 	 */
-	frame(fn: CallbackFunction) {
+	public frame(fn: CallbackFunction) {
 		this.frameFn = fn
 	}
 	
@@ -84,7 +84,7 @@ class Glass {
 	 * Runs this function every physics frame
 	 * @param fn Function to be ran
 	 */
-	physics(fn: CallbackFunction) {
+	public physics(fn: CallbackFunction) {
 		this.physicsFn = fn
 	}
 

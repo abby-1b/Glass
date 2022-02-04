@@ -1,13 +1,13 @@
 class Rect {
-	x: number = 0
-	y: number = 0
-	x2: number = 0
-	y2: number = 0
-	width: number = 0
-	height: number = 0
-	bottomRight: boolean = false
+	public x = 0
+	public y = 0
+	public x2 = 0
+	public y2 = 0
+	public width = 0
+	public height = 0
+	public bottomRight = false
 
-	constructor(x: number, y: number, width: number, height: number, bottomRight: boolean) {
+	public constructor(x: number, y: number, width: number, height: number, bottomRight: boolean) {
 		this.x = x
 		this.y = y
 		this.width = width
@@ -19,12 +19,12 @@ class Rect {
 	/**
 	 * Constructs the bottom-right point of the triangle.
 	 */
-	reload() {
+	public reload() {
 		this.x2 = this.x + this.width
 		this.y2 = this.y + this.height
 	}
 
-	coordInside(ix: number, iy: number) {
+	public coordInside(ix: number, iy: number) {
 		return (ix >= this.x && ix <= this.x2
 			&& iy >= this.y && iy <= this.y2) 
 	}

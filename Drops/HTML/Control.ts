@@ -1,6 +1,6 @@
 class Control {
-	public  touch: boolean = ("ontouchend" in document)
-	public  keyboard = !this.touch
+	public touch: boolean = ("ontouchend" in document)
+	public keyboard = true //!this.touch
 
 	private cEvents: { [key: string]: [CallbackFunction, boolean] } = {}
 

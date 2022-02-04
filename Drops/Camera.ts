@@ -1,19 +1,19 @@
 class Camera {
-	pos: Vec2 = new Vec2(0, 0)
+	public pos: Vec2 = new Vec2(0, 0)
 	private _constrains: Rect = new Rect(-1e9, -1e9, 2e9, 2e9, true)
-	following: Sprite
+	private following: Sprite
 
-	followSpeed = 0
-	followSpeedVec = new Vec2(0, 0)
+	public followSpeed = 0
+	public followSpeedVec = new Vec2(0, 0)
 
 	// constructor() {}
 
-	set constrains(v) {
+	public set constrains(v) {
 		v.bottomRight = true
 		v.reload()
 		this._constrains = v
 	}
-	get constrains() {
+	public get constrains() {
 		return this._constrains
 	}
 
@@ -23,7 +23,7 @@ class Camera {
 	 * @param interval How fast to follow the element. Specifies the amount to lerp each frame.
 	 * @param speedPos How much the element's speed affects the position of the camera
 	 */
-	follow(el: Sprite, interval: number, speedPos: Vec2) {
+	public follow(el: Sprite, interval: number, speedPos: Vec2) {
 		if (!(el instanceof Sprite)) Log.e("Can't follow given element.")
 		if (!interval) Log.e("No interval supplied!")
 		if (!speedPos) Log.e("No speed position supplied!")
