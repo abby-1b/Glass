@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 
 // Variables
-// const HOME_URL = "index.html"
+// Doesn't work right now. (1, eval)(...) is apparently not global enough?
+const mergeDrops = false
 
 // Code
 const ts = require("typescript")
@@ -74,7 +75,7 @@ const server = http.createServer((req, res) => {
 			<body>
 			</body>
 		</html>
-		`.split("\n").map(e => e.trim()).join("\n"))
+		`)
 		res.end()
 		console.log(" > Game HTML")
 		return
@@ -116,7 +117,7 @@ const server = http.createServer((req, res) => {
 					if (tp == "ts") {
 						// Compile typescript
 						data = String.fromCharCode(...data)
-						res.end(ts.transpileModule(data, { compilerOptions: { target: "es6", module: ts.ModuleKind.CommonJS }}).outputText)
+						res.end(compileTS(data))
 					} else {
 						// Send raw data
 						res.end(data)
@@ -138,6 +139,10 @@ const server = http.createServer((req, res) => {
 server.listen(port, hostname, () => {
 	console.log(`Server running at http://${hostname}:${port}/`)
 })
+
+function compileTS(data) {
+	return ts.transpileModule(data, { compilerOptions: { target: "es6", module: ts.ModuleKind.CommonJS }}).outputText
+}
 
 function getFiles(path) {
 	let files = fs.readdirSync(path).filter(e => e != ".DS_Store")
@@ -161,6 +166,12 @@ function getFileTypes(path) {
 }
 
 function getModules() {
-	return getFiles("Drops").map(e => `<script src="/${e}" defer></script>`).join("\n")
-	// return `<script>(function(){let mds=[${getFiles("Drops").map(e=>'"/'+e+'"')}]\nlet missing=mds.length\nlet final=""\nfor(let m=0;m<mds.length;m++){fetch(mds[m]).then(r=>r.text().then(t=>{final+=t\nmissing--\nif(missing==0){eval(final)}}))}})()</script>`
+	const allFiles = getFiles("Drops")
+	const orderedFiles = JSON.parse(fs.readFileSync("dropOrder.json", "utf8")).map(e => `Drops/${e}.ts`)
+	const missing = allFiles.filter(e => !orderedFiles.includes(e))
+	if (missing.length > 0) console.log("Missing Drops in dropOrder.json:", missing)
+	if (mergeDrops)
+		return "<script defer>" + orderedFiles.map(e => compileTS(fs.readFileSync(e, "utf8"))).join("\n") + "</script>"
+	else
+		return orderedFiles.map(e => `<script src="/${e}" defer></script>`).join("\n")
 }
