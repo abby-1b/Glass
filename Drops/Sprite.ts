@@ -14,8 +14,10 @@ class Sprite {
 		this.pos.x = x
 		this.pos.y = y
 		if (width == -1 || height == -1) {
-			this.width = this.src.width
-			this.height = this.src.height
+			this.src.loaded((img) => {
+				this.width = this.src.width
+				this.height = this.src.height
+			})
 		} else {
 			this.width = width
 			this.height = height
