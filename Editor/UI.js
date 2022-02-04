@@ -19,3 +19,10 @@ for (let r = 0; r < rs.length; r++) {
 rs[0].onpointerdown = (e) => { document.onpointermove = (e) => { rs[0].holdPos -= rs[0].getBoundingClientRect().x - e.clientX; resizeGrid() } }
 rs[1].onpointerdown = (e) => { document.onpointermove = (e) => { rs[1].holdPos -= rs[1].getBoundingClientRect().x - e.clientX; resizeGrid() } }
 rs[2].onpointerdown = (e) => { document.onpointermove = (e) => { rs[2].holdPos -= rs[2].getBoundingClientRect().y - e.clientY; resizeGrid() } }
+
+const preventDefault = (e) => { e.preventDefault() }
+var supportsPassive = false
+try { window.addEventListener("test", null, Object.defineProperty({}, 'passive', { get: function () { supportsPassive = true } })) } catch(e) {}
+window.addEventListener('DOMMouseScroll', preventDefault, false)
+window.addEventListener('onwheel' in document.createElement('div') ? 'wheel' : 'mousewheel', preventDefault, supportsPassive ? { passive: false } : false)
+window.addEventListener('touchmove', preventDefault, supportsPassive ? { passive: false } : false)

@@ -7,20 +7,23 @@
 		<meta name="description" content="">
 		<meta name="viewport" content="width=device-width, initial-scale=1">
 		<link type="text/css" rel="stylesheet" href="styles.css">
-		<script src="Resize.js" defer></script>
+		<script src="UI.js" defer></script>
+		<script src="GameCodeView.ts" defer></script>
 		<script src="FileView.ts" defer></script>
 	</head>
 	<body>
-		<div class="window terminalView">Terminal</div>
+		<div class="window" id="terminalView">Terminal</div>
 		<div class="terminalResizer"></div>
-		<div class="window fileView">
+		<div class="window" id="fileView">
 			<input type='text'>
 			<img src='Assets/backIcon.png'>
 			<div style='overflow:auto;height:calc(100% - 31px)'></div>
 		</div>
 		<div class="fileResizer"></div>
-		<div class="window gameCodeView">Game / Code</div>
-		<div class="window propertyView">Properties</div>
+		<div class="window" id="gameCodeView">
+			
+		</div>
+		<div class="window" id="propertyView">Properties</div>
 		<div class="propertyResizer"></div>
 	</body>
 </html>

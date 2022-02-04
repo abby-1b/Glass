@@ -21,6 +21,8 @@ html, body {
 	margin: 0;
 	padding: 0;
 	color: var(--textColor);
+	/* position: fixed; */
+	/* overflow: auto; */
 }
 
 body {
@@ -38,7 +40,7 @@ body {
 	box-sizing: border-box;
 }
 
-.fileView {
+#fileView {
 	overflow: auto;
 	grid-row: 3;
 	grid-column: 1;
@@ -55,13 +57,16 @@ body {
 	cursor: ew-resize;
 }
 
-.gameCodeView {
+#gameCodeView {
 	grid-row: 1 / 4;
 	grid-column: 3;
 	background-color: #2d2b55;
+
+	margin: 0;
+	padding: 0;
 }
 
-.propertyView {
+#propertyView {
 	background-color: #28284e;
 	grid-row: 1 / 4;
 	grid-column: 5;
@@ -74,7 +79,7 @@ body {
 	cursor: ew-resize;
 }
 
-.terminalView {
+#terminalView {
 	grid-row: 1;
 	background-color: #1e1e3f;
 	grid-column: 1;
@@ -107,7 +112,7 @@ body {
 	background-image: url("Assets/fileIcons.png");
 }
 
-.fileView > input {
+#fileView > input {
 	width: calc(100% - 25px);
 	height: 25px;
 	box-sizing: border-box;
@@ -119,7 +124,7 @@ body {
 	color: white;
 }
 
-.fileView > img {
+#fileView > img {
 	width: 25px;
 	height: 25px;
 	box-sizing: border-box;
@@ -130,8 +135,8 @@ body {
 	background-color: #2d2b55;
 }
 
-.fileView > img:hover { background-color: #fff3; }
-.fileView > img:active { background-color: #aaa2; }
+#fileView > img:hover { background-color: #fff3; }
+#fileView > img:active { background-color: #aaa2; }
 
 .ftHTML { background-position-x: -16px; }
 .ftJS   { background-position-x: -32px; }
@@ -142,5 +147,5 @@ body {
 .ftPDF  { background-position-x: -112px; }
 .ftDIR  { background-position-x: -128px; }
 
-.file:hover { background-color: #fff2; }
+.file:hover  { background-color: #fff2; }
 .file:active { background-color: #aaa2; }
