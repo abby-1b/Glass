@@ -3,7 +3,8 @@
 	"HTML/Control",
 	"HTML/ImageHolder",
 	"HTML/Img",
-	"HTML/TextureSurface",
+	"HTML/Surface",
+	"HTML/Texture",
 	
 	"Rect",
 	"Vec",
