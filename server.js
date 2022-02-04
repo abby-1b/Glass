@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 
 // Variables
 // const HOME_URL = "index.html"
