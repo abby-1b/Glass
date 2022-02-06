@@ -7,7 +7,7 @@ class Rect {
 	public height = 0
 	public bottomRight = false
 
-	public constructor(x: number, y: number, width: number, height: number, bottomRight: boolean) {
+	public constructor(x: number, y: number, width: number, height: number, bottomRight = false) {
 		this.x = x
 		this.y = y
 		this.width = width

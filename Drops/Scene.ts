@@ -1,6 +1,6 @@
 class Scene {
 	public parent: Glass
-	private objects: Array<Sprite> = []
+	public objects: Array<Sprite> = []
 	private maxSortPerFrame = 1
 	private sortIdx = 0
 
