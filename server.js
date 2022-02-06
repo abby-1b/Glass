@@ -5,9 +5,9 @@
 const mergeDrops = false
 
 // Code
-const ts = require("typescript")
-const http = require("http")
-const fs = require("fs")
+const { transpileModule, ModuleKind } = require("typescript")
+const { createServer } = require("http")
+const { readFileSync, existsSync, lstatSync, readdirSync, readFile } = require("fs")
 
 const hostname = "localhost"
 const port = 8080
@@ -24,7 +24,7 @@ const fileTypes = {
 	"ts": "text"
 }
 
-const server = http.createServer((req, res) => {
+const server = createServer((req, res) => {
 	let url = req.url
 	if (url[url.length - 1] == "/") url = url.slice(0, -1)
 
@@ -33,7 +33,7 @@ const server = http.createServer((req, res) => {
 
 	if (url.endsWith("/favicon.ico")) {
 		res.setHeader("Content-Type", "image/png")
-		res.end(fs.readFileSync("icon.png"))
+		res.end(readFileSync("icon.png"))
 		// res.end()
 		return
 	}
@@ -60,7 +60,7 @@ const server = http.createServer((req, res) => {
 	}
 
 	// Use `main.ts`
-	if (url.endsWith("/index.html") && fs.existsSync(__dirname + url.split("/").slice(0,-1).join("/") + "/main.ts")) {
+	if (url.endsWith("/index.html") && existsSync(__dirname + url.split("/").slice(0,-1).join("/") + "/main.ts")) {
 		res.setHeader("Content-Type", "text/html")
 		res.write(`
 		<!DOCTYPE html>
@@ -81,11 +81,11 @@ const server = http.createServer((req, res) => {
 		return
 	}
 
-	if (fs.existsSync(__dirname + url)) {
+	if (existsSync(__dirname + url)) {
 		// Exists
-		if (fs.lstatSync(__dirname + url).isDirectory()) {
+		if (lstatSync(__dirname + url).isDirectory()) {
 			// Is a directory.
-			if (fs.existsSync(__dirname + url + "/main.ts")) {
+			if (existsSync(__dirname + url + "/main.ts")) {
 				// Contains `main.ts`
 				res.writeHead(302, { "Location": url + "/index.html" })
 				res.end()
@@ -95,7 +95,7 @@ const server = http.createServer((req, res) => {
 				res.setHeader("Content-Type", "text/html")
 				res.write(wStyle + `<div style='position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center'>
 					<a class='d'href='../'>&lt;</a> Files at <a class='d'>${url == "" ? "/" : url}</a>:<br>`)
-				fs.readdirSync(__dirname + url).forEach(e => {
+				readdirSync(__dirname + url).forEach(e => {
 					res.write(`<a class='d'href='${url + "/" + e}'>${e}</a><br>`)
 				})
 				res.end("</div>")
@@ -103,7 +103,7 @@ const server = http.createServer((req, res) => {
 			}
 		} else {
 			// Is a file
-			fs.readFile(__dirname + url, (err, data) => {
+			readFile(__dirname + url, (err, data) => {
 				if (!data) {
 					res.statusCode = 500
 					res.setHeader("Content-Type", "text/html")
@@ -141,13 +141,13 @@ server.listen(port, hostname, () => {
 })
 
 function compileTS(data) {
-	return ts.transpileModule(data, { compilerOptions: { target: "es6", module: ts.ModuleKind.CommonJS }}).outputText
+	return transpileModule(data, { compilerOptions: { target: "es6", module: ModuleKind.CommonJS }}).outputText
 }
 
 function getFiles(path) {
-	let files = fs.readdirSync(path).filter(e => e != ".DS_Store")
+	let files = readdirSync(path).filter(e => e != ".DS_Store")
 	for (let f = 0; f < files.length; f++)
-		if (fs.lstatSync(path + '/' + files[f]).isDirectory())
+		if (lstatSync(path + '/' + files[f]).isDirectory())
 			files[f] = getFiles(path + '/' + files[f])
 		else
 			files[f] = path + '/' + files[f]
@@ -155,10 +155,10 @@ function getFiles(path) {
 }
 
 function getFileTypes(path) {
-	let files = fs.readdirSync(path).filter(e => e != ".DS_Store")
+	let files = readdirSync(path).filter(e => e != ".DS_Store")
 	// if (path[0] != '/') path = '/' + path
 	for (let f = 0; f < files.length; f++)
-		if (fs.lstatSync(path + '/' + files[f]).isDirectory())
+		if (lstatSync(path + '/' + files[f]).isDirectory())
 			files[f] = "DIR:/" + path + '/' + files[f]
 		else
 			files[f] = files[f].split('.').slice(-1)[0].toUpperCase() + ":/" + path + '/' + files[f]
@@ -167,11 +167,11 @@ function getFileTypes(path) {
 
 function getModules() {
 	const allFiles = getFiles("Drops")
-	const orderedFiles = JSON.parse(fs.readFileSync("dropOrder.json", "utf8")).map(e => `Drops/${e}.ts`)
+	const orderedFiles = JSON.parse(readFileSync("dropOrder.json", "utf8")).map(e => `Drops/${e}.ts`)
 	const missing = allFiles.filter(e => !orderedFiles.includes(e))
 	if (missing.length > 0) console.log("Missing Drops in dropOrder.json:", missing)
 	if (mergeDrops)
-		return "<script defer>" + orderedFiles.map(e => compileTS(fs.readFileSync(e, "utf8"))).join("\n") + "</script>"
+		return "<script defer>" + orderedFiles.map(e => compileTS(readFileSync(e, "utf8"))).join("\n") + "</script>"
 	else
 		return orderedFiles.map(e => `<script src="/${e}" defer></script>`).join("\n")
 }
