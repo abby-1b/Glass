@@ -33,12 +33,12 @@ class Glass {
 	 * Init, runs when everything is ready; in this case, instantly.
 	 * @param fn Function to be ran when everything is ready
 	 */
-	public init(fn: CallbackFunction) {
+	public init(fn: CallbackFunction): void {
 		this.initFn = fn
 		this._init()
 	}
 
-	private _init() {
+	private _init(): void {
 		if ((!Surface.ready) || (!ImageHolder.allLoaded())) {
 			setTimeout(() => {
 				this._init.call(this)
@@ -52,7 +52,7 @@ class Glass {
 		this.initFn()
 
 		// Graphics interval
-		const graphicsFn = () => {
+		const graphicsFn = (): void => {
 			this.doGraphics.call(this)
 			window.requestAnimationFrame(graphicsFn)
 		}
@@ -68,7 +68,7 @@ class Glass {
 	 * Runs this function before every frame, when sprites are about to be rendered
 	 * @param fn Function to be ram
 	 */
-	public preFrame(fn: CallbackFunction) {
+	public preFrame(fn: CallbackFunction): void {
 		this.preFrameFn = fn
 	}
 
@@ -76,7 +76,7 @@ class Glass {
 	 * Runs this function at the end of every frame
 	 * @param fn Function to be ran
 	 */
-	public frame(fn: CallbackFunction) {
+	public frame(fn: CallbackFunction): void {
 		this.frameFn = fn
 	}
 	
@@ -84,7 +84,7 @@ class Glass {
 	 * Runs this function every physics frame
 	 * @param fn Function to be ran
 	 */
-	public physics(fn: CallbackFunction) {
+	public physics(fn: CallbackFunction): void {
 		this.physicsFn = fn
 	}
 
@@ -92,7 +92,7 @@ class Glass {
 	 * Main loop for the game. Runs the preLoop, moves everything, and runs the normal loop functions.
 	 * @private
 	 */
-	private doGraphics() {
+	private doGraphics(): void {
 		this.scene.width = Surface.texture.width
 		this.scene.height = Surface.texture.height
 		// Move camera towards targeted object
@@ -128,7 +128,7 @@ class Glass {
 		Surface.frameEnd()
 	}
 
-	private doPhysics() {
+	private doPhysics(): void {
 		this.scene.doPhysics()
 
 		this.physicsFn()
