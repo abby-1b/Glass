@@ -21,7 +21,7 @@ module.exports =
 		"@typescript-eslint/no-empty-function": [ "off" ],
 		"@typescript-eslint/no-unused-vars": [ "off" ],
 		"@typescript-eslint/explicit-member-accessibility": [ "error" ],
-		// "@typescript-eslint/explicit-function-return-type": [ "error" ],
+		"@typescript-eslint/explicit-function-return-type": [ "error" ],
 		"indent": [
 			"error",
 			"tab"

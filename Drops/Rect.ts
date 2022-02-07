@@ -19,12 +19,12 @@ class Rect {
 	/**
 	 * Constructs the bottom-right point of the triangle.
 	 */
-	public reload() {
+	public reload(): void {
 		this.x2 = this.x + this.width
 		this.y2 = this.y + this.height
 	}
 
-	public coordInside(ix: number, iy: number) {
+	public coordInside(ix: number, iy: number): boolean {
 		return (ix >= this.x && ix <= this.x2
 			&& iy >= this.y && iy <= this.y2) 
 	}

@@ -15,7 +15,7 @@ class Texture {
 		return false//!!document.createElement("canvas").getContext("webgl2")
 	}
 
-	public static new(width: number, height: number, webGL = false) {
+	public static new(width: number, height: number, webGL = false): Texture {
 		return this.canGL() && webGL ? new TextureWebGL(width, height) : new TextureCanvas(width, height)
 	}
 
@@ -27,10 +27,10 @@ class Texture {
 		this.height = height
 	}
 
-	public translate(x: number, y: number) { }
-	public resetTranslate() { }
+	public translate(x: number, y: number): void { }
+	public resetTranslate(): void { }
 
-	public colorf(r: number, g: number, b: number, a: number) { }
+	public colorf(r: number, g: number, b: number, a: number): void { }
 
 	/**
 	 * Draws the background, effectively clearing the texture.
@@ -42,7 +42,7 @@ class Texture {
 	 * @param width New width
 	 * @param height New height
 	 */
-	public resize(width: number, height: number) { }
+	public resize(width: number, height: number): void { }
 
 	/**
 	 * Draws an image to the texture
@@ -50,9 +50,9 @@ class Texture {
 	 * @param pos Position to draw the image at
 	 * @param scale Scaling factor for the image
 	 */
-	public drawImage(sourceImg: Img, pos: Vec2, scale = 1) { }
+	public drawImage(sourceImg: Img, pos: Vec2, scale = 1): void { }
 
-	public rect(x: number, y: number, w: number, h: number) { }
+	public rect(x: number, y: number, w: number, h: number): void { }
 }
 
 class TextureCanvas extends Texture {
@@ -72,35 +72,35 @@ class TextureCanvas extends Texture {
 		this.ctx.fillRect(0, 0, this.width, this.height)
 	}
 
-	public resize(width: number, height: number) {
+	public resize(width: number, height: number): void {
 		this.width = width
 		this.height = height
 		this.el.width = this.width
 		this.el.height = this.height
 	}
 
-	public translate(x: number, y: number) {
+	public translate(x: number, y: number): void {
 		this.translation[0] += x
 		this.translation[1] += y
 	}
 
-	public resetTranslate() {
+	public resetTranslate(): void {
 		this.translation[0] = 0
 		this.translation[1] = 0
 	}
 
-	public colorf(r: number, g: number, b: number, a: number) {
+	public colorf(r: number, g: number, b: number, a: number): void {
 		// this.currentColor = [r, g, b, a]
 		this.ctx.fillStyle = "rgba(" + [r, g, b, a / 255] + ")"
 		this.ctx.strokeStyle = "rgba(" + [r, g, b, a / 255] + ")"
 	}
 
-	public drawImage(sourceImg: Img, pos: Vec2, scale = 1) {
+	public drawImage(sourceImg: Img, pos: Vec2, scale = 1): void {
 		// TODO: use scale
 		this.ctx.drawImage(sourceImg.img, Math.round(pos.x), Math.round(pos.y))
 	}
 
-	public rect(x: number, y: number, w: number, h: number) {
+	public rect(x: number, y: number, w: number, h: number): void {
 		this.ctx.beginPath()
 		this.ctx.rect(Math.round(x) + 0.5, Math.round(y) + 0.5, w - 1, h - 1)
 		this.ctx.stroke()
@@ -185,7 +185,7 @@ class TextureWebGL extends TextureCanvas {
 		}
 	}
 
-	private buildShader(vertex: string, fragment: string) {
+	private buildShader(vertex: string, fragment: string): WebGLProgram | undefined {
 		const program = this.gl.createProgram()
 		if (!program) return
 	
@@ -221,19 +221,19 @@ class TextureWebGL extends TextureCanvas {
 		this.gl.clear(this.gl.COLOR_BUFFER_BIT)
 	}
 
-	public translate(x: number, y: number) {
+	public translate(x: number, y: number): void {
 		this.translation[0] += x
 		this.translation[1] += y
 		this.gl.uniform2fv(this.glParams.vOffs, this.translation)
 	}
 
-	public resetTranslation() {
+	public resetTranslation(): void {
 		this.translation[0] = 0
 		this.translation[1] = 0
 		this.gl.uniform2fv(this.glParams.vOffs, this.translation)
 	}
 
-	public resize(width: number, height: number) {
+	public resize(width: number, height: number): void {
 		this.width = width
 		this.height = height
 		this.el.width = this.width
@@ -303,7 +303,7 @@ class TextureWebGL extends TextureCanvas {
 	 * @param x X Position to draw at
 	 * @param y Y Position to draw at
 	 */
-	public point(x: number, y: number) {
+	public point(x: number, y: number): void {
 		this.gl.bufferData(this.gl.ARRAY_BUFFER, new Float32Array([
 			Math.floor(x + 1), Math.floor(y)
 		]), this.gl.DYNAMIC_DRAW)
@@ -318,7 +318,7 @@ class TextureWebGL extends TextureCanvas {
 	 * @param w Width of the rectangle
 	 * @param h Height of the rectangle
 	 */
-	public line(x1: number, y1: number, x2: number, y2: number) {
+	public line(x1: number, y1: number, x2: number, y2: number): void {
 		this.gl.bufferData(this.gl.ARRAY_BUFFER, new Float32Array([
 			Math.floor(x1), Math.floor(y1), Math.floor(x2 + 1), Math.floor(y2 + 1)
 		]), this.gl.DYNAMIC_DRAW)
@@ -333,7 +333,7 @@ class TextureWebGL extends TextureCanvas {
 	 * @param w Width of the rectangle
 	 * @param h Height of the rectangle
 	 */
-	public rect(x: number, y: number, w: number, h: number) {
+	public rect(x: number, y: number, w: number, h: number): void {
 		x = Math.floor(x + 1)
 		y = Math.floor(y)
 		w = Math.floor(w - 1)
@@ -356,7 +356,7 @@ class TextureWebGL extends TextureCanvas {
 	 * @param w Width of the rectangle
 	 * @param h Height of the rectangle
 	 */
-	public fillRect(x: number, y: number, w: number, h: number) {
+	public fillRect(x: number, y: number, w: number, h: number): void {
 		this.gl.bufferData(this.gl.ARRAY_BUFFER, new Float32Array([
 			x, y, x + w, y,
 			x, y + h, x + w, y + h
@@ -369,7 +369,7 @@ class TextureWebGL extends TextureCanvas {
 	 * Changes the blend mode
 	 * @param t Blend mode to switch to.
 	 */
-	public blend(t: number) {
+	public blend(t: number): void {
 		this.gl.blendFuncSeparate(this.gl.SRC_ALPHA, this.gl.ONE_MINUS_SRC_ALPHA, this.gl.ONE, this.gl.ONE_MINUS_SRC_ALPHA)
 		switch (t) {
 		case 0: // Normal

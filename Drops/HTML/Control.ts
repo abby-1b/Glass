@@ -4,12 +4,12 @@ class Control {
 
 	private cEvents: { [key: string]: [CallbackFunction, boolean] } = {}
 
-	public cEvent(name: string, fn: CallbackFunction) {
+	public cEvent(name: string, fn: CallbackFunction): void {
 		this.cEvents[name] = [fn, false]
 	}
 
 	// Keyboard
-	public onKeyDown(keys: Array<string>, cEv: string) {
+	public onKeyDown(keys: Array<string>, cEv: string): void {
 		if (!(cEv in this.cEvents)) Log.w("Event", cEv, "doesn't exist.")
 		window.addEventListener("keydown", e => {
 			if (keys.includes(e.key) && !e.repeat) {
@@ -23,7 +23,7 @@ class Control {
 		})
 	}
 
-	public isOngoing(cEv: string) {
+	public isOngoing(cEv: string): boolean {
 		return this.cEvents[cEv][1]
 	}
 }

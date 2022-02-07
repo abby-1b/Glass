@@ -4,7 +4,7 @@ class HTML {
 	 * @param desiredSize The desired size of the drawing surface or screen.
 	 * @returns A drawable surface.
 	 */
-	public static setup() {
+	public static setup(): void {
 		const metaTags: { [key: string]: string } = {
 			"viewport": "width=device-width,initial-scale=1,maximum-scale=1.0,user-scalable=0",
 			"apple-mobile-web-app-capable": "yes"
@@ -33,15 +33,15 @@ class HTML {
 		el.style.height = "100vh"
 	}
 
-	public static fullScreen(el: HTMLCanvasElement) {
+	public static fullScreen(el: HTMLCanvasElement): void {
 		el.requestFullscreen()
 	}
 
-	public static exitFullscreen() {
+	public static exitFullscreen(): void {
 		document.exitFullscreen()
 	}
 
-	public static isFullscreen() {
+	public static isFullscreen(): boolean {
 		return !!document.fullscreenElement
 	}
 }

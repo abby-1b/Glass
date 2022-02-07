@@ -23,7 +23,7 @@ class Scene {
 		this.parent = parent
 	}
 
-	public draw() {
+	public draw(): void {
 		Surface.viewport(this.pos.x, this.pos.y, this.width, this.height)
 		// Sort objects
 		if (this.objects.length > 1) {
@@ -47,7 +47,7 @@ class Scene {
 		Surface.resetViewport()
 	}
 
-	public doPhysics() {
+	public doPhysics(): void {
 		// Loop through all objects, and then again for PhysicsActors
 		for (let o = 0; o < this.objects.length; o++) {
 			// TODO: physics
@@ -79,7 +79,7 @@ class Scene {
 	 * @param obj Object to be removed
 	 * @returns The removed object
 	 */
-	public rObj(obj: Sprite) {
+	public rObj(obj: Sprite): Sprite {
 		return this.rObjIdx(this.objects.indexOf(obj))
 	}
 
@@ -88,11 +88,11 @@ class Scene {
 	 * @param idx Index to remove
 	 * @returns The removed object
 	 */
-	public rObjIdx(idx: number) {
-		return this.objects.splice(idx, 1)
+	public rObjIdx(idx: number): Sprite {
+		return this.objects.splice(idx, 1)[0]
 	}
 
-	public shiftObjects(x: number, y: number) {
+	public shiftObjects(x: number, y: number): void {
 		// TODO: camera
 		// this.camera.pos.x += x
 		// this.camera.pos.y += y

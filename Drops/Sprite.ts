@@ -32,16 +32,16 @@ class Sprite {
 		}
 	}
 
-	public layer(l: number) {
+	public layer(l: number): void {
 		this._layer = l
 	}
 
-	public draw() {
+	public draw(): void {
 		Surface.texture.drawImage(this.src, this.pos, this.scale)
 		this.drawHb()
 	}
 
-	public getHb() {
+	public getHb(): Rect {
 		if (this.flipped) {
 			this.hb.x      = this.pos.x - (this.centered ? this.width * 0.5 : 0) + this.hbOffsets.right * this.scale,
 			this.hb.y      = this.pos.y - (this.centered ? this.height * 0.5 : 0) + this.hbOffsets.top * this.scale,
@@ -56,7 +56,7 @@ class Sprite {
 		return this.hb
 	}
 
-	public drawHb() {
+	public drawHb(): void {
 		Surface.texture.colorf(255, 0, 0, 100)
 		Surface.texture.rect(this.pos.x, this.pos.y, this.width, this.height)
 	}

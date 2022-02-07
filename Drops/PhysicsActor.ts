@@ -20,7 +20,7 @@ class PhysicsActor extends Sprite {
 		return false
 	}
 
-	public physics() {
+	public physics(): void {
 		this.pos.x += (this.speed.x = (this.speed.x + this.properties.gravity.x) * this.properties.friction.x)
 		this.pos.y += (this.speed.y = (this.speed.y + this.properties.gravity.y) * this.properties.friction.y)
 		for (let o = 0; o < this.parent.objects.length; o++) {
@@ -33,7 +33,7 @@ class PhysicsActor extends Sprite {
 		}
 	}
 
-	private avoidCollision(spr: Sprite) {
+	private avoidCollision(spr: Sprite): void {
 		const b1 = this.getHb()
 		const b2 = spr.getHb()
 		if (!this.intersects(spr)) return

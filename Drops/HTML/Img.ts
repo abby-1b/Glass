@@ -12,7 +12,7 @@ class Img {
 		this.height = height
 	}
 
-	public loaded(fn: (arg0: Img) => void) {
+	public loaded(fn: (arg0: Img) => void): void {
 		if (this.isLoaded)
 			fn(this)
 		else
@@ -24,7 +24,7 @@ class ImgURL extends Img {
 	public constructor(url: string) {
 		super(-1, -1)
 		this.img = new Image()
-		this.img.onload = () => {
+		this.img.onload = (): void => {
 			this.width = this.img.width
 			this.height = this.img.height
 			this.isLoaded = true

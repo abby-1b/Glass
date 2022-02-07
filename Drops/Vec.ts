@@ -7,34 +7,34 @@ class Vec2 {
 		this.y = y
 	}
 
-	public rounded() {
+	public rounded(): Vec2 {
 		return new Vec2(Math.round(this.x), Math.round(this.y))
 	}
 
-	public lerp(x: number, y: number, v: number) {
+	public lerp(x: number, y: number, v: number): void {
 		this.x = this.x * (1 - v) + x * v
 		this.y = this.y * (1 - v) + y * v
 	}
 
-	public set(x: number, y: number) {
+	public set(x: number, y: number): void {
 		this.x = x
 		this.y = y
 	}
 
 	// Multiplies, doesn't return
-	public multiply(v: number) {
+	public multiply(v: number): void {
 		this.x *= v
 		this.y *= v
 	}
 
 	// Multiplies by vector
-	public multiplyVec(v: Vec2) {
+	public multiplyVec(v: Vec2): void {
 		this.x *= v.x
 		this.y *= v.y
 	}
 
 	// Multiplies, returns
-	public multiplyRet(v: number) {
+	public multiplyRet(v: number): this {
 		this.x *= v
 		this.y *= v
 		return this
@@ -113,7 +113,7 @@ class Vec2 {
 	}
 
 	// Gets distance in x plus distance in y (faster than square root, maybe.)
-	public cartesianDist(v: Vec2) {
+	public cartesianDist(v: Vec2): number {
 		return Math.abs(this.x - v.x) + Math.abs(this.y - v.y)
 	}
 }

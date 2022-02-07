@@ -10,7 +10,7 @@ class Surface {
 
 	public static texture: Texture
 
-	public static setup() {
+	public static setup(): void {
 		this.texture = Texture.new(this.desiredSize, this.desiredSize, true)
 		const resizeFn = (): void => {
 			this.texture.resize(
@@ -29,13 +29,13 @@ class Surface {
 		HTML.setup()
 	}
 
-	public static frameSetup() {
+	public static frameSetup(): void {
 		this.texture.colorf(...this.bgColor, 255)
 		this.texture.background()
 	}
-	public static frameEnd() { this.frameCount++ }
+	public static frameEnd(): void { this.frameCount++ }
 
-	public static calculateFramerate() {
+	public static calculateFramerate(): void {
 		// Calculate framerate
 		const currTime = window.performance.now()
 		const deltaTime = (currTime - this.frameLastMoment)
@@ -51,7 +51,7 @@ class Surface {
 		this.bgColor = color
 	}
 
-	public static viewport(x: number, y: number, w: number, h: number) {
+	public static viewport(x: number, y: number, w: number, h: number): void {
 		if (this.texture instanceof TextureCanvas) {
 			this.texture.ctx.save()
 			this.texture.ctx.beginPath()
@@ -59,7 +59,7 @@ class Surface {
 			this.texture.ctx.clip()
 		}
 	}
-	public static resetViewport() {
+	public static resetViewport(): void {
 		if (this.texture instanceof TextureCanvas) {
 			this.texture.ctx.restore()
 		}
