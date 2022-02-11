@@ -15,7 +15,7 @@ class Sprite {
 
 	public hbOffsets = {top: 0, bottom: 0, left: 0, right: 0}
 
-	private hb: Rect
+	private hb: Rect = new Rect(0, 0, 0, 0, true)
 
 	public constructor(src: Img, x: number, y: number, width = -1, height = -1) {
 		this.src = src
@@ -37,7 +37,7 @@ class Sprite {
 	}
 
 	public draw(): void {
-		Surface.texture.drawImage(this.src, this.pos, this.scale)
+		Surface.texture.drawImage(this.src, this.pos, this.width, this.height, 1, this.flipped)
 		this.drawHb()
 	}
 
@@ -53,11 +53,12 @@ class Sprite {
 			this.hb.width  = this.width * this.scale - (this.hbOffsets.left * this.scale + this.hbOffsets.right * this.scale),
 			this.hb.height = this.height * this.scale - (this.hbOffsets.top * this.scale + this.hbOffsets.bottom * this.scale)
 		}
+		this.hb.reload()
 		return this.hb
 	}
 
 	public drawHb(): void {
 		Surface.texture.colorf(255, 0, 0, 100)
-		Surface.texture.rect(this.pos.x, this.pos.y, this.width, this.height)
+		Surface.texture.rect(this.pos.x + this.hbOffsets.left, this.pos.y + this.hbOffsets.top, this.width - this.hbOffsets.left - this.hbOffsets.right, this.height - this.hbOffsets.top - this.hbOffsets.bottom)
 	}
 }
