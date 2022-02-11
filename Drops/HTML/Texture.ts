@@ -50,7 +50,7 @@ class Texture {
 	 * @param pos Position to draw the image at
 	 * @param scale Scaling factor for the image
 	 */
-	public drawImage(sourceImg: Img, pos: Vec2, scale = 1): void { }
+	public drawImage(sourceImg: Img, pos: Vec2, width: number, height: number, scale = 1, flipped = false): void { }
 
 	public rect(x: number, y: number, w: number, h: number): void { }
 }
@@ -95,9 +95,15 @@ class TextureCanvas extends Texture {
 		this.ctx.strokeStyle = "rgba(" + [r, g, b, a / 255] + ")"
 	}
 
-	public drawImage(sourceImg: Img, pos: Vec2, scale = 1): void {
+	public drawImage(sourceImg: Img, pos: Vec2, width: number, height: number, scale = 1, flipped = false): void {
 		// TODO: use scale
-		this.ctx.drawImage(sourceImg.img, Math.round(pos.x), Math.round(pos.y))
+		if (flipped) {
+			this.ctx.scale(-1, 1)
+			this.ctx.drawImage(sourceImg.img, -Math.round(pos.x), Math.round(pos.y), -width, height)
+			this.ctx.scale(-1, 1)
+		} else {
+			this.ctx.drawImage(sourceImg.img, Math.round(pos.x), Math.round(pos.y), width, height)
+		}
 	}
 
 	public rect(x: number, y: number, w: number, h: number): void {
