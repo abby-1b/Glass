@@ -1,9 +1,12 @@
 
 type CallbackFunction = () => void
 
+let width = -1
+let height = -1
+let frameCount = -1
+
 class Glass {
 	public scene: Scene
-	public control: Control
 
 	private initFn     : CallbackFunction = () => void 0
 	private preFrameFn : CallbackFunction = () => void 0
@@ -20,7 +23,6 @@ class Glass {
 		Surface.backgroundColor(backgroundColor)
 
 		this.scene = new Scene(this)
-		this.control = new Control()
 
 		// Font
 		// this.fonts = {"": "20px Arial"}
@@ -53,15 +55,16 @@ class Glass {
 
 		// Graphics interval
 		const graphicsFn = (): void => {
+			for (let p = 0; p < 4; p++) this.doPhysics.call(this)
 			this.doGraphics.call(this)
 			window.requestAnimationFrame(graphicsFn)
 		}
 		window.requestAnimationFrame(graphicsFn)
 
 		// Physics interval
-		setInterval(() => {
-			this.doPhysics.call(this)
-		}, 4)
+		// setInterval(() => {
+		// 	this.doPhysics.call(this)
+		// }, 4)
 	}
 
 	/**
@@ -114,6 +117,10 @@ class Glass {
 		Surface.frameSetup()
 		Surface.calculateFramerate()
 
+		width  = Surface.texture.width
+		height = Surface.texture.height
+		frameCount = Surface.frameCount
+
 		this.preFrameFn() // Call user pre-frame function
 
 		// Draw all objects
@@ -130,7 +137,6 @@ class Glass {
 
 	private doPhysics(): void {
 		this.scene.doPhysics()
-
 		this.physicsFn()
 	}
 
