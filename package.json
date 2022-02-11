@@ -12,8 +12,8 @@
     "url": "git+https://github.com/CodeIGuess/Glass.git"
   },
   "keywords": [],
-  "author": "",
-  "license": "ISC",
+  "author": "CodeIGuess",
+  "license": "MIT",
   "bugs": {
     "url": "https://github.com/CodeIGuess/Glass/issues"
   },
