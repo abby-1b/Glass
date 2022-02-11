@@ -1,9 +1,9 @@
 [
 	"HTML/HTML",
-	"HTML/Control",
 	"HTML/ImageHolder",
 	"HTML/Img",
 	"HTML/Surface",
+	"HTML/Control",
 	"HTML/Texture",
 	
 	"Rect",
@@ -17,5 +17,6 @@
 	"ImgGen",
 	"Log",
 
+	"PhysicsBody",
 	"PhysicsActor"
 ]
