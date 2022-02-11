@@ -28,4 +28,12 @@ class Rect {
 		return (ix >= this.x && ix <= this.x2
 			&& iy >= this.y && iy <= this.y2) 
 	}
+
+	public intersects(rect: Rect): boolean {
+		if (this.x > rect.x2
+			|| this.x2 < rect.x
+			|| this.y > rect.y2
+			|| this.y2 < rect.y) return false
+		return true
+	}
 }
