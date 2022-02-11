@@ -10,13 +10,15 @@ class Surface {
 
 	public static texture: Texture
 
+	public static width = 0
+	public static height = 0
+
 	public static setup(): void {
 		this.texture = Texture.new(this.desiredSize, this.desiredSize, true)
 		const resizeFn = (): void => {
-			this.texture.resize(
-				Math.ceil((window.innerWidth / window.innerHeight) * this.desiredSize),
-				Math.ceil(this.desiredSize)
-			)
+			this.width = Math.ceil((window.innerWidth / window.innerHeight) * this.desiredSize)
+			this.height = this.desiredSize
+			this.texture.resize(this.width, this.height)
 		}
 		window.addEventListener("resize", resizeFn)
 		window.addEventListener("orientationchange", resizeFn)
