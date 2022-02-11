@@ -5,7 +5,7 @@ class Img {
 	public img: HTMLImageElement | HTMLCanvasElement
 
 	public isLoaded = false
-	public onLoadFn: (arg0: Img) => void
+	public onLoadFn: (arg0: Img) => void = () => {}
 
 	public constructor(width: number, height: number) {
 		this.width = width
