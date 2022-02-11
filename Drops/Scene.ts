@@ -8,9 +8,13 @@ class Scene {
 	public width = -1
 	public height = -1
 
-	private gravity: Vec2 = new Vec2(0.0, 0.015)
-	private friction: Vec2 = new Vec2(0.9, 0.997)
-	private groundFriction: Vec2 = new Vec2(0.9, 0.997)
+	public physicsEnable = PhysicsBody.PHYSICS_HARD
+	public physicsProperties: PhysicsProperties = {
+		gravity: new Vec2(0.0, 0.015),
+		friction: new Vec2(0.9, 0.997),
+		groundFriction: new Vec2(0.9, 0.997),
+		bounce: 0
+	}
 
 	// TODO: Implement different collision types
 	// Bits:
@@ -51,11 +55,19 @@ class Scene {
 		// Loop through all objects, and then again for PhysicsActors
 		for (let o = 0; o < this.objects.length; o++) {
 			// TODO: physics
-			// if (this.objects[o] instanceof PhysicsActor) {
-			// 	this.objects[o].collided = false
-			// 	this.objects[o].onGround = false
-			// 	this.objects[o].physics()
-			// }
+			if (this.objects[o] instanceof PhysicsActor) {
+				// this.objects[o].collided = false
+				// this.objects[o].onGround = false
+				(this.objects[o] as PhysicsActor).physics()
+			}
+		}
+	}
+
+	public physicsType(type: "top-down"): void {
+		if (type == "top-down") {
+			this.physicsProperties.gravity.set(0, 0)
+			this.physicsProperties.friction.set(0.95, 0.95)
+			this.physicsProperties.groundFriction = this.physicsProperties.friction
 		}
 	}
 
@@ -70,6 +82,9 @@ class Scene {
 		// 	return this.objects[this.objects.push(obj) - 1]
 		// else
 		obj.parent = this
+		if (obj instanceof PhysicsActor) {
+			obj.properties = this.physicsProperties
+		}
 		return this.objects[this.objects.push(obj) - 1]
 	}
 
