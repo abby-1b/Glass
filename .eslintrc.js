@@ -23,7 +23,7 @@ module.exports =
 		"@typescript-eslint/explicit-member-accessibility": [ "error" ],
 		"@typescript-eslint/explicit-function-return-type": [ "error" ],
 		"indent": [
-			"error",
+			"warn",
 			"tab"
 		],
 		"linebreak-style": [
