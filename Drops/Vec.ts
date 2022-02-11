@@ -56,6 +56,11 @@ class Vec2 {
 		return this
 	}
 
+	public add2(ax: number, ay: number): void {
+		this.x += ax
+		this.y += ay
+	}
+
 	public addVec(v: Vec2): void {
 		this.x += v.x
 		this.y += v.y
