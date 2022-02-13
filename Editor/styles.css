@@ -7,7 +7,7 @@
 * {
 	user-select: none;
 	font-family: monospace;
-
+	box-sizing: border-box;
 }
 
 img, .nosmooth {
@@ -37,7 +37,6 @@ body {
 	height: 100%;
 	padding: 8px;
 	margin: 0;
-	box-sizing: border-box;
 }
 
 #fileView {
@@ -65,6 +64,15 @@ body {
 	margin: 0;
 	padding: 0;
 }
+
+#gameViewPanel {
+
+}
+
+#codeViewPanel {
+
+}
+
 
 #propertyView {
 	background-color: #28284e;
@@ -149,3 +157,38 @@ body {
 
 .file:hover  { background-color: #fff2; }
 .file:active { background-color: #aaa2; }
+
+.panelSwitcher {
+	position: relative;
+	width: 100%;
+	height: 31px;
+	
+	/* overflow-x: auto;
+    overflow-y: hidden; */
+	overflow: scroll;
+
+	white-space: nowrap;
+}
+
+.panelSwitcherOption {
+	padding: 8px;
+	/* width: auto; */
+	/* float: left; */
+	display: inline-block;
+	text-decoration: none;
+}
+
+.panelSwitcherOption:hover {
+	background-color: #fff3;
+}
+
+.panelHolder {
+	width: 100%;
+	height: calc(100% - 31px);
+}
+
+.panel {
+	width: 100%;
+	height: 100%;
+	padding: 8px;
+}
