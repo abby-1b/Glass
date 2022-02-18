@@ -1,6 +1,6 @@
 
 // VARIABLES
-const fullCompact = false // Makes things readable for debugging
+const fullCompact = true // Makes things readable for debugging
 const precomputeValues = false // experimental, precomputes simple math (1+1 => 2)
 
 // CODE...
@@ -32,6 +32,28 @@ function toText(tree, noArrowFuncShorten, malformedArrowFunc, aInParen, lineAlon
 	switch (tree.type) {
 		case "Program": {
 			ret += iterateLines(tree.body)
+		} break
+
+		// Imports
+		case "ImportDeclaration": {
+			ret += "import"
+			if (tree.specifiers[0].type == "ImportSpecifier") {
+				ret += `{${tree.specifiers.map(toText).join(",")}}`
+			} else {
+				ret += toText(tree.specifiers[0])
+			}
+			ret += `from "${tree.source.value}";`
+		} break
+		case "ImportSpecifier": {
+			ret += tree.local.name
+		} break
+		case "ImportNamespaceSpecifier": {
+			ret += ` * as ${tree.local.name} `
+		} break
+
+		// Await
+		case "AwaitExpression": {
+			ret += `await ${toText(tree.argument)}`
 		} break
 
 		// Control flow
@@ -209,6 +231,9 @@ function toText(tree, noArrowFuncShorten, malformedArrowFunc, aInParen, lineAlon
 		} break
 		case "TemplateElement": {
 			ret += tree.value.cooked
+		} break
+		case "TaggedTemplateExpression": {
+			ret += toText(tree.tag) + toText(tree.quasi)
 		} break
 
 		// Operators
