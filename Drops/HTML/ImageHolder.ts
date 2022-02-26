@@ -3,6 +3,7 @@ type ImageTemplate = { img: HTMLImageElement, width: number, height: number, com
 const IMAGE_LOAD_TIMEOUT = 10
 let _ImageLoadTimeoutCount: number = IMAGE_LOAD_TIMEOUT + 1
 
+// TODO: implement with the Img and ImgURL classes.
 class ImageHolder {
 	private static imageElements: Array<ImageTemplate> = []
 	private static imageIndexes: {[key: string]: number} = {}
