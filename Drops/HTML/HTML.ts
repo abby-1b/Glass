@@ -22,6 +22,7 @@ class HTML {
 		window.addEventListener("click", () => {
 			Surface.ready = true
 		})
+		Surface.ready = true // Added this to skip [play] button, as it's only necessary to play sounds.
 
 		let el: HTMLCanvasElement
 		if (Surface.texture instanceof TextureWebGL && Surface.texture.secondStepBlur) {
