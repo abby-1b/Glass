@@ -126,7 +126,7 @@ class Glass {
 		// Draw all objects
 		Surface.resetViewport()
 		this.scene.draw()
-		Surface.texture.resetTranslate()
+		Surface.texture.resetTranslation()
 		
 		Surface.resetViewport()
 		this.frameFn() // Call user frame function
