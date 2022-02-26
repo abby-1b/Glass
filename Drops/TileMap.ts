@@ -1,4 +1,4 @@
 
-class TileMap {
-	// knljugiyftdursxyzdgs
+class TileMap extends Sprite {
+
 }
