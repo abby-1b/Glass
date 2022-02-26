@@ -1,16 +1,9 @@
-class Img {
-	public width: number
-	public height: number
-
-	public img: HTMLImageElement | HTMLCanvasElement
-
+/**
+ * A non-editable source image.
+ */
+class Img extends TextureCanvas {
 	public isLoaded = false
 	public onLoadFn: (arg0: Img) => void = () => {}
-
-	public constructor(width: number, height: number) {
-		this.width = width
-		this.height = height
-	}
 
 	public loaded(fn: (arg0: Img) => void): void {
 		if (this.isLoaded)
@@ -23,13 +16,13 @@ class Img {
 class ImgURL extends Img {
 	public constructor(url: string) {
 		super(-1, -1)
-		this.img = new Image()
-		this.img.onload = (): void => {
-			this.width = this.img.width
-			this.height = this.img.height
+		const img = new Image()
+		img.onload = (): void => {
+			this.resize(img.width, img.height)
+			this.el.getContext("2d")?.drawImage(img, 0, 0)
 			this.isLoaded = true
 			this.onLoadFn(this)
 		}
-		this.img.src = url
+		img.src = url
 	}
 }

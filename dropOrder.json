@@ -1,10 +1,10 @@
 [
 	"HTML/HTML",
 	"HTML/ImageHolder",
-	"HTML/Img",
 	"HTML/Surface",
 	"HTML/Control",
 	"HTML/Texture",
+	"HTML/Img",
 	
 	"Rect",
 	"Vec",
