@@ -19,6 +19,8 @@ class Texture {
 		return this.canGL() && webGL ? new TextureWebGL(width, height) : new TextureCanvas(width, height)
 	}
 
+	public loaded(fn: CallbackFunction): void { }
+
 	public constructor(width: number, height: number) {
 		this.el = document.createElement("canvas")
 		this.el.width = width
@@ -28,7 +30,7 @@ class Texture {
 	}
 
 	public translate(x: number, y: number): void { }
-	public resetTranslate(): void { }
+	public resetTranslation(): void { }
 
 	public colorf(r: number, g: number, b: number, a: number): void { }
 
@@ -42,7 +44,12 @@ class Texture {
 	 * @param width New width
 	 * @param height New height
 	 */
-	public resize(width: number, height: number): void { }
+	public resize(width: number, height: number): void {
+		this.width = width
+		this.height = height
+		this.el.width = this.width
+		this.el.height = this.height
+	}
 
 	/**
 	 * Draws an image to the texture
@@ -50,8 +57,15 @@ class Texture {
 	 * @param pos Position to draw the image at
 	 * @param scale Scaling factor for the image
 	 */
-	public drawImage(sourceImg: Img, pos: Vec2, width: number, height: number, scale = 1, flipped = false): void { }
+	public drawImage(sourceImg: Texture, pos: Vec2, width: number, height: number, scale = 1, flipped = false): void { }
 
+	/**
+	 * Draws a rectangle
+	 * @param x Top right X
+	 * @param y Top right Y
+	 * @param w Width
+	 * @param h Height
+	 */
 	public rect(x: number, y: number, w: number, h: number): void { }
 }
 
@@ -72,19 +86,12 @@ class TextureCanvas extends Texture {
 		this.ctx.fillRect(0, 0, this.width, this.height)
 	}
 
-	public resize(width: number, height: number): void {
-		this.width = width
-		this.height = height
-		this.el.width = this.width
-		this.el.height = this.height
-	}
-
 	public translate(x: number, y: number): void {
 		this.translation[0] += x
 		this.translation[1] += y
 	}
 
-	public resetTranslate(): void {
+	public resetTranslation(): void {
 		this.translation[0] = 0
 		this.translation[1] = 0
 	}
@@ -95,14 +102,14 @@ class TextureCanvas extends Texture {
 		this.ctx.strokeStyle = "rgba(" + [r, g, b, a / 255] + ")"
 	}
 
-	public drawImage(sourceImg: Img, pos: Vec2, width: number, height: number, scale = 1, flipped = false): void {
+	public drawImage(sourceImg: Texture, pos: Vec2, width: number, height: number, scale = 1, flipped = false): void {
 		// TODO: use scale
 		if (flipped) {
 			this.ctx.scale(-1, 1)
-			this.ctx.drawImage(sourceImg.img, -Math.round(pos.x), Math.round(pos.y), -width, height)
+			this.ctx.drawImage(sourceImg.el, -Math.round(pos.x), Math.round(pos.y), -width, height)
 			this.ctx.scale(-1, 1)
 		} else {
-			this.ctx.drawImage(sourceImg.img, Math.round(pos.x), Math.round(pos.y), width, height)
+			this.ctx.drawImage(sourceImg.el, Math.round(pos.x), Math.round(pos.y), width, height)
 		}
 	}
 
@@ -240,10 +247,7 @@ class TextureWebGL extends TextureCanvas {
 	}
 
 	public resize(width: number, height: number): void {
-		this.width = width
-		this.height = height
-		this.el.width = this.width
-		this.el.height = this.height
+		super.resize(width, height)
 
 		if (this.secondStepBlur) {
 			this.secondStepCanvas.width = this.width
