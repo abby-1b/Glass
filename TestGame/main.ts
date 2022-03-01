@@ -4,7 +4,7 @@ const g: Glass = new Glass(200, [100, 100, 100])
 // g.scene.physicsType("top-down")
 // g.scene.physicsEnable = 0
 
-const spr1 = g.scene.nObj(new PhysicsActor(new ImgURL("test.png"), 0, 0)) as PhysicsActor
+const spr1 = g.scene.nObj(new PhysicsActor(new ImgURL("test.png"), 5, 0)) as PhysicsActor
 const floor1 = g.scene.nObj(new PhysicsBody(new ImgURL("floor.png"), 0, 92, 64, 16)) as PhysicsBody
 const floor2 = g.scene.nObj(new PhysicsBody(new ImgURL("floor.png"), 64, 108, 64, 16)) as PhysicsBody
 

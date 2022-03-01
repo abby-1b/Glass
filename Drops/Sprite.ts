@@ -26,7 +26,7 @@ class Sprite {
 		this.pos.x = x
 		this.pos.y = y
 		if (width == -1 || height == -1) {
-			this.src.loaded((img) => {
+			this.src.loaded((img: TextureCanvas): void => {
 				this.width = this.src.width
 				this.height = this.src.height
 			})
