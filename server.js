@@ -70,7 +70,7 @@ const server = createServer((req, res) => {
 				<meta name="viewport" content="width=device-width,initial-scale=1">
 				<link rel="stylesheet" href="">
 				${getModules()}
-				<script src="${url.split("/").slice(0,-1).join("/")}/main.ts" defer></script>
+				<script type="module" src="${url.split("/").slice(0,-1).join("/")}/main.ts" defer></script>
 			</head>
 			<body>
 			</body>
@@ -111,9 +111,9 @@ const server = createServer((req, res) => {
 					console.log(" > 404 (!)")
 				} else {
 					res.statusCode = 200
-					let tp = url.split(".").slice(-1)
+					let tp = url.split(".").slice(-1)[0]
 					if (!fileTypes[tp]) console.log("############################ CONTENT TYPE: " + tp + " NOT IN LIST ############################")
-					res.setHeader("Content-Type", fileTypes[tp] + "/" + tp)
+					res.setHeader("Content-Type", fileTypes[tp] + "/" + (tp == "ts" ? "javascript" : tp))
 					if (tp == "ts") {
 						// Compile typescript
 						data = String.fromCharCode(...data)
@@ -141,7 +141,8 @@ server.listen(port, hostname, () => {
 })
 
 function compileTS(data) {
-	return transpileModule(data, { compilerOptions: { target: "es6", module: ModuleKind.CommonJS }}).outputText
+	return transpileModule(data, { compilerOptions: { target: "esnext", module: ModuleKind.CommonJS }}).outputText
+		.replace(`Object.defineProperty(exports, "__esModule", { value: true });`, "")
 }
 
 function getFiles(path) {
