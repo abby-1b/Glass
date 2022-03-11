@@ -19,7 +19,8 @@ class Texture {
 		return this.canGL() && webGL ? new TextureWebGL(width, height) : new TextureCanvas(width, height)
 	}
 
-	public loaded(fn: CallbackFunction): void { }
+	public onLoad(fn: (img: TextureCanvas) => void): void { }
+	public async load(): Promise<this> { return this }
 
 	public constructor(width: number, height: number) {
 		this.el = document.createElement("canvas")
@@ -117,6 +118,10 @@ class TextureCanvas extends Texture {
 		this.ctx.beginPath()
 		this.ctx.rect(Math.round(x) + 0.5, Math.round(y) + 0.5, w - 1, h - 1)
 		this.ctx.stroke()
+	}
+
+	public getPixels(): number[] {
+		return [...this.ctx.getImageData(0, 0, this.el.width, this.el.height).data]
 	}
 }
 

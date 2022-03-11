@@ -4,13 +4,12 @@ type HitboxOffsets = {top: number, bottom: number, left: number, right: number}
 /**
  * Any object that can be drawn to the screen.
  */
-class Sprite {
-	public src: TextureCanvas
+class Sprite extends TextureCanvas {
 	public parent: Scene
 
 	public pos: Vec2 = new Vec2(0, 0)
-	public width = -1
-	public height = -1
+	public width = 1
+	public height = 1
 	public scale = 1
 	public flipped = false
 	public centered = false
@@ -21,19 +20,24 @@ class Sprite {
 	public showHb = true
 	private hb: Rect = new Rect(0, 0, 0, 0, true)
 
-	public constructor(src: TextureCanvas, x: number, y: number, width = -1, height = -1) {
-		this.src = src
+	public constructor(src: TextureCanvas, x: number, y: number, width = 1, height = 1) {
+		super(width, height)
 		this.pos.x = x
 		this.pos.y = y
-		if (width == -1 || height == -1) {
-			this.src.loaded((img: TextureCanvas): void => {
-				this.width = this.src.width
-				this.height = this.src.height
-			})
-		} else {
-			this.width = width
-			this.height = height
-		}
+		this.width = width
+		this.height = height
+
+		this.loadSource(src)
+	}
+
+	private async loadSource(src: TextureCanvas): Promise<void> {
+		src.onLoad((img: TextureCanvas): void => {
+			// this.width = img.width
+			// this.height = img.height
+			this.resize(img.width, img.height)
+			// setTimeout(() => {console.log(this.width, this.height)}, 1000)
+			this.ctx.drawImage(img.el, 0, 0, this.width, this.height)
+		})
 	}
 
 	public layer(l: number): void {
@@ -42,7 +46,7 @@ class Sprite {
 
 	public draw(): void {
 		// TODO: draw centered
-		Surface.texture.drawImage(this.src, this.pos, this.width, this.height, 1, this.flipped)
+		Surface.texture.drawImage(this, this.pos, this.width, this.height, 1, this.flipped)
 		if (this.showHb) this.drawHb()
 	}
 

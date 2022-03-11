@@ -1,12 +1,28 @@
 
+export {}
+
 const g: Glass = new Glass(200, [100, 100, 100])
 
 // g.scene.physicsType("top-down")
 // g.scene.physicsEnable = 0
 
 const spr1 = g.scene.nObj(new PhysicsActor(new ImgURL("test.png"), 5, 0)) as PhysicsActor
-const floor1 = g.scene.nObj(new PhysicsBody(new ImgURL("floor.png"), 0, 92, 64, 16)) as PhysicsBody
-const floor2 = g.scene.nObj(new PhysicsBody(new ImgURL("floor.png"), 64, 108, 64, 16)) as PhysicsBody
+const floor1 = g.scene.nObj(new PhysicsBody(new ImgURL("floor.png"), 0, 92)) as PhysicsBody
+const floor2 = g.scene.nObj(new PhysicsBody(new ImgURL("floor.png"), 64, 108)) as PhysicsBody
+
+spr1.hbOffsets = {
+	top: 3, bottom: 0,
+	left: 3, right: 4
+}
+
+// const gen = g.scene.nObj(new ImgGen(100, 100).c(255, 0, 0, 255).done())
+
+const tilemap = g.scene.nObj(await TileMap.fromImage(new ImgURL("test.png"), [
+	[[148, 52, 115, 255], 4],
+	[[197, 129, 123, 255], 2],
+	[[123, 44, 123, 255], 3],
+	[[230, 178, 74, 255], 1]
+], new TileSet("floor.png"))) as TileMap
 
 g.init(() => { })
 

@@ -5,11 +5,21 @@ class Img extends TextureCanvas {
 	public isLoaded = false
 	public onLoadFn: (arg0: Img) => void = () => {}
 
-	public loaded(fn: (arg0: Img) => void): void {
+	/**
+	 * Calls a callback when done loading. If the image is already loaded, calls it immediately.
+	 * @param fn 
+	 */
+	public onLoad(fn: (arg0: Img) => void): void {
 		if (this.isLoaded)
 			fn(this)
 		else
 			this.onLoadFn = fn
+	}
+
+	public async load(): Promise<this> {
+		return new Promise(resolve => {
+			this.onLoad(() => { resolve(this) })
+		})
 	}
 }
 
