@@ -6,7 +6,7 @@ class PhysicsBody extends Sprite {
 
 	public physicsEnable = 0
 
-	public constructor(src: Img, x: number, y: number, width = 1, height = 1) {
+	public constructor(src: TextureCanvas, x: number, y: number, width = 1, height = 1) {
 		super(src, x, y, width, height)
 	}
 

@@ -17,14 +17,15 @@ class PhysicsActor extends PhysicsBody {
 					|| this.parent.objects[o].pos.cartesianDist(this.pos) >
 					(this.width + this.height + this.parent.objects[o].width + this.parent.objects[o].height)
 					* (this.scale + this.parent.objects[o].scale)) continue
-				this.avoidCollision(this.parent.objects[o])
+				for (let c = 0; c < this.parent.objects[o].hb.length; c++)
+					this.avoidCollision(this.parent.objects[o], c)
 			}
 		}
 	}
 
-	private avoidCollision(spr: Sprite): void {
-		const b1 = this.getHb()
-		const b2 = spr.getHb()
+	private avoidCollision(spr: Sprite, idx: number): void {
+		const b1 = this.getHb(0) // TODO: multiple collisions for this PhysicsBody
+		const b2 = spr.getHb(idx)
 		if (!b1.intersects(b2)) return
 
 		// Gets the offsets from each side of one body to the opposite side of the other (top, bottom, left, right)

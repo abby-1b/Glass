@@ -17,8 +17,8 @@ class Sprite extends TextureCanvas {
 
 	public hbOffsets = {top: 0, bottom: 0, left: 0, right: 0}
 
-	public showHb = true
-	private hb: Rect = new Rect(0, 0, 0, 0, true)
+	public showHb = false
+	public hb: Rect[] = [new Rect(0, 0, 0, 0, true)]
 
 	public constructor(src: TextureCanvas, x: number, y: number, width = 1, height = 1) {
 		super(width, height)
@@ -50,24 +50,29 @@ class Sprite extends TextureCanvas {
 		if (this.showHb) this.drawHb()
 	}
 
-	public getHb(): Rect {
+	public getHb(id: number): Rect {
 		if (this.flipped) {
-			this.hb.x		= this.pos.x - (this.centered ? this.width * 0.5 : 0) + this.hbOffsets.right * this.scale,
-			this.hb.y		= this.pos.y - (this.centered ? this.height * 0.5 : 0) + this.hbOffsets.top * this.scale,
-			this.hb.width	= this.width * this.scale - (this.hbOffsets.right * this.scale + this.hbOffsets.left * this.scale),
-			this.hb.height	= this.height * this.scale - (this.hbOffsets.top * this.scale + this.hbOffsets.bottom * this.scale)
+			this.hb[0].x		= this.pos.x - (this.centered ? this.width * 0.5 : 0) + this.hbOffsets.right * this.scale
+			this.hb[0].y		= this.pos.y - (this.centered ? this.height * 0.5 : 0) + this.hbOffsets.top * this.scale
+			this.hb[0].width	= this.width * this.scale - (this.hbOffsets.right * this.scale + this.hbOffsets.left * this.scale)
+			this.hb[0].height	= this.height * this.scale - (this.hbOffsets.top * this.scale + this.hbOffsets.bottom * this.scale)
 		} else {
-			this.hb.x		= this.pos.x - (this.centered ? this.width * 0.5 : 0) + this.hbOffsets.left * this.scale,
-			this.hb.y		= this.pos.y - (this.centered ? this.height * 0.5 : 0) + this.hbOffsets.top * this.scale,
-			this.hb.width	= this.width * this.scale - (this.hbOffsets.left * this.scale + this.hbOffsets.right * this.scale),
-			this.hb.height	= this.height * this.scale - (this.hbOffsets.top * this.scale + this.hbOffsets.bottom * this.scale)
+			this.hb[0].x		= this.pos.x - (this.centered ? this.width * 0.5 : 0) + this.hbOffsets.left * this.scale
+			this.hb[0].y		= this.pos.y - (this.centered ? this.height * 0.5 : 0) + this.hbOffsets.top * this.scale
+			this.hb[0].width	= this.width * this.scale - (this.hbOffsets.left * this.scale + this.hbOffsets.right * this.scale)
+			this.hb[0].height	= this.height * this.scale - (this.hbOffsets.top * this.scale + this.hbOffsets.bottom * this.scale)
 		}
-		this.hb.reload()
-		return this.hb
+		this.hb[0].reload()
+		return this.hb[id]
 	}
 
 	public drawHb(): void {
+		// TODO: mirror hb array here.
 		Surface.texture.colorf(255, 0, 0, 100)
-		Surface.texture.rect(this.pos.x + this.hbOffsets.left, this.pos.y + this.hbOffsets.top, this.width - this.hbOffsets.left - this.hbOffsets.right, this.height - this.hbOffsets.top - this.hbOffsets.bottom)
+		// Surface.texture.rect(this.pos.x + this.hbOffsets.left, this.pos.y + this.hbOffsets.top, this.width - this.hbOffsets.left - this.hbOffsets.right, this.height - this.hbOffsets.top - this.hbOffsets.bottom)
+		for (let h = 0; h < this.hb.length; h++) {
+			const hb = this.getHb(h)
+			Surface.texture.rect(hb.x, hb.y, hb.width, hb.height)
+		}
 	}
 }
