@@ -18,7 +18,7 @@ class HTML {
 		document.body.style.margin = document.body.style.padding = "0"
 
 		// Checks if the user interacted with the page
-		document.body.innerHTML = "<h1 id='play'style='font-family:monospace;position:fixed;z-index:0;transform:translate(-50%,-50%);top:50%;left:50%;transition:opacity .5s'>[Play]</h1>"
+		// document.body.innerHTML = "<h1 id='play'style='font-family:monospace;position:fixed;z-index:0;transform:translate(-50%,-50%);top:50%;left:50%;transition:opacity .5s;pointer-events:none'>[Play]</h1>"
 		window.addEventListener("click", () => {
 			Surface.ready = true
 		})

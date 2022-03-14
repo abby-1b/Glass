@@ -107,10 +107,10 @@ class TextureCanvas extends Texture {
 		// TODO: use scale
 		if (flipped) {
 			this.ctx.scale(-1, 1)
-			this.ctx.drawImage(sourceImg.el, -Math.round(pos.x), Math.round(pos.y), -width, height)
+			this.ctx.drawImage(sourceImg.el, Math.round(-pos.x + this.translation[0]), Math.round(pos.y + this.translation[1]), -width, height)
 			this.ctx.scale(-1, 1)
 		} else {
-			this.ctx.drawImage(sourceImg.el, Math.round(pos.x), Math.round(pos.y), width, height)
+			this.ctx.drawImage(sourceImg.el, Math.round(pos.x - this.translation[0]), Math.round(pos.y + this.translation[1]), width, height)
 		}
 	}
 
