@@ -10,18 +10,19 @@
 	"Vec",
 	"Sprite",
 
-	"TileSet",
-	"TileMap",
-
+	
 	"Camera",
 	"Scene",
 	"EventHolder",
 	"Glass",
-
+	
 	
 	"ImgGen",
 	"Log",
-
+	
 	"PhysicsBody",
-	"PhysicsActor"
+	"PhysicsActor",
+
+	"TileSet",
+	"TileMap"
 ]
