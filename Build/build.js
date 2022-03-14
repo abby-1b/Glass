@@ -13,11 +13,24 @@ function getFiles(path) {
 	return files.flat()
 }
 
-let out = getFiles("../Drops")
+function transpile(str) {
+	return ts.transpileModule(str, { compilerOptions: { target: "esnext", module: ts.ModuleKind.CommonJS }}).outputText
+}
+
+let out = JSON.parse(fs.readFileSync("../dropOrder.json"))
+	.map(e => "../Drops/" + e + ".ts")
 	.map(e => fs.readFileSync(e, "utf8"))
-	.map(e => ts.transpileModule(e, { compilerOptions: { target: "es6", module: ts.ModuleKind.CommonJS }}).outputText)
+	.map(e => transpile(e))
 	.join("\n")
 out = minify(out)
-fs.writeFileSync("out.js", out, "utf8")
 
-// console.log(minify(`new Vec2(a + b, c + d)`))
+out += transpile(fs.readFileSync("../TestGame/main.ts", "utf8").replace("export {}", ""))
+fs.writeFileSync("../TestGame/built.js", out, "utf8")
+
+// const code = `class Hell {
+// 	public static async fn() {
+// 		await fetch("")
+// 	}
+// }`
+// const transpiled = transpile(code)
+// console.log(minify(transpiled))
