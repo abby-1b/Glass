@@ -28,9 +28,11 @@ var missed = 0
 
 function toText(tree, noArrowFuncShorten, malformedArrowFunc, aInParen, lineAlone) {
 	// console.log(tree)
+	if (tree == null) return "null"
 	let ret = ""
 	switch (tree.type) {
 		case "Program": {
+			// console.log(tree.body[0].body.body)
 			ret += iterateLines(tree.body)
 		} break
 
@@ -148,9 +150,11 @@ function toText(tree, noArrowFuncShorten, malformedArrowFunc, aInParen, lineAlon
 			ret += "{" + tree.body.map(e => toText(e)).join(fullCompact ? "" : "\n") + "}"
 		} break
 		case "MethodDefinition": {
+			console.log(tree)
 			if (tree.computed) console.log("WHAT??? A COMPUTED METHOD????", tree)
 			
-			if (tree.static) ret += "static "
+			ret += tree.static ? "static " : ""
+			if (tree.value.type == "FunctionExpression" && tree.value.async) ret += "async "
 			ret += toText(tree.key)
 			ret += toText(tree.value, true)
 		} break
@@ -161,7 +165,13 @@ function toText(tree, noArrowFuncShorten, malformedArrowFunc, aInParen, lineAlon
 				+ "function " + toText(tree.id) + "(" + tree.params.map(e => toText(e)) + ")"
 				+ toText(tree.body)
 		} break
-		case "FunctionExpression":
+		case "FunctionExpression": {
+			if (malformedArrowFunc && !aInParen) ret += '('
+			if (tree.params.length == 1 && !noArrowFuncShorten) ret += (tree.async ? "async " : "") + toText(tree.params[0])
+			else ret += "(" + tree.params.map(e => toText(e)) + ")"
+			ret += (noArrowFuncShorten ? "" : "=>") + toText(tree.body)
+			if (malformedArrowFunc && !aInParen) ret += ')'
+		} break
 		case "ArrowFunctionExpression": {
 			if (malformedArrowFunc && !aInParen) ret += '('
 			if (tree.params.length == 1 && !noArrowFuncShorten) ret += (tree.async ? "async " : "") + toText(tree.params[0])
@@ -204,15 +214,28 @@ function toText(tree, noArrowFuncShorten, malformedArrowFunc, aInParen, lineAlon
 			ret += "{" + tree.properties.map(e => toText(e)) + "}"
 		} break
 		case "Property": {
-			if (tree.computed || tree.method || tree.shorthand) console.log("PROPERTY WITH WEIRD BOOLS!", TREE)
+			if (tree.method || tree.shorthand) console.log("PROPERTY WITH WEIRD BOOLS!", tree)
+			if (tree.computed) ret += "["
 			if (tree.kind != "init") console.log("WHAT??? PROPERTY NOT INIT", tree)
-			ret += toText(tree.key) + ":" + toText(tree.value)
+			ret += toText(tree.key, false, false, true)
+			if (tree.computed) ret += "]"
+			ret += ":" + toText(tree.value)
 		} break
+
+		case "PropertyDefinition": {
+			ret += tree.static ? "static " : ""
+			ret += toText(tree.key) + "=" + toText(tree.value) + ";"
+		} break
+
 		case "Super": {
 			ret += "super"
 		} break
 		case "ThisExpression": {
 			ret += "this"
+		} break
+
+		case "ChainExpression": {
+			ret += toText(tree.expression, noArrowFuncShorten, malformedArrowFunc, aInParen, lineAlone)
 		} break
 
 		// Template Strings
@@ -300,6 +323,15 @@ function toText(tree, noArrowFuncShorten, malformedArrowFunc, aInParen, lineAlon
 			else ret += toText(tree.object) + "." + toText(tree.property)
 		} break
 
+		case "YieldExpression": {
+			ret += "yield " + toText(tree.argument)
+		} break
+
+		// TODO:
+		// case "SequenceExpression": {
+		// 	console.log(tree.expressions)
+		// } break
+
 		// Assignment in functions
 		case "AssignmentPattern": {
 			ret += toText(tree.left) + "=" + toText(tree.right)
@@ -322,7 +354,7 @@ function toText(tree, noArrowFuncShorten, malformedArrowFunc, aInParen, lineAlon
 		default: {
 			console.log(tree)
 			missed++
-			ret += "..."
+			ret += "[...]"
 		} break
 	}
 	return ret
@@ -339,7 +371,12 @@ function toText(tree, noArrowFuncShorten, malformedArrowFunc, aInParen, lineAlon
 // }
 
 function minify(code) {
-	return toText(parse(code))
+	return `"use strict";\n` + toText(parse(code, {
+		next: true,
+		// loc: true,
+		// onComment: []
+		// onToken: []
+	}))
 }
 
 module.exports = { minify }
