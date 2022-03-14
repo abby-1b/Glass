@@ -113,7 +113,7 @@ const server = createServer((req, res) => {
 					res.statusCode = 200
 					let tp = url.split(".").slice(-1)[0]
 					if (!fileTypes[tp]) console.log("############################ CONTENT TYPE: " + tp + " NOT IN LIST ############################")
-					res.setHeader("Content-Type", fileTypes[tp] + "/" + (tp == "ts" ? "javascript" : tp))
+					res.setHeader("Content-Type", fileTypes[tp] + "/" + (tp == "ts" || tp == "js" ? "javascript" : tp))
 					if (tp == "ts") {
 						// Compile typescript
 						data = String.fromCharCode(...data)
