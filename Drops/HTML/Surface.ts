@@ -16,8 +16,14 @@ class Surface {
 	public static setup(): void {
 		this.texture = Texture.new(this.desiredSize, this.desiredSize, true)
 		const resizeFn = (): void => {
-			this.width = Math.ceil((window.innerWidth / window.innerHeight) * this.desiredSize)
-			this.height = this.desiredSize
+			// It only took me around six months to figure this one out.
+			// It takes a desired square size and fits the screen to keep that same surface area.
+			// I'm so proud of myself :D
+			const m = Math.sqrt((this.desiredSize * this.desiredSize) / (window.innerWidth * window.innerHeight))
+			this.width = Math.ceil(window.innerWidth * m)
+			this.height = Math.ceil(window.innerHeight * m)
+			// this.width = Math.ceil((window.innerWidth / window.innerHeight) * this.desiredSize)
+			// this.height = this.desiredSize
 			this.texture.resize(this.width, this.height)
 		}
 		window.addEventListener("resize", resizeFn)
