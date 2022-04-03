@@ -1,4 +1,6 @@
 
+import { Language, minify } from "https://deno.land/x/minifier/mod.ts"
+
 // Specifies wether or not to fully minify the file
 const FULL = Deno.args.includes("full")
 
@@ -25,11 +27,7 @@ let built = Object.values(compiled.files)
 	.map(e => e.replace("\"use strict\";\n", ""))
 	.join("\n")
 
-// TODO: Use `minify.js` here
-// Come to think of it, I need to port `minify.js` to Deno...
 if (FULL)
-	built = built.split("\n")
-		.map(e => e.trim())
-		.join("\n")
+	built = minify(Language.JS, built)
 
 Deno.writeTextFileSync(FILE, built)
