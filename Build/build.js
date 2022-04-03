@@ -24,13 +24,16 @@ let out = JSON.parse(fs.readFileSync("../dropOrder.json"))
 	.join("\n")
 out = minify(out)
 
-out += transpile(fs.readFileSync("../TestGame/main.ts", "utf8").replace("export {}", ""))
-fs.writeFileSync("../TestGame/built.js", out, "utf8")
+// This is why I made build.ts
+// Why did I even hard-code this? I mean I guess it was 4am but still!
+let main = fs.readFileSync("../TestGame/main.ts", "utf8").replace("export {}", "")
+console.log(main)
+out += minify("(async function(){" + transpile(main) + "})()")
+// fs.writeFileSync("../TestGame/built.js", out, "utf8")
+fs.writeFileSync("../../CodeIGuess.github.io/GameOfWords/built.js", out, "utf8")
 
-// const code = `class Hell {
-// 	public static async fn() {
-// 		await fetch("")
-// 	}
-// }`
+// const code = `
+// (val) => ({hey: 1, yeet:""})
+// `
 // const transpiled = transpile(code)
 // console.log(minify(transpiled))
