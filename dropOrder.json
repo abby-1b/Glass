@@ -8,8 +8,9 @@
 	
 	"Rect",
 	"Vec",
-	"Sprite",
 
+	"GObj",
+	"Sprite",
 	
 	"Camera",
 	"Scene",
@@ -19,10 +20,14 @@
 	
 	"ImgGen",
 	"Log",
+
+	"Particles",
 	
 	"PhysicsBody",
 	"PhysicsActor",
 
 	"TileSet",
-	"TileMap"
+	"TileMap",
+
+	"Utils"
 ]
