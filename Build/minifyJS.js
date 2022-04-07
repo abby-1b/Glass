@@ -26,7 +26,7 @@ function iterateLines(l) {
 
 var missed = 0
 
-function toText(tree, noArrowFuncShorten, malformedArrowFunc, aInParen, lineAlone) {
+function toText(tree, noArrowFuncShorten, malformedArrowFunc, aInParen, lineAlone, classProperty) {
 	// console.log(tree)
 	if (tree == null) return "null"
 	let ret = ""
@@ -150,13 +150,12 @@ function toText(tree, noArrowFuncShorten, malformedArrowFunc, aInParen, lineAlon
 			ret += "{" + tree.body.map(e => toText(e)).join(fullCompact ? "" : "\n") + "}"
 		} break
 		case "MethodDefinition": {
-			console.log(tree)
 			if (tree.computed) console.log("WHAT??? A COMPUTED METHOD????", tree)
 			
 			ret += tree.static ? "static " : ""
 			if (tree.value.type == "FunctionExpression" && tree.value.async) ret += "async "
 			ret += toText(tree.key)
-			ret += toText(tree.value, true)
+			ret += toText(tree.value, true, false, false, false, true)
 		} break
 
 		// Functions
@@ -168,7 +167,7 @@ function toText(tree, noArrowFuncShorten, malformedArrowFunc, aInParen, lineAlon
 		case "FunctionExpression": {
 			if (malformedArrowFunc && !aInParen) ret += '('
 			if (tree.params.length == 1 && !noArrowFuncShorten) ret += (tree.async ? "async " : "") + toText(tree.params[0])
-			else ret += "(" + tree.params.map(e => toText(e)) + ")"
+			else ret += (classProperty || !tree.async ? "(" : "async(") + tree.params.map(e => toText(e)) + ")"
 			ret += (noArrowFuncShorten ? "" : "=>") + toText(tree.body)
 			if (malformedArrowFunc && !aInParen) ret += ')'
 		} break
@@ -176,7 +175,9 @@ function toText(tree, noArrowFuncShorten, malformedArrowFunc, aInParen, lineAlon
 			if (malformedArrowFunc && !aInParen) ret += '('
 			if (tree.params.length == 1 && !noArrowFuncShorten) ret += (tree.async ? "async " : "") + toText(tree.params[0])
 			else ret += (tree.async ? "async(" : "(") + tree.params.map(e => toText(e)) + ")"
-			ret += (noArrowFuncShorten ? "" : "=>") + toText(tree.body)
+			ret += (noArrowFuncShorten ? "" : "=>")
+				+ (tree.body.type == "ObjectExpression" ? '(' : '') + toText(tree.body)
+				+ (tree.body.type == "ObjectExpression" ? ')' : '')
 			if (malformedArrowFunc && !aInParen) ret += ')'
 		} break
 
@@ -210,11 +211,18 @@ function toText(tree, noArrowFuncShorten, malformedArrowFunc, aInParen, lineAlon
 		case "SpreadElement": {
 			ret += "..." + toText(tree.argument)
 		} break
+		case "ObjectPattern": {
+			ret += "({" + tree.properties.map(e => toText(e, false, false, true)) + "})"
+		} break
 		case "ObjectExpression": {
 			ret += "{" + tree.properties.map(e => toText(e)) + "}"
 		} break
 		case "Property": {
 			if (tree.method || tree.shorthand) console.log("PROPERTY WITH WEIRD BOOLS!", tree)
+			if (tree.shorthand) {
+				ret += toText(tree.key, false, false, true)
+				break
+			}
 			if (tree.computed) ret += "["
 			if (tree.kind != "init") console.log("WHAT??? PROPERTY NOT INIT", tree)
 			ret += toText(tree.key, false, false, true)
@@ -265,18 +273,18 @@ function toText(tree, noArrowFuncShorten, malformedArrowFunc, aInParen, lineAlon
 		case "BinaryExpression": {
 			let lIP = false
 			let rIP = false
-			let lIx = OOP.indexOf(tree.left.operator)
-			let rIx = OOP.indexOf(tree.right.operator)
-			let tIx = OOP.indexOf(tree.operator)
-			if (OPTYPES.includes(tree.left.type) && !OPTYPES.includes(tree.right.type)) {
-				if (lIx >= tIx) lIP = true
-			} else if (OPTYPES.includes(tree.right.type) && !OPTYPES.includes(tree.left.type)) {
-				if (rIx >= tIx) rIP = true
-			} else if (OPTYPES.includes(tree.left.type) && OPTYPES.includes(tree.right.type)) {
-				// console.log(tree)
-				if (rIx >= tIx) rIP = true
-				if (lIx >= tIx) lIP = true
-			}
+			// let lIx = OOP.indexOf(tree.left.operator)
+			// let rIx = OOP.indexOf(tree.right.operator)
+			// let tIx = OOP.indexOf(tree.operator)
+			// if (OPTYPES.includes(tree.left.type) && !OPTYPES.includes(tree.right.type)) {
+			// 	if (lIx >= tIx) lIP = true
+			// } else if (OPTYPES.includes(tree.right.type) && !OPTYPES.includes(tree.left.type)) {
+			// 	if (rIx >= tIx) rIP = true
+			// } else if (OPTYPES.includes(tree.left.type) && OPTYPES.includes(tree.right.type)) {
+			// 	// console.log(tree)
+			// 	if (rIx >= tIx) rIP = true
+			// 	if (lIx >= tIx) lIP = true
+			// }
 			if (["in", "instanceof"].includes(tree.operator)) tree.operator = " " + tree.operator + " "
 			let tmp = toText(tree.left, false, true, lIP) + tree.operator + toText(tree.right, false, true, rIP)
 
