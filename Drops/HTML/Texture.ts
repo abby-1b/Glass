@@ -4,7 +4,7 @@ class Texture {
 	public width: number
 	public height: number
 
-	protected translation: [number, number] = [0, 0]
+	public translation: [number, number] = [0, 0]
 
 	public currentColor: [number, number, number, number] = [0, 0, 0, 0]
 	
@@ -58,7 +58,7 @@ class Texture {
 	 * @param pos Position to draw the image at
 	 * @param scale Scaling factor for the image
 	 */
-	public drawImage(sourceImg: Texture, pos: Vec2, width: number, height: number, scale = 1, flipped = false): void { }
+	public drawImage(sourceImg: Texture, frame: number, pos: Vec2, width: number, height: number, scale = 1, flipped = false, centered = false): void { }
 
 	/**
 	 * Draws a rectangle
@@ -68,6 +68,11 @@ class Texture {
 	 * @param h Height
 	 */
 	public rect(x: number, y: number, w: number, h: number): void { }
+	public fillRect(x: number, y: number, w: number, h: number): void { }
+
+	public line(x1: number, y1: number, x2: number, y2: number): void { }
+
+	public text(txt: string, x: number, y: number): void { }
 }
 
 class TextureCanvas extends Texture {
@@ -79,6 +84,7 @@ class TextureCanvas extends Texture {
 			const context = this.el.getContext("2d")
 			if (!context) return
 			this.ctx = context
+			this.ctx.globalCompositeOperation = "lighter"
 		}
 	}
 
@@ -88,8 +94,8 @@ class TextureCanvas extends Texture {
 	}
 
 	public translate(x: number, y: number): void {
-		this.translation[0] += x
-		this.translation[1] += y
+		this.translation[0] += Math.floor(x)
+		this.translation[1] += Math.floor(y)
 	}
 
 	public resetTranslation(): void {
@@ -103,14 +109,18 @@ class TextureCanvas extends Texture {
 		this.ctx.strokeStyle = "rgba(" + [r, g, b, a / 255] + ")"
 	}
 
-	public drawImage(sourceImg: Texture, pos: Vec2, width: number, height: number, scale = 1, flipped = false): void {
+	public drawImage(sourceImg: Texture, frame: number, pos: Vec2, width: number, height: number, scale = 1, flipped = false, centered = false): void {
 		// TODO: use scale
+		const x = pos.x - (centered ? Math.floor(width / 2) : 0)
+		const y = pos.y - (centered ? Math.floor(height / 2) : 0)
+
 		if (flipped) {
 			this.ctx.scale(-1, 1)
-			this.ctx.drawImage(sourceImg.el, Math.round(-pos.x + this.translation[0]), Math.round(pos.y + this.translation[1]), -width, height)
+			this.ctx.drawImage(sourceImg.el, width * frame, 0, width, height, Math.round(-x + this.translation[0]), Math.round(y + this.translation[1]), -width, height)
 			this.ctx.scale(-1, 1)
 		} else {
-			this.ctx.drawImage(sourceImg.el, Math.round(pos.x - this.translation[0]), Math.round(pos.y + this.translation[1]), width, height)
+			// console.log(sourceImg, width)
+			this.ctx.drawImage(sourceImg.el, width * frame, 0, width, height, Math.round(x + this.translation[0]), Math.round(y + this.translation[1]), width, height)
 		}
 	}
 
@@ -118,6 +128,22 @@ class TextureCanvas extends Texture {
 		this.ctx.beginPath()
 		this.ctx.rect(Math.round(x) + 0.5, Math.round(y) + 0.5, w - 1, h - 1)
 		this.ctx.stroke()
+	}
+
+	public fillRect(x: number, y: number, w: number, h: number): void {
+		this.ctx.fillRect(x + this.translation[0], y + this.translation[1], w, h)
+	}
+
+	public line(x1: number, y1: number, x2: number, y2: number): void {
+		this.ctx.beginPath()
+		this.ctx.moveTo(x1, y1)
+		this.ctx.lineTo(x2, y2)
+		this.ctx.stroke()
+	}
+
+	public text(txt: string, x: number, y: number): void {
+		this.ctx.font = "12px Courier New"
+		this.ctx.fillText(txt, x - txt.length * 3.58, y + 8)
 	}
 
 	public getPixels(): number[] {
@@ -188,7 +214,6 @@ class TextureWebGL extends TextureCanvas {
 		}
 		this.translation = [0, 0]
 
-		// TODO: check for second step blur
 		this.secondStepBlur = false
 		if ("WebKitNamespace" in window) {
 			this.secondStepBlur = true
