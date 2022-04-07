@@ -8,17 +8,22 @@ class PhysicsActor extends PhysicsBody {
 	public onGround = false
 
 	public physics(): void {
-		this.pos.x += (this.speed.x = (this.speed.x + this.properties.gravity.x) * (this.onGround ? this.properties.groundFriction.x : this.properties.friction.x))
-		this.pos.y += (this.speed.y = (this.speed.y + this.properties.gravity.y) * (this.onGround ? this.properties.groundFriction.y : this.properties.friction.y))
+		if (this.physicsEnable & PhysicsBody.PHYSICS_LOOP) {
+			this.pos.x += (this.speed.x = (this.speed.x + this.properties.gravity.x) * (this.onGround ? this.properties.groundFriction.x : this.properties.friction.x))
+			this.pos.y += (this.speed.y = (this.speed.y + this.properties.gravity.y) * (this.onGround ? this.properties.groundFriction.y : this.properties.friction.y))
+		}
 		this.onGround = false
-		for (let o = 0; o < this.parent.objects.length; o++) {
-			if (this.parent.objects[o] instanceof PhysicsBody) {
-				if (this.parent.objects[o] == this
-					|| this.parent.objects[o].pos.cartesianDist(this.pos) >
-					(this.width + this.height + this.parent.objects[o].width + this.parent.objects[o].height)
-					* (this.scale + this.parent.objects[o].scale)) continue
-				for (let c = 0; c < this.parent.objects[o].hb.length; c++)
-					this.avoidCollision(this.parent.objects[o], c)
+		if (this.physicsEnable & PhysicsBody.PHYSICS_HARD) {
+			for (let o = 0; o < this.parent.objects.length; o++) {
+				if (this.parent.objects[o] instanceof PhysicsBody) {
+					if (this.parent.objects[o] == this
+						|| !((this.parent.objects[o] as PhysicsBody).physicsEnable & PhysicsBody.PHYSICS_HARD)
+						|| this.parent.objects[o].pos.cartesianDist(this.pos) >
+						(this.width + this.height + this.parent.objects[o].width + this.parent.objects[o].height)
+						* (this.scale + this.parent.objects[o].scale)) continue
+					for (let c = 0; c < this.parent.objects[o].hb.length; c++)
+						this.avoidCollision(this.parent.objects[o], c)
+				}
 			}
 		}
 	}
