@@ -1,6 +1,6 @@
 class Scene {
 	public parent: Glass
-	public objects: Array<Sprite> = []
+	public objects: Array<GObj> = []
 	private maxSortPerFrame = 1
 	private sortIdx = 0
 
@@ -54,12 +54,11 @@ class Scene {
 	public doPhysics(): void {
 		// Loop through all objects, and then again for PhysicsActors
 		for (let o = 0; o < this.objects.length; o++) {
-			// TODO: physics
-			if (this.objects[o] instanceof PhysicsActor) {
-				// this.objects[o].collided = false
-				// this.objects[o].onGround = false
+			if (this.objects[o] instanceof PhysicsActor)
 				(this.objects[o] as PhysicsActor).physics()
-			}
+			
+			if (this.objects[o] instanceof Particles)
+				(this.objects[o] as Particles).step()
 		}
 	}
 
@@ -76,7 +75,7 @@ class Scene {
 	 * @param obj Object to be added. Can be of any library type, such as a Sprite, PhysicsActor, Tile, TileMap, ect.
 	 * @returns The added object.
 	 */
-	public nObj(obj: Sprite): Sprite {
+	public nObj(obj: GObj): GObj {
 		// TODO: tilemaps
 		// if (obj instanceof TileMap)
 		// 	return this.objects[this.objects.push(obj) - 1]
@@ -94,7 +93,7 @@ class Scene {
 	 * @param obj Object to be removed
 	 * @returns The removed object
 	 */
-	public rObj(obj: Sprite): Sprite {
+	public rObj(obj: GObj): GObj {
 		return this.rObjIdx(this.objects.indexOf(obj))
 	}
 
@@ -103,7 +102,7 @@ class Scene {
 	 * @param idx Index to remove
 	 * @returns The removed object
 	 */
-	public rObjIdx(idx: number): Sprite {
+	public rObjIdx(idx: number): GObj {
 		return this.objects.splice(idx, 1)[0]
 	}
 

@@ -4,23 +4,21 @@ type HitboxOffsets = {top: number, bottom: number, left: number, right: number}
 /**
  * Any object that can be drawn to the screen.
  */
-class Sprite extends TextureCanvas {
-	public parent: Scene
-
-	public pos: Vec2 = new Vec2(0, 0)
+class Sprite extends GObj {
 	public width = 1
 	public height = 1
 	public scale = 1
 	public flipped = false
 	public centered = false
-	public _layer = 0
+
+	public frame = 0
 
 	public hbOffsets = {top: 0, bottom: 0, left: 0, right: 0}
 
 	public showHb = false
 	public hb: Rect[] = [new Rect(0, 0, 0, 0, true)]
 
-	public constructor(src: TextureCanvas, x: number, y: number, width = 1, height = 1) {
+	public constructor(src: TextureCanvas, x: number, y: number, width = -1, height = -1) {
 		super(width, height)
 		this.pos.x = x
 		this.pos.y = y
@@ -32,11 +30,15 @@ class Sprite extends TextureCanvas {
 
 	private async loadSource(src: TextureCanvas): Promise<void> {
 		src.onLoad((img: TextureCanvas): void => {
-			// this.width = img.width
-			// this.height = img.height
-			this.resize(img.width, img.height)
+			if (this.width == -1) {
+				this.width = img.width
+				this.height = img.height
+			}
+			// this.resize(img.width, img.height)
+			this.el.width = img.width
+			this.el.height = img.height
 			// setTimeout(() => {console.log(this.width, this.height)}, 1000)
-			this.ctx.drawImage(img.el, 0, 0, this.width, this.height)
+			this.ctx.drawImage(img.el, 0, 0)
 		})
 	}
 
@@ -46,7 +48,7 @@ class Sprite extends TextureCanvas {
 
 	public draw(): void {
 		// TODO: draw centered
-		Surface.texture.drawImage(this, this.pos, this.width, this.height, 1, this.flipped)
+		Surface.texture.drawImage(this, this.frame, this.pos.added2(this.translation[0], this.translation[1]), this.width, this.height, 1, this.flipped, this.centered)
 		if (this.showHb) this.drawHb()
 	}
 
@@ -67,12 +69,11 @@ class Sprite extends TextureCanvas {
 	}
 
 	public drawHb(): void {
-		// TODO: mirror hb array here.
 		Surface.texture.colorf(255, 0, 0, 100)
 		// Surface.texture.rect(this.pos.x + this.hbOffsets.left, this.pos.y + this.hbOffsets.top, this.width - this.hbOffsets.left - this.hbOffsets.right, this.height - this.hbOffsets.top - this.hbOffsets.bottom)
 		for (let h = 0; h < this.hb.length; h++) {
 			const hb = this.getHb(h)
-			Surface.texture.rect(hb.x, hb.y, hb.width, hb.height)
+			Surface.texture.rect(hb.x - Surface.texture.translation[0], hb.y + Surface.texture.translation[1], hb.width, hb.height)
 		}
 	}
 }
