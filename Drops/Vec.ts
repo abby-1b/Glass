@@ -7,6 +7,10 @@ class Vec2 {
 		this.y = y
 	}
 
+	public new(): Vec2 {
+		return new Vec2(this.x, this.y)
+	}
+
 	public rounded(): Vec2 {
 		return new Vec2(Math.round(this.x), Math.round(this.y))
 	}
@@ -66,13 +70,39 @@ class Vec2 {
 		this.y += v.y
 	}
 
+	public subVec(v: Vec2): void {
+		this.x -= v.x
+		this.y -= v.y
+	}
+
 	// Added, doesn't mutate
 	public addedVec(v: Vec2): Vec2 {
 		return new Vec2(this.x + v.x, this.y + v.y)
 	}
 
+	public subbedVec(v: Vec2): Vec2 {
+		return new Vec2(this.x - v.x, this.y - v.y)
+	}
+
 	public added2(ax: number, ay: number): Vec2 {
 		return new Vec2(this.x + ax, this.y + ay)
+	}
+
+	public rotate(a: number): void {
+		const s = Math.sin(a)
+		const c = Math.cos(a)
+		const nx = c * this.x - s * this.y
+		const ny = s * this.x + c * this.y
+		this.x = nx
+		this.y = ny
+	}
+
+	public rotated(a: number): Vec2 {
+		const s = Math.sin(a)
+		const c = Math.cos(a)
+		const nx = c * this.x - s * this.y
+		const ny = s * this.x + c * this.y
+		return new Vec2(nx, ny)
 	}
 
 	// Normalizes, doesn't return
@@ -97,7 +127,7 @@ class Vec2 {
 
 	// Gets the angle
 	public angle(): number {
-		return Math.atan2(this.x, this.y)
+		return Math.atan2(this.y, this.x)
 	}
 
 	public toString(): string { return `(${this.x}, ${this.y})` }
