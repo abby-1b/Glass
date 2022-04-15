@@ -28,7 +28,8 @@ class Glass {
 		// this.fonts = {"": "20px Arial"}
 		// this.nFont("std", new ImageLoader(1, `127|4|>J?[UFF9^9;[N?JH:9OR+Y^9*9[R6?$1_(_XAVF6^J1IM_JEV9N(^.$>PA[S'I]IPTBYG?^?C_"[W9W_XO_=N_^[F^SKU^K_#=")W _YG_ 1$09@#_!O]F9F%^B.<0$0!OF?8-V?P, ,  ,  G57("6U!0"220`, this.gl))
 		// this.font("std")
-		Surface.setup()
+
+		// Surface.setup()
 	}
 
 	/**
@@ -96,8 +97,8 @@ class Glass {
 	 * @private
 	 */
 	private doGraphics(): void {
-		this.scene.width = Surface.texture.width
-		this.scene.height = Surface.texture.height
+		this.scene.width = Surface.width
+		this.scene.height = Surface.height
 		// Move camera towards targeted object
 		// if (this.camera.following) {
 		// 	if (this.camera.following instanceof PhysicsActor) {
@@ -117,8 +118,8 @@ class Glass {
 		Surface.frameSetup()
 		Surface.calculateFramerate()
 
-		width  = Surface.texture.width
-		height = Surface.texture.height
+		width  = Surface.width
+		height = Surface.height
 		frameCount = Surface.frameCount
 
 		this.preFrameFn() // Call user pre-frame function
@@ -126,7 +127,7 @@ class Glass {
 		// Draw all objects
 		Surface.resetViewport()
 		this.scene.draw()
-		Surface.texture.resetTranslation()
+		Surface.resetTranslation()
 		
 		Surface.resetViewport()
 		this.frameFn() // Call user frame function

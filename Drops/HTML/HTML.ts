@@ -25,10 +25,10 @@ class HTML {
 		Surface.ready = true // Added this to skip [play] button, as it's only necessary to play sounds.
 
 		let el: HTMLCanvasElement
-		if (Surface.texture instanceof TextureWebGL && Surface.texture.secondStepBlur) {
-			el = document.body.appendChild(Surface.texture.secondStepCanvas)
+		if (Surface instanceof TextureWebGL && Surface.secondStepBlur) {
+			el = document.body.appendChild(Surface.secondStepCanvas)
 		} else {
-			el = document.body.appendChild(Surface.texture.el)
+			el = document.body.appendChild(Surface.el)
 		}
 		el.style.width = "100vw"
 		el.style.height = "100vh"
@@ -46,3 +46,4 @@ class HTML {
 		return !!document.fullscreenElement
 	}
 }
+HTML.setup()

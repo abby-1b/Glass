@@ -1,20 +1,19 @@
-class Surface {
-	public static desiredSize = -1
-	public static ready = false
+class _SurfaceClass extends Texture {
+	public desiredSize = -1
+	public ready = false
 
-	private static bgColor: [number, number, number] = [0, 0, 0]
+	public bgColor: [number, number, number] = [0, 0, 0]
 
-	public static frameRate = 60
-	private static frameLastMoment = window.performance.now()
-	public static frameCount = 0
+	public frameRate = 60
+	public frameLastMoment = window.performance.now()
+	public frameCount = 0
 
-	public static texture: Texture
+	public width = 0
+	public height = 0
 
-	public static width = 0
-	public static height = 0
-
-	public static setup(): void {
-		this.texture = Texture.new(this.desiredSize, this.desiredSize, true)
+	public constructor() {
+		super(1, 1, true)
+		// this.texture = Texture.new(this.desiredSize, this.desiredSize, true)
 		const resizeFn = (): void => {
 			// It only took me around six months to figure this one out.
 			// It takes a desired square size and fits the screen to keep that same surface area.
@@ -24,26 +23,24 @@ class Surface {
 			this.height = Math.ceil(window.innerHeight * m)
 			// this.width = Math.ceil((window.innerWidth / window.innerHeight) * this.desiredSize)
 			// this.height = this.desiredSize
-			this.texture.resize(this.width, this.height)
+			this.resize(this.width, this.height)
 		}
 		window.addEventListener("resize", resizeFn)
 		window.addEventListener("orientationchange", resizeFn)
 		window.addEventListener("deviceorientation", resizeFn)
 		resizeFn()
 
-		this.texture.el.style.width = "100vw"
-		this.texture.el.style.height = "100vh"
-
-		HTML.setup()
+		this.el.style.width = "100vw"
+		this.el.style.height = "100vh"
 	}
 
-	public static frameSetup(): void {
-		this.texture.colorf(...this.bgColor, 255)
-		this.texture.background()
+	public frameSetup(): void {
+		this.colorf(...this.bgColor, 255)
+		this.background()
 	}
-	public static frameEnd(): void { this.frameCount++ }
+	public frameEnd(): void { this.frameCount++ }
 
-	public static calculateFramerate(): void {
+	public calculateFramerate(): void {
 		// Calculate framerate
 		const currTime = window.performance.now()
 		const deltaTime = (currTime - this.frameLastMoment)
@@ -55,21 +52,23 @@ class Surface {
 	 * Sets the background color.
 	 * @param color Color to set
 	 */
-	public static backgroundColor(color: [number, number, number]): void {
+	public backgroundColor(color: [number, number, number]): void {
 		this.bgColor = color
 	}
 
-	public static viewport(x: number, y: number, w: number, h: number): void {
-		if (this.texture instanceof TextureCanvas) {
-			this.texture.ctx.save()
-			this.texture.ctx.beginPath()
-			this.texture.ctx.rect(x, y, w, h)
-			this.texture.ctx.clip()
+	public viewport(x: number, y: number, w: number, h: number): void {
+		if (this instanceof TextureCanvas) {
+			this.ctx.save()
+			this.ctx.beginPath()
+			this.ctx.rect(x, y, w, h)
+			this.ctx.clip()
 		}
 	}
-	public static resetViewport(): void {
-		if (this.texture instanceof TextureCanvas) {
-			this.texture.ctx.restore()
+	public resetViewport(): void {
+		if (this instanceof TextureCanvas) {
+			this.ctx.restore()
 		}
 	}
 }
+
+const Surface = new _SurfaceClass()

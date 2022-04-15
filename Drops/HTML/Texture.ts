@@ -22,12 +22,15 @@ class Texture {
 	public onLoad(fn: (img: TextureCanvas) => void): void { }
 	public async load(): Promise<this> { return this }
 
-	public constructor(width: number, height: number) {
+	public constructor(width: number, height: number, webGL = false) {
 		this.el = document.createElement("canvas")
 		this.el.width = width
 		this.el.height = height
 		this.width = width
 		this.height = height
+
+		if (webGL)
+			return Texture.new(0, 0)
 	}
 
 	public translate(x: number, y: number): void { }
