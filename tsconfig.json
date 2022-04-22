@@ -10,5 +10,8 @@
 		"strictPropertyInitialization": false
 	},
 	"exclude": [ "node_modules" ],
-	"filesGlob": [ "./Drops/**/*.ts" ],
+	"filesGlob": [
+		"./Drops/**/*.ts",
+		"./server.ts"
+	],
 }
