@@ -20,15 +20,15 @@ module.exports =  {
 		"@typescript-eslint/no-empty-function": [ "off" ],
 		"@typescript-eslint/no-unused-vars": [ "off" ],
 		"@typescript-eslint/explicit-function-return-type": [ "error" ],
-		// "require-jsdoc": ["warn", {
-		// 	"require": {
-		// 		"FunctionDeclaration": true,
-		// 		"MethodDefinition": true,
-		// 		"ClassDeclaration": true,
-		// 		"ArrowFunctionExpression": false,
-		// 		"FunctionExpression": false
-		// 	}
-		// }],
+		"require-jsdoc": ["warn", {
+			"require": {
+				"FunctionDeclaration": false,
+				"MethodDefinition": false,
+				"ClassDeclaration": true,
+				"ArrowFunctionExpression": false,
+				"FunctionExpression": false
+			}
+		}],
 		"indent": [
 			"warn",
 			"tab"
