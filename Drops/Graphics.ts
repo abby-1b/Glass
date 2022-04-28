@@ -172,6 +172,7 @@ class Sprite extends Modifiable {
 
 	constructor(x = 0, y = 0) {
 		super()
+		this.applyModifier(ModAnimation)
 		this.pos = new Vec2(x, y)
 		cSurface.drawPool.push(this)
 	}
