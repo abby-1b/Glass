@@ -165,16 +165,21 @@ class Sprite extends Modifiable {
 	tint: [number, number, number, number] = [1, 1, 1, -1]
 
 	// Animation
-	animationFrame = 0
+	frame = 0
 
 	static texInfo = new Float32Array([0,0, 0,0, 0,0])
 	static fourVertex = new Float32Array([0,0, 0,0, 0,0, 0,0])
 
 	constructor(x = 0, y = 0) {
 		super()
-		this.applyModifier(ModAnimation)
 		this.pos = new Vec2(x, y)
 		cSurface.drawPool.push(this)
+	}
+
+	/** Makes this object able to be animated. */
+	animatable(): this {
+		this.applyModifier(ModAnimation)
+		return this
 	}
 
 	/**
@@ -248,9 +253,9 @@ class Sprite extends Modifiable {
 
 		Sprite.texInfo[0] = Sprite.fourVertex[0]
 		Sprite.texInfo[1] = Sprite.fourVertex[1]
-		Sprite.texInfo[2] = this.rect.x / this.texWidth
+		Sprite.texInfo[2] = (this.rect.x + this.frame * this.rect.w) / this.texWidth
 		Sprite.texInfo[3] = this.rect.y / this.texHeight
-		Sprite.texInfo[4] = this.rect.w / this.texWidth / this.width + this.animationFrame
+		Sprite.texInfo[4] = this.rect.w / this.texWidth / this.width
 		Sprite.texInfo[5] = this.rect.h / this.texHeight / this.height
 		cSurface.gl.uniform1fv(cSurface.texInfoUniform, Sprite.texInfo)
 
