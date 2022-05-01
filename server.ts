@@ -54,7 +54,7 @@ async function serveHttp(conn: Deno.Conn): Promise<void> {
 			code = 404
 
 			if (ext == "html") {
-				body = await genHTML()
+				body = await genHTML(path.split("/").slice(-2)[0])
 				type = "text/html"
 				code = 200
 			}
