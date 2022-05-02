@@ -4,8 +4,8 @@ let mouseY = 0
 let mouseDown = false
 
 window.addEventListener("mousemove", (e) => {
-	mouseX = e.clientX
-	mouseY = e.clientY
+	mouseX = (e.clientX / window.innerWidth) * width
+	mouseY = (e.clientY / window.innerHeight) * height
 })
 
 window.addEventListener("mousedown", (e) => {
