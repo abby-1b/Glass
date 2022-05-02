@@ -9,7 +9,7 @@ async function genHTML(title = "Untitled Project"): Promise<string> {
 	const dir = await Deno.readDir(import.meta.url.slice(7).split("/").slice(0, -2).join("/") + "/Drops")
 	const files = []
 	for await (const f of dir) {
-		if (!(f.name.includes(".t.")))
+		if (!(f.name.includes(".t.") || f.name.endsWith(".png")))
 			files.push(`<script src="../Drops/${f.name}"></script>`) // Doesn't account for different directories.
 	}
 	return `
