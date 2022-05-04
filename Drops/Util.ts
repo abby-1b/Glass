@@ -49,3 +49,7 @@ class Rect {
 		return this
 	}
 }
+
+function map(v: number, f1: number, f2: number, t1: number, t2: number): number {
+	return (v - f1) * (t2 - t1) / (f2 - f1) + t1
+}
