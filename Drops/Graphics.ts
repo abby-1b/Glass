@@ -1,11 +1,9 @@
 
-function shaderCode(c: TemplateStringsArray): string {
-	return c[0].replace(/\t{1,}|\n| (?=[=,{}+\-*/<>()])|(?<=[=,{}+\-*/<>()]) /g, "")
-}
+// function shaderCode(c: TemplateStringsArray): string {
+// 	return c[0].replace(/\t{1,}|\n| (?=[=,{}+\-*/<>()])|(?<=[=,{}+\-*/<>()]) /g, "")
+// }
 
-/**
- * Specifies a WebGL canvas context for drawing.
- */
+/** Specifies a WebGL canvas context for drawing. */
 class Surface {
 	cnv: HTMLCanvasElement
 	gl: WebGL2RenderingContext
@@ -15,7 +13,7 @@ class Surface {
 	colorUniform: WebGLUniformLocation
 	texInfoUniform: WebGLUniformLocation
 
-	drawPool: Sprite[] = []
+	drawColor: [number, number, number, number] = [1, 1, 1, 1]
 
 	constructor() {
 		this.cnv = document.getElementById("cnv") as HTMLCanvasElement
@@ -75,9 +73,7 @@ class Surface {
 		// TODO: finish implementing pixelated size
 	}
 
-	/**
-	 * Sets the size of the canvas to the real size of the window, so basically the highest resolution possible.
-	 */
+	/** Sets the size of the canvas to the real size of the window, so basically the highest resolution possible. */
 	realSize(): void {
 		this.cnv.style.imageRendering = "unset"
 		window.onresize = (): void => {
@@ -94,6 +90,7 @@ class Surface {
 		(window.onresize as () => void)()
 	}
 
+	/** Builds a shader program from vertex and fragment shader code. */
 	private buildSP(vert: string, frag: string): WebGLProgram {
 		function buildSS(gl: WebGL2RenderingContext, code: string, type: number): WebGLShader {
 			const s = gl.createShader(type) as WebGLShader
@@ -127,7 +124,7 @@ class Surface {
 	}
 
 	/**
-	 * Sets up for a new frame. Runs before every frame, no matter if there's a pre-frame function.
+	 * Sets up for a new frame. Runs before every frame, no matter if there's a pre-frame function. Runs before everything.
 	 */
 	frame(): void {
 		this.gl.clearColor(0.7, 1, 1, 1)
@@ -138,9 +135,30 @@ class Surface {
 		this.gl.depthFunc(this.gl.LEQUAL)
 		this.gl.enable(this.gl.BLEND)
 		this.gl.blendFunc(this.gl.SRC_ALPHA, this.gl.ONE_MINUS_SRC_ALPHA)
-
-
 	}
+}
+
+function colorf(r: number, g: number, b: number, a = 255): void {
+	cSurface.drawColor[0] = r / 255
+	cSurface.drawColor[1] = g / 255
+	cSurface.drawColor[2] = b / 255
+	cSurface.drawColor[3] = a / 255
+}
+
+function rect(x: number, y: number, w: number, h: number): void {
+	Sprite.fourVertex[0] = x
+	Sprite.fourVertex[1] = y
+	Sprite.fourVertex[2] = x + w
+	Sprite.fourVertex[3] = y
+	Sprite.fourVertex[4] = x
+	Sprite.fourVertex[5] = y + h
+	Sprite.fourVertex[6] = x + w
+	Sprite.fourVertex[7] = y + h
+	console.log(x, y, w, h)
+	cSurface.gl.bufferData(cSurface.gl.ARRAY_BUFFER, Sprite.fourVertex, cSurface.gl.DYNAMIC_DRAW)
+	cSurface.gl.uniform4fv(cSurface.colorUniform, cSurface.drawColor)
+	// cSurface.gl.drawArrays(cSurface.gl.LINES, 0, 8)
+	cSurface.gl.drawArrays(cSurface.gl.TRIANGLE_STRIP, 0, 4)
 }
 
 const cSurface = new Surface()
@@ -149,7 +167,7 @@ const cSurface = new Surface()
  * A sprite is any object that can be drawn to the canvas.
  * Other drawable objects extend from this class. 
  */
-class Sprite extends Modifiable {
+class Sprite extends GlassNode {
 	protected tex: WebGLTexture
 	texWidth: number
 	texHeight: number
@@ -170,16 +188,9 @@ class Sprite extends Modifiable {
 	static texInfo = new Float32Array([0,0, 0,0, 0,0])
 	static fourVertex = new Float32Array([0,0, 0,0, 0,0, 0,0])
 
-	constructor(x = 0, y = 0) {
-		super()
+	constructor(name: string, x = 0, y = 0) {
+		super(name)
 		this.pos = new Vec2(x, y)
-		cSurface.drawPool.push(this)
-	}
-
-	/** Makes this object able to be animated. */
-	animatable(): this {
-		this.applyModifier(ModAnimation)
-		return this
 	}
 
 	/**
@@ -190,15 +201,16 @@ class Sprite extends Modifiable {
 		this.tex = cSurface.newTex()
 		const img = new Image()
 		img.onload = (): void => {
-			this.texWidth = img.width
+			this.texWidth  = img.width
 			this.texHeight = img.height
-			if (this.width == -1) this.width = img.width
+			if (this.width  == -1) this.width  = img.width
 			if (this.height == -1) this.height = img.height
 			if (this.rect.w == -1) this.rect.w = img.width
 			if (this.rect.h == -1) this.rect.h = img.height
 			cSurface.gl.bindTexture(cSurface.gl.TEXTURE_2D, this.tex)
 			cSurface.gl.texImage2D(cSurface.gl.TEXTURE_2D, 0, cSurface.gl.RGBA, cSurface.gl.RGBA, cSurface.gl.UNSIGNED_BYTE, img)
 		}
+		img.onerror = (): void => console.log("Error loading %c" + url, "background-color:black;color:white")
 		img.src = url
 		return this
 	}
@@ -238,7 +250,8 @@ class Sprite extends Modifiable {
 	/**
 	 * Draws this texture to the WebGL canvas.
 	 */
-	draw(): void {
+	frameFn(): void {
+		super.frameFn()
 		cSurface.gl.bindTexture(cSurface.gl.TEXTURE_2D, this.tex)
 
 		Sprite.fourVertex[0] = this.pos.x
