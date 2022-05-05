@@ -5,12 +5,23 @@ async function buildTS(ts: string): Promise<string> {
 	})).files["file:///mod.ts.js"].replace(/\s*export {}(;|)\s*/g, "")
 }
 
-async function genHTML(title = "Untitled Project"): Promise<string> {
-	const dir = await Deno.readDir(import.meta.url.slice(7).split("/").slice(0, -2).join("/") + "/Drops")
-	const files = []
-	for await (const f of dir) {
-		if (!(f.name.includes(".t.") || f.name.endsWith(".png")))
-			files.push(`<script src="../Drops/${f.name}"></script>`) // Doesn't account for different directories.
+async function genHTML(title = "Untitled Project", shorten = false): Promise<string> {
+	let script = ""
+	if (shorten) {
+		script += "<script>"
+		let ts = ""
+		const dir = await Deno.readDir(import.meta.url.slice(7).split("/").slice(0, -2).join("/") + "/Drops")
+		for await (const f of dir) {
+			if (!(f.name.includes(".t.") || f.name.endsWith(".png")))
+				ts += "\n" + await Deno.readTextFile("Drops/" + f.name) // Doesn't account for different directories.
+		}
+		script += await buildTS(ts) + "</script>"
+	} else {
+		const dir = await Deno.readDir(import.meta.url.slice(7).split("/").slice(0, -2).join("/") + "/Drops")
+		for await (const f of dir) {
+			if (!(f.name.includes(".t.") || f.name.endsWith(".png")))
+				script += `\n<script src="../Drops/${f.name}"></script>` // Doesn't account for different directories.
+		}
 	}
 	return `
 	<head>
@@ -19,7 +30,7 @@ async function genHTML(title = "Untitled Project"): Promise<string> {
 	</head>
 	<body>
 		<canvas id="cnv"></canvas>
-		${files.join("")}
+		${script}
 		<script src="main.ts"></script>
 	</body>`
 }

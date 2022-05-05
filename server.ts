@@ -29,11 +29,11 @@ async function serveHttp(conn: Deno.Conn): Promise<void> {
 
 		try {
 			// Path exists
-			const stat = Deno.statSync(path)
+			const stat = await Deno.stat(path)
 			if (stat.isDirectory) {
 				// Is a directory
 				body = "<body>"
-				for (const f of Deno.readDirSync(path)) {
+				for await (const f of Deno.readDir(path)) {
 					let href = path + "/" + f.name
 					while (href[0] == "." || href[0] == "/") href = href.slice(1)
 					body += `<a href='${href}'>${f.name}</a><br>`
@@ -54,7 +54,7 @@ async function serveHttp(conn: Deno.Conn): Promise<void> {
 			code = 404
 
 			if (ext == "html") {
-				body = await genHTML(path.split("/").slice(-2)[0])
+				body = await genHTML(path.split("/").slice(-2)[0], true)
 				type = "text/html"
 				code = 200
 			}
