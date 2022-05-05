@@ -154,10 +154,8 @@ function rect(x: number, y: number, w: number, h: number): void {
 	Sprite.fourVertex[5] = y + h
 	Sprite.fourVertex[6] = x + w
 	Sprite.fourVertex[7] = y + h
-	console.log(x, y, w, h)
 	cSurface.gl.bufferData(cSurface.gl.ARRAY_BUFFER, Sprite.fourVertex, cSurface.gl.DYNAMIC_DRAW)
 	cSurface.gl.uniform4fv(cSurface.colorUniform, cSurface.drawColor)
-	// cSurface.gl.drawArrays(cSurface.gl.LINES, 0, 8)
 	cSurface.gl.drawArrays(cSurface.gl.TRIANGLE_STRIP, 0, 4)
 }
 
