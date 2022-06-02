@@ -2,3 +2,5 @@
 class Scene extends GlassNode {
 	// TODO: load and unload objects
 }
+
+let cScene: Scene
