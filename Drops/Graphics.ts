@@ -60,26 +60,44 @@ class Surface {
 		this.texInfoUniform	= this.gl.getUniformLocation(this.material, "texInfo") as WebGLUniformLocation
 	}
 
+	setupCanvas(): void {
+		document.body.style.margin = "0"
+		document.body.style.overflow = "hidden"
+		this.cnv.style.width = "100vw"
+		this.cnv.style.height = "100vh"
+	}
+
 	/**
 	 * Sets the size of the canvas when pixelated. Only takes one value, trying to keep the area of the screen to the value squared.
 	 */
-	pixelSize(desiredSize: number): void {
+	pixelated(desiredSize: number): void {
+		this.desiredSize = desiredSize
+		this.setupCanvas()
 		this.cnv.style.imageRendering = "crisp-edges"
 		this.cnv.style.imageRendering = "pixelated"
-
-		this.cnv.style.width = "100vw"
-		this.cnv.style.height = "100vh"
-
-		// TODO: finish implementing pixelated size
+		window.onresize = (): void => {
+			const m = Math.sqrt((this.desiredSize * this.desiredSize) / (window.innerWidth * window.innerHeight))
+			width = Math.ceil(window.innerWidth * m)
+			height = Math.ceil(window.innerHeight * m)
+			console.log("Resized:", width, height)
+			this.cnv.width = width
+			this.cnv.height = height
+			
+			const screenScale = this.gl.getUniformLocation(this.material, "screenScale")
+			this.gl.uniform2fv(screenScale, [2 / width, -2 / height])
+			this.gl.viewport(0, 0, width, height)
+		}
+		(window.onresize as () => void)()
 	}
 
 	/** Sets the size of the canvas to the real size of the window, so basically the highest resolution possible. */
 	realSize(): void {
+		this.setupCanvas()
 		this.cnv.style.imageRendering = "unset"
 		window.onresize = (): void => {
-			console.log(window.innerWidth, window.innerHeight)
 			width = window.innerWidth
 			height = window.innerHeight
+			console.log("Resized:", width, height)
 			this.cnv.width = width
 			this.cnv.height = height
 			
@@ -127,7 +145,7 @@ class Surface {
 	 * Sets up for a new frame. Runs before every frame, no matter if there's a pre-frame function. Runs before everything.
 	 */
 	frame(): void {
-		this.gl.clearColor(0.7, 1, 1, 1)
+		this.gl.clearColor(0.7, 1, 1, 1) // TODO: change background color dynamically
 		this.gl.clear(this.gl.COLOR_BUFFER_BIT)
 
 		// Setup 3D (for depth testing)
@@ -138,6 +156,15 @@ class Surface {
 	}
 }
 
+const cSurface = new Surface()
+
+/**
+ * Sets a full color, without missing any arguments (except for alpha, optionally). Faster than `color`, but more precise.
+ * @param r Red
+ * @param g Green
+ * @param b Blue
+ * @param a Alpha (default: 255)
+ */
 function colorf(r: number, g: number, b: number, a = 255): void {
 	cSurface.drawColor[0] = r / 255
 	cSurface.drawColor[1] = g / 255
@@ -145,6 +172,13 @@ function colorf(r: number, g: number, b: number, a = 255): void {
 	cSurface.drawColor[3] = a / 255
 }
 
+/**
+ * Draws a rectangle on the current surface.
+ * @param x X Position
+ * @param y Y Position
+ * @param w Width
+ * @param h Height
+ */
 function rect(x: number, y: number, w: number, h: number): void {
 	Sprite.fourVertex[0] = x
 	Sprite.fourVertex[1] = y
@@ -158,8 +192,6 @@ function rect(x: number, y: number, w: number, h: number): void {
 	cSurface.gl.uniform4fv(cSurface.colorUniform, cSurface.drawColor)
 	cSurface.gl.drawArrays(cSurface.gl.TRIANGLE_STRIP, 0, 4)
 }
-
-const cSurface = new Surface()
 
 /** 
  * A sprite is any object that can be drawn to the canvas.
@@ -189,6 +221,7 @@ class Sprite extends GlassNode {
 	constructor(name: string, x = 0, y = 0) {
 		super(name)
 		this.pos = new Vec2(x, y)
+		cScene.addChild(this)
 	}
 
 	/**

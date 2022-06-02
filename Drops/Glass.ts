@@ -3,29 +3,18 @@ let frameCount = 0
 let width: number, height: number
 
 /**
- * Sets the desired size for the canvas. Only affects pixel mode.
- * 
- * **NOTE: THIS NEEDS TO BE CALLED FOR THE CANVAS TO BE INITIALIZED PROPERLY.**
- * @param desiredSize 200 by default. Makes the canvas occupy a total area of this value squared, no matter the dimensions.
+ * Makes the canvas a fraction of its size, scaling pixels.
+ * This should be used for pixel art games or games.
  */
-function size(desiredSize = 200): void {
-	cSurface.pixelSize(desiredSize)
-	console.log("Set size to", desiredSize)
-
-	// TODO: pixel-size calculations.
-	width = 1
-	height = 1
-
-	// Setup HTML
-	document.body.style.margin = "0"
-	document.body.style.overflow = "hidden"
+function pixelated(desiredSize: number): void {
+	cSurface.pixelated(desiredSize)
 }
 
 /**
- * Makes the canvas switch over to its real size, without scaling pixels.
- * This should be used for full-resolution games or games that don't stick to a pixel-art style.
+ * Makes the canvas its real size, without scaling pixels.
+ * This should be used for full resolution games or games that don't stick to a pixel-art style.
  */
-function noPixels(): void {
+function realSize(): void {
 	cSurface.realSize()
 }
 
