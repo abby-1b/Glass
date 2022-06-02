@@ -1,7 +1,7 @@
 export {}
 
 size()
-noPixels()
+realSize()
 
 const player = new Sprite("Player")
 	.fromURL("../TestProject/Assets/test.png")
