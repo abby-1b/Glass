@@ -11,9 +11,9 @@ root.addChild(cScene)
 // Create player character
 const player = new Sprite("Player")
 	.fromURL("./Assets/test.png")
-	.setPos(10, 10)
+	.setPos(0, 0)
 	.setSize(16, 16)
-	.setRect(0, 0, 16)
+	.setRect(0, 0, 16, 16)
 
 // Preload (nothing lmao)
 preLoad(() => {
@@ -23,7 +23,7 @@ preLoad(() => {
 // Frame function, runs every frame.
 frame(() => {
 	// Testing recrangles
-	// player.setRect(0, 0, mouseX, mouseY)
+	player.setRect(0, 0, 16 / mouseX * 16, 16 / mouseY * 16)
 	// player.frame = mouseY / width
 	// colorf(map(mouseX, 0, width, 0, 255), map(mouseY, 0, height, 0, 255), 0)
 	// rect(mouseX - 32, mouseY - 32, 64, 64)
