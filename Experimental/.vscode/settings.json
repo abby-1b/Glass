@@ -1,0 +1,11 @@
+{
+	"deno.enable": true,
+	"spellright.language": [
+		"en"
+	],
+	"spellright.documentTypes": [
+		"markdown",
+		"latex",
+		"plaintext"
+	]
+}
