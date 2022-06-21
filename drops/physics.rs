@@ -1,4 +1,4 @@
-use vec::*;
+use crate::vec::*;
 
 pub struct Physics {
 	velocity: Vec2,

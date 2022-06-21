@@ -1,6 +1,6 @@
-use vec::*;
-use physics::*;
-use renderer::*;
+use crate::vec::*;
+use crate::physics::*;
+use crate::renderer::*;
 
 pub struct EntityHolder {
 	component_position: Vec<Option<Vec2>>,

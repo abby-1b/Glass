@@ -6,3 +6,4 @@ pub mod renderer;
 pub mod entity_holder;
 pub mod scene;
 pub mod glass;
+pub mod log;
