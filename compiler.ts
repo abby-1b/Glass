@@ -23,7 +23,7 @@ async function compileTarget(t: string) {
 		buildCode.fns[nm].modify("mod drops;"
 		+ (txt.startsWith("mod drops;") ? txt.slice(10) : txt))
 	)
-	if (await buildCode.fns[nm].build(fileName, project + "/out") == 1) failed = true
+	if (await buildCode.fns[nm].build(fileName, project + "/build/out") == 1) failed = true
 	await Deno.remove(TEMP_NAME + project + ".rs")
 }
 
@@ -31,7 +31,7 @@ if (typeof target !== "string") {
 	console.log("No targets specified!\n\t[b] Binary executable\n\t[w] Web")
 	Deno.exit()
 }
-if (target.includes("w")) compileTarget("w")
-if (target.includes("b")) compileTarget("b")
+if (target.includes("w")) await compileTarget("w")
+if (target.includes("b")) await compileTarget("b")
 
 if (failed) Deno.exit(1)
