@@ -1,13 +1,15 @@
 mod drops;
 use drops::*;
+#[allow(unused_imports)]
 use log::*;
 use glass::*;
 
-pub fn frame(_delta: i32, ins: &mut GlassStruct) {
-	// log!("Hello, World!");
-	ins.gl.rect(10.0, 10.0, 20.0, 20.0);
+pub fn frame(_delta: f32, ins: &mut GlassStruct) {
+	ins.get_curr_scene().object_holder.add_object(
+		
+	);
 }
 
-pub fn physics(_delta: i32, _ins: &mut GlassStruct) {
-
+pub fn physics(_delta: f32, _ins: &mut GlassStruct) {
+	
 }
