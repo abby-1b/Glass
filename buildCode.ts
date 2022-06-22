@@ -59,15 +59,16 @@ let gls = {
 	export_var: (pos, ofv) => gls[ofv] = pos
 }
 init().then(()=>{
-	wasm.wasm_main()
+	wasm.main()
+	let t = 0
 	const frm = () => {
-		wasm.wasm_step_frame()
+		wasm.wasm_step_frame((performance.now() - t) / 16.666)
+		t = performance.now()
 		window.requestAnimationFrame(frm)
 	}
 	frm()
 })
 window.onresize = () => { cachedUint8Memory0[gls[0]] = 1 }
-console.log(gls)
 		</script>
 	</body>
 </html>
@@ -81,16 +82,12 @@ const INIT_FNS = `
 
 const WEB_EXPORT_FNS = `
 #[wasm_bindgen]
-pub fn wasm_main() {
+pub fn main() {
 	${INIT_FNS}
 }
 #[wasm_bindgen]
-pub fn wasm_step_frame() {
-	GLASS.lock().unwrap().frame();
-}
-#[wasm_bindgen]
-pub fn wasm_step_physics() {
-	GLASS.lock().unwrap().physics();
+pub fn wasm_step_frame(delta: f32) {
+	GLASS.lock().unwrap().frame(delta);
 }
 `
 

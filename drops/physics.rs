@@ -1,8 +1,16 @@
 use crate::vec::*;
 
 pub struct Physics {
-	velocity: Vec2,
-	mass: f32,
+	pub velocity: Vec2,
+	pub mass: f32,
+}
+impl Physics {
+	pub fn new() -> Physics {
+		Physics {
+			velocity: Vec2::new(5.0, 0.0),
+			mass: 1.0
+		}
+	}
 }
 
 pub struct ScenePhysics {
