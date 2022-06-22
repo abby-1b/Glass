@@ -40,7 +40,10 @@ path = "%%"
 opt-level = "z"
 crate-type = ["cdylib"]
 [dependencies]
-wasm-bindgen = "0.2"`
+lazy_static = "1.4.0"
+[features]
+bin = []
+` // glium = "*"
 
 const HTML_TEMPLATE = `
 <html>
@@ -70,20 +73,24 @@ console.log(gls)
 </html>
 `
 
+const INIT_FNS = `
+	GLASS.lock().unwrap().set_frame_fn(frame);
+	GLASS.lock().unwrap().set_physics_fn(physics);
+	GLASS.lock().unwrap().init();
+`
+
 const WEB_EXPORT_FNS = `
 #[wasm_bindgen]
 pub fn wasm_main() {
-	Glass.lock().unwrap().set_frame_fn(frame);
-	Glass.lock().unwrap().set_physics_fn(physics);
-	Glass.lock().unwrap().init();
+	${INIT_FNS}
 }
 #[wasm_bindgen]
 pub fn wasm_step_frame() {
-	Glass.lock().unwrap().frame();
+	GLASS.lock().unwrap().frame();
 }
 #[wasm_bindgen]
 pub fn wasm_step_physics() {
-	Glass.lock().unwrap().physics();
+	GLASS.lock().unwrap().physics();
 }
 `
 
@@ -104,11 +111,17 @@ function minifyJS(code: string): string {
 export const fns: {[key: string]: {modify: (code: string) => string, build: (fileName: string, outName: string) => Promise<number>}} = {
 	"bin": {
 		modify: (code: string): string => {
-			return code
+			return "#[macro_use]\nextern crate lazy_static;\n" + code + "\nfn main() {\n" + INIT_FNS + "\n}"
 		},
 		build: async (fileName: string, outName: string): Promise<number> => {
-			await Deno.writeTextFile("Cargo.toml", CARGO_TOML.replace(/%%/g, "drops/main.rs"))
-			const ret = await Deno.run({cmd: ["rustc", fileName, "-o", outName, "--cfg", "to=\"bin\""]}).status()
+			await Deno.writeTextFile("Cargo.toml", CARGO_TOML.replace(/%%/g, fileName))
+			// const ret = await Deno.run({cmd: ["rustc", fileName, "-o", outName, "--cfg", "to=\"bin\""]}).status()
+			const dr = outName.split("/").slice(0, -1).join("/")
+			const ret = await Deno.run({cmd: ["cargo", "build", "--target-dir", dr, "--features", "bin"]}).status()
+			await Deno.writeFile(outName, await Deno.readFile(dr + "/debug/glass_eng"))
+			await Deno.run({cmd: ["chmod", "u+x", outName]}).status()
+			try { await Deno.remove(dr + "/debug") } catch (e) { [] }
+			try { await Deno.remove(dr + "/.rustc_info.json") } catch (e) { [] }
 			return ret.code
 		}
 	},

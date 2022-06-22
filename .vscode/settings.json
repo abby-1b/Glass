@@ -1,5 +1,19 @@
 {
-	"deno.enable": true,
+	"deno.enable": false,
 	"deno.unstable": true,
-	"deno.lint": true
+	"deno.lint": true,
+	"files.exclude": {
+		"**/.git": true,
+		"**/.svn": true,
+		"**/.hg": true,
+		"**/CVS": true,
+		"**/.DS_Store": true,
+		"**/Thumbs.db": true,
+		"_comp*.rs": true,
+		"Cargo.lock": true,
+		"Cargo.toml": true,
+		// "**/pkg": true,
+		// "**/target": true,
+		// "**/debug": true,
+	}
 }

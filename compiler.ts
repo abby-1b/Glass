@@ -24,7 +24,6 @@ async function compileTarget(t: string) {
 		+ (txt.startsWith("mod drops;") ? txt.slice(10) : txt))
 	)
 	if (await buildCode.fns[nm].build(fileName, project + "/build/out") == 1) failed = true
-	await Deno.remove(TEMP_NAME + project + ".rs")
 }
 
 if (typeof target !== "string") {
