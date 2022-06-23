@@ -1,7 +1,6 @@
 #!/usr/bin/env -S deno run -A
 import * as buildCode from "./buildCode.ts"
 
-const TEMP_NAME = "_comp"
 const project = Deno.args[0]
 const target = Deno.args[1]
 
@@ -9,7 +8,6 @@ if (!project) {
 	console.log("No project supplied!")
 	Deno.exit()
 }
-const txt = Deno.readTextFileSync(project + "/main.rs").trim()
 
 let failed = false
 async function compileTarget(t: string) {
@@ -17,13 +15,12 @@ async function compileTarget(t: string) {
 	if (t == "b") nm = "bin"
 	if (t == "w") nm = "web"
 
-	const fileName = TEMP_NAME + project + ".rs"
+	// const fileName = TEMP_NAME + project + ".rs"
 	await Deno.writeTextFile(
-		fileName,
-		buildCode.fns[nm].modify("mod drops;"
-		+ (txt.startsWith("mod drops;") ? txt.slice(10) : txt))
+		project + "/main.rs",
+		buildCode.fns[nm].modify()
 	)
-	if (await buildCode.fns[nm].build(fileName, project + "/build/out") == 1) failed = true
+	if (await buildCode.fns[nm].build(project + "/main.rs", project + "/build/out") == 1) failed = true
 }
 
 if (typeof target !== "string") {

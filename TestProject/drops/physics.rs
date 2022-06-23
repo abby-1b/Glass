@@ -7,7 +7,7 @@ pub struct Physics {
 impl Physics {
 	pub fn new() -> Physics {
 		Physics {
-			velocity: Vec2::new(5.0, 0.0),
+			velocity: Vec2::new(0.0, 0.0),
 			mass: 1.0
 		}
 	}

@@ -16,5 +16,8 @@ impl Vec2 {
 	pub fn pow(&mut self, b: f32) { self.x = self.x.powf(b); self.y = self.y.powf(b); }
 	pub fn pow_ret(&mut self, b: f32) -> Vec2 { Vec2 { x: self.x.powf(b), y: self.y.powf(b) } }
 
+	pub fn normalize(&mut self) { let d = (self.x.powf(2.0) + self.y.powf(2.0)).sqrt(); self.x /= d; self.y /= d; }
+	pub fn normalize_ret(&mut self) -> Vec2 { let d = (self.x.powf(2.0) + self.y.powf(2.0)).sqrt(); Vec2 { x: self.x / d, y: self.y / d } }
+
 	pub fn to_string(&self) -> String { return format!("Vec2( {}, {} )", self.x, self.y); }
 }

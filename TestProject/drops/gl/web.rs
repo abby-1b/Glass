@@ -188,6 +188,8 @@ impl Graphics {
 		self.context.vertex_attrib_pointer_with_i32(0, 2, WebGl2RenderingContext::FLOAT, false, 0, 0);
 	
 		self.context.bind_vertex_array(Some(&vao));
+
+		self.resized();
 		Ok(())
 	}
 }

@@ -41,6 +41,7 @@ opt-level = "z"
 crate-type = ["cdylib"]
 [dependencies]
 lazy_static = "1.4.0"
+rand = "0.8"
 [features]
 bin = []
 ` // glium = "*"
@@ -68,26 +69,29 @@ init().then(()=>{
 	}
 	frm()
 })
-window.onresize = () => { cachedUint8Memory0[gls[0]] = 1 }
+window.onresize = () => { getUint8Memory0()[gls[0]] = 1 }
 		</script>
 	</body>
 </html>
 `
 
-const INIT_FNS = `
-	GLASS.lock().unwrap().set_frame_fn(frame);
-	GLASS.lock().unwrap().set_physics_fn(physics);
-	GLASS.lock().unwrap().init();
-`
+const MAIN_FILE = `
+#[macro_use]
+extern crate lazy_static;
+mod drops;
+use drops::*;
+#[allow(unused_imports)]
+use log::*;
+use glass::*;
 
-const WEB_EXPORT_FNS = `
+mod project;
+
 #[wasm_bindgen]
 pub fn main() {
-	${INIT_FNS}
-}
-#[wasm_bindgen]
-pub fn wasm_step_frame(delta: f32) {
-	GLASS.lock().unwrap().frame(delta);
+	GLASS.lock().unwrap().set_setup_fn(project::setup);
+	GLASS.lock().unwrap().set_frame_fn(project::frame);
+	GLASS.lock().unwrap().set_physics_fn(project::physics);
+	GLASS.lock().unwrap().init();
 }
 `
 
@@ -105,10 +109,11 @@ function minifyJS(code: string): string {
 	// 	.replace(/(}\n){1,}/g,e=>e.replace(/\n/g,"")+"\n")
 }
 
-export const fns: {[key: string]: {modify: (code: string) => string, build: (fileName: string, outName: string) => Promise<number>}} = {
+export const fns: {[key: string]: {modify: () => string, build: (fileName: string, outName: string) => Promise<number>}} = {
 	"bin": {
-		modify: (code: string): string => {
-			return "#[macro_use]\nextern crate lazy_static;\n" + code + "\nfn main() {\n" + INIT_FNS + "\n}"
+		modify: (): string => {
+			// return "#[macro_use]\nextern crate lazy_static;\n" + code + "\nfn main() {\n" + INIT_FNS + "\n}"
+			return MAIN_FILE
 		},
 		build: async (fileName: string, outName: string): Promise<number> => {
 			await Deno.writeTextFile("Cargo.toml", CARGO_TOML.replace(/%%/g, fileName))
@@ -123,10 +128,13 @@ export const fns: {[key: string]: {modify: (code: string) => string, build: (fil
 		}
 	},
 	"web": {
-		modify: (code: string): string => {
-			return "#[macro_use]\nextern crate lazy_static;\nuse wasm_bindgen::prelude::*;\n"
-				+ code
-				+ WEB_EXPORT_FNS
+		modify: (): string => {
+			return "use wasm_bindgen::prelude::*;\n"
+				+ MAIN_FILE
+				+ "\n#[wasm_bindgen]"
+				+ "\npub fn wasm_step_frame(delta: f32) {"
+				+ "\n\tGLASS.lock().unwrap().frame(delta);"
+				+ "\n}"
 		},
 		build: async (fileName: string, outName: string): Promise<number> => {
 			await Deno.writeTextFile("Cargo.toml", WEB_TOML.replace(/%%/g, fileName))
@@ -135,7 +143,7 @@ export const fns: {[key: string]: {modify: (code: string) => string, build: (fil
 				minifyJS(await Deno.readTextFile("pkg/glass_engine.js"))))
 			await Deno.writeFile(outName.split("/").slice(0, -1).join("/") + "/glass_engine_bg.wasm",
 				await Deno.readFile("pkg/glass_engine_bg.wasm"))
-			try { await Deno.remove("pkg") } catch (_e) { [] }
+			// try { await Deno.remove("pkg") } catch (_e) { [] }
 			return ret.code
 		}
 	}

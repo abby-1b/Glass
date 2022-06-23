@@ -1,15 +1,24 @@
+use wasm_bindgen::prelude::*;
+
+#[macro_use]
+extern crate lazy_static;
 mod drops;
 use drops::*;
 #[allow(unused_imports)]
 use log::*;
 use glass::*;
 
-pub fn frame(_delta: f32, ins: &mut GlassStruct) {
-	ins.get_curr_scene().object_holder.add_object(
-		
-	);
+mod project;
+
+#[wasm_bindgen]
+pub fn main() {
+	GLASS.lock().unwrap().set_setup_fn(project::setup);
+	GLASS.lock().unwrap().set_frame_fn(project::frame);
+	GLASS.lock().unwrap().set_physics_fn(project::physics);
+	GLASS.lock().unwrap().init();
 }
 
-pub fn physics(_delta: f32, _ins: &mut GlassStruct) {
-	
+#[wasm_bindgen]
+pub fn wasm_step_frame(delta: f32) {
+	GLASS.lock().unwrap().frame(delta);
 }
