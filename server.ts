@@ -1,5 +1,23 @@
+#!/usr/bin/env -S deno run -A --unstable
+async function buildTS(ts: string): Promise<string> {
+	return (await Deno.emit("/mod.ts", {
+		sources: { "/mod.ts": ts },
+	})).files["file:///mod.ts.js"].replace(/\s*export {}(;|)\s*/g, "")
+}
 
-import { buildTS, genHTML } from "./Build/build.ts"
+async function genHTML(title = "Untitled Project", shorten = false): Promise<string> {
+	let script = ""
+	return `
+	<head>
+		<title>${title}</title>
+		<meta name="apple-mobile-web-app-capable" content="yes">
+	</head>
+	<body>
+		<canvas id="cnv"></canvas>
+		${script}
+		<script type="module" src="main.ts"></script>
+	</body>`
+}
 
 const server = Deno.listen({ port: 8080 })
 console.log("HTTP webserver running at: http://localhost:8080/")
@@ -49,7 +67,7 @@ async function serveHttp(conn: Deno.Conn): Promise<void> {
 					body = Deno.readFileSync(path)
 				}
 			}
-		} catch (e) {
+		} catch (_e) {
 			// Path doesn't exist
 			code = 404
 
