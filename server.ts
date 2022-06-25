@@ -6,17 +6,14 @@ async function buildTS(ts: string): Promise<string> {
 }
 
 async function genHTML(title = "Untitled Project", shorten = false): Promise<string> {
-	let script = ""
 	return `
 	<head>
 		<title>${title}</title>
 		<meta name="apple-mobile-web-app-capable" content="yes">
+		<script type="module" src="main.ts" async defer></script>
+		<style>*{margin:0;padding:0;width:100vw;height:100vh}</style>
 	</head>
-	<body>
-		<canvas id="cnv"></canvas>
-		${script}
-		<script type="module" src="main.ts"></script>
-	</body>`
+	<body></body>`
 }
 
 const server = Deno.listen({ port: 8080 })
@@ -36,7 +33,7 @@ for await (const conn of server) serveHttp(conn)
 async function serveHttp(conn: Deno.Conn): Promise<void> {
 	const httpConn = Deno.serveHttp(conn)
 	for await (const requestEvent of httpConn) {
-		let path = requestEvent.request.url.slice(21)
+		let path: string = requestEvent.request.url.slice(21)
 		if (path[0] != "/") path = "/" + path
 		path = "." + path
 		const ext = path.split(".")[2] ?? "txt"
@@ -44,7 +41,6 @@ async function serveHttp(conn: Deno.Conn): Promise<void> {
 
 		let code = 200
 		let body: string | Uint8Array = ""
-
 		try {
 			// Path exists
 			const stat = await Deno.stat(path)
@@ -69,12 +65,17 @@ async function serveHttp(conn: Deno.Conn): Promise<void> {
 			}
 		} catch (_e) {
 			// Path doesn't exist
-			code = 404
-
-			if (ext == "html") {
-				body = await genHTML(path.split("/").slice(-2)[0], true)
-				type = "text/html"
-				code = 200
+			try {
+				// Maybe it's a ts file?
+				body = await buildTS(await Deno.readTextFile(path + ".ts"))
+				type = "text/javascript"
+			} catch (_ee) {
+				code = 404
+				if (ext == "html") {
+					body = await genHTML(path.split("/").slice(-2)[0], true)
+					type = "text/html"
+					code = 200
+				}
 			}
 		}
 		
