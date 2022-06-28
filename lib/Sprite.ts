@@ -29,8 +29,8 @@ export class Sprite extends GlassNode {
 		img.src = src
 	}
 
-	public render() {
-		super.render()
+	public render(delta: number) {
+		super.render(delta)
 		Glass.gl.bindTexture(Glass.gl.TEXTURE_2D, this.texture)
 		Glass.vertexData[0] = this.pos.x
 		Glass.vertexData[1] = this.pos.y

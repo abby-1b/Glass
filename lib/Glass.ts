@@ -8,14 +8,25 @@ class GlassInstance {
 	height: number = 0
 	scene: Scene
 
+	public frameCount = 0
+
 	private program: WebGLProgram
 	gl: WebGL2RenderingContext
 	private drawColor: [number, number, number, number] = [1, 1, 1, 1]
 	public vertexData = new Float32Array(8)
 	public texData = new Float32Array(6)
 	public uniforms: {[key: string]: WebGLUniformLocation} = {}
+	private translation: [number, number] = [0, 0]
 
 	constructor() {}
+
+	public pixelated(yes: boolean) {
+		if (yes)
+			this.gl.canvas.style.imageRendering = "crisp-edges",
+			this.gl.canvas.style.imageRendering = "pixelated"
+		else
+			this.gl.canvas.style.imageRendering = "unset"
+	}
 
 	public init(setup: () => void | undefined, frame: ((delta: number) => void) | undefined, physics: ((delta: number) => void) | undefined) {
 		this.frameFn = frame === undefined ? () => {} : frame
@@ -27,11 +38,12 @@ class GlassInstance {
 		this.program = buildSP(this.gl, `#version 300 es
 			in vec2 vertex_pos;
 			out vec2 tex_pos;
+			uniform vec2 translate;
 			uniform vec2 screen_scale;
 			uniform float tex_info[6];
 			void main() {
 				tex_pos = vertex_pos.xy - vec2(tex_info[0], tex_info[1]);
-				gl_Position = vec4(vertex_pos * screen_scale - vec2(1.0, -1.0), 0.0, 1.0);
+				gl_Position = vec4((vertex_pos + translate) * screen_scale - vec2(1.0, -1.0), 0.0, 1.0);
 			}`,
 			`#version 300 es
 			precision highp float;
@@ -53,6 +65,7 @@ class GlassInstance {
 		this.uniforms.color = this.gl.getUniformLocation(this.program, "color") as WebGLUniformLocation
 		this.uniforms.texInfo = this.gl.getUniformLocation(this.program, "tex_info") as WebGLUniformLocation
 		this.uniforms.screenScale = this.gl.getUniformLocation(this.program, "screen_scale") as WebGLUniformLocation
+		this.uniforms.translate = this.gl.getUniformLocation(this.program, "translate") as WebGLUniformLocation
 		window.addEventListener("resize", (e) => {
 			this.width = window.innerWidth
 			this.height = window.innerHeight
@@ -74,6 +87,12 @@ class GlassInstance {
 		frameCallback()
 	}
 
+	public translate(x: number, y: number) {
+		this.translation[0] += x
+		this.translation[1] += y
+		this.gl.uniform2fv(this.uniforms.translate, this.translation)
+	}
+
 	public newTexture(): WebGLTexture {
 		const texture = this.gl.createTexture() as WebGLTexture
 		this.gl.bindTexture(this.gl.TEXTURE_2D, texture)
@@ -92,6 +111,20 @@ class GlassInstance {
 	}
 
 	public rect(x: number, y: number, w: number, h: number) {
+		this.gl.uniform4fv(this.uniforms.color, this.drawColor)
+		this.vertexData[0] = x
+		this.vertexData[1] = y
+		this.vertexData[2] = x + w
+		this.vertexData[3] = y
+		this.vertexData[4] = x + w
+		this.vertexData[5] = y + h
+		this.vertexData[6] = x
+		this.vertexData[7] = y + h
+		this.gl.bufferData(this.gl.ARRAY_BUFFER, this.vertexData, this.gl.DYNAMIC_DRAW)
+		this.gl.drawArrays(this.gl.LINE_LOOP, 0, 4)
+	}
+
+	public fillRect(x: number, y: number, w: number, h: number) {
 		this.vertexData[0] = x
 		this.vertexData[1] = y
 		this.vertexData[2] = x + w
@@ -112,13 +145,10 @@ class GlassInstance {
 		this.gl.depthFunc(this.gl.LEQUAL)
 		this.gl.enable(this.gl.BLEND)
 		this.gl.blendFunc(this.gl.SRC_ALPHA, this.gl.ONE_MINUS_SRC_ALPHA)
-		this.physics(delta)
-		this.frameFn(delta)
-		this.scene.render()
-	}
-
-	private physics(delta: number) {
 		this.physicsFn(delta)
+		this.frameFn(delta)
+		this.scene.render(delta)
+		this.frameCount++
 	}
 }
 

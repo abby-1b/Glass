@@ -1,4 +1,5 @@
 #!/usr/bin/env -S deno run -A --unstable
+
 async function buildTS(ts: string): Promise<string> {
 	return (await Deno.emit("/mod.ts", {
 		sources: { "/mod.ts": ts },

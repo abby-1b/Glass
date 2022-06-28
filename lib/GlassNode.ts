@@ -1,4 +1,5 @@
 import { Vec2 } from "./Math"
+import { Glass } from "./Glass"
 
 export class GlassNode {
 	static id = 0
@@ -6,6 +7,8 @@ export class GlassNode {
 	static removeNode(id: number) {
 		GlassNode.allNodes[id] = undefined
 	}
+
+	private nodeName: string
 
 	id: number
 	pos: Vec2 = new Vec2(0, 0)
@@ -18,12 +21,31 @@ export class GlassNode {
 		GlassNode.allNodes.push(this)
 	}
 
-	public has(...nodes: GlassNode[]) {
-		this.children.push(...nodes)
+	public name(name: string): this {
+		this.nodeName = name
+		return this
+	}
+	public get(name: string, supressError = false): GlassNode | undefined {
+		if (this.nodeName == name) return this
+		for (let c = 0; c < this.children.length; c++)
+			if (this.children[c].get(name, true)) return this.children[c]
+		if (!supressError) console.log("Node `" + name + "` not found")
 	}
 
-	public render() {
+	public edit(fn: (self: this) => void) {
+		fn(this)
+		return this
+	}
+
+	public has(...nodes: GlassNode[]): this {
+		this.children.push(...nodes)
+		return this
+	}
+
+	public render(delta: number) {
+		Glass.translate(this.pos.x, this.pos.y)
 		for (let c = 0; c < this.children.length; c++)
-			this.children[c].render()
+			this.children[c].render(delta)
+		Glass.translate(-this.pos.x, -this.pos.y)
 	}
 }

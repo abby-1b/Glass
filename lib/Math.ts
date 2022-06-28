@@ -23,6 +23,22 @@ export class Vec2 {
 	divVec(v: Vec2) { this.x /= v.x, this.y /= v.y }
 	divRet(x: number, y: number) { return new Vec2(this.x / x, this.y / y) }
 
+	powRet(x: number, y: number) { return new Vec2(this.x ** x, this.y ** y) }
+
+	rotated(angle: number) {
+		const c = Math.cos(angle)
+		const s = Math.sin(angle)
+		return new Vec2(
+			c * this.x - s * this.y,
+			s * this.x + c * this.y
+		)
+	}
+
+	lerp(x: number, y: number, i: number) {
+		this.x = (1 - i) * this.x + i * x
+		this.y = (1 - i) * this.y + i * y
+	}
+
 	len() { return Math.sqrt(this.x + this.y) }
 	normalize() { const m = Math.sqrt(this.x + this.y); this.x /= m, this.y /= m }
 	normalizeRet() { const m = Math.sqrt(this.x + this.y); return new Vec2(this.x / m, this.y / m) }
@@ -39,4 +55,16 @@ export class Rect {
 		this.width = width
 		this.height = height
 	}
+
+	virtualOvelap() {
+		
+	}
+}
+
+export function rand(to: number) {
+	return Math.random() * to
+}
+
+export function lerp(a: number, b: number, i: number) {
+	return (1 - i) * a + i * b
 }
