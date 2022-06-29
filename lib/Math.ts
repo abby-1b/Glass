@@ -39,9 +39,13 @@ export class Vec2 {
 		this.y = (1 - i) * this.y + i * y
 	}
 
-	len() { return Math.sqrt(this.x + this.y) }
-	normalize() { const m = Math.sqrt(this.x + this.y); this.x /= m, this.y /= m }
-	normalizeRet() { const m = Math.sqrt(this.x + this.y); return new Vec2(this.x / m, this.y / m) }
+	len() { return Math.hypot(this.x, this.y) }
+	normalize() { const m = Math.hypot(this.x, this.y); this.x /= m, this.y /= m }
+	normalizeRet() { const m = Math.hypot(this.x, this.y); return new Vec2(this.x / m, this.y / m) }
+
+	dist(v: Vec2) {
+		return Math.hypot(this.x - v.x, this.y - v.y)
+	}
 }
 
 export class Rect {

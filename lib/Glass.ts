@@ -8,6 +8,9 @@ class GlassInstance {
 	height: number = 0
 	scene: Scene
 
+	mouseX: number = 0
+	mouseY: number = 0
+
 	public frameCount = 0
 
 	private program: WebGLProgram
@@ -85,6 +88,12 @@ class GlassInstance {
 			window.requestAnimationFrame(frameCallback)
 		}
 		frameCallback()
+
+		// Inputs
+		window.addEventListener("mousemove", (e) => {
+			this.mouseX = e.clientX
+			this.mouseY = e.clientY
+		})
 	}
 
 	public translate(x: number, y: number) {

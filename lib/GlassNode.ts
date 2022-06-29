@@ -13,7 +13,7 @@ export class GlassNode {
 	id: number
 	pos: Vec2 = new Vec2(0, 0)
 	size: Vec2 = new Vec2(0, 0)
-
+	showHitbox: boolean = true
 	children: GlassNode[] = []
 
 	constructor() {
@@ -46,6 +46,12 @@ export class GlassNode {
 		Glass.translate(this.pos.x, this.pos.y)
 		for (let c = 0; c < this.children.length; c++)
 			this.children[c].render(delta)
+		// Draw hitbox
+		if (this.showHitbox) {
+			Glass.colorf(255, 0, 0)
+			Glass.rect(0, 0, this.size.x, this.size.y)
+		}
+
 		Glass.translate(-this.pos.x, -this.pos.y)
 	}
 }
