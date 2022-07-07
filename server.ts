@@ -1,12 +1,22 @@
 #!/usr/bin/env -S deno run -A --unstable
 
-async function buildTS(ts: string): Promise<string> {
-	return (await Deno.emit("/mod.ts", {
-		sources: { "/mod.ts": ts },
+const cache: {[key: string]: [number, string]} = {}
+async function buildTSPath(path: string): Promise<string> {
+	let editTime = Math.random()
+	const t = (await Deno.stat(path)).mtime
+	if (t != null) editTime = t.getTime()
+	if (path in cache && cache[path][0] == editTime)
+		return cache[path][1]
+	const code = await Deno.readTextFile(path)
+	const compiled: string = (await Deno.emit("/mod.ts", {
+		sources: { "/mod.ts": code },
+		check: false
 	})).files["file:///mod.ts.js"].replace(/\s*export {}(;|)\s*/g, "")
+	cache[path] = [editTime, compiled]
+	return compiled
 }
 
-async function genHTML(title = "Untitled Project", shorten = false): Promise<string> {
+function genHTML(title = "Untitled Project"): string {
 	return `
 	<head>
 		<title>${title}</title>
@@ -58,7 +68,7 @@ async function serveHttp(conn: Deno.Conn): Promise<void> {
 			} else {
 				// Not a directory
 				if (ext == "ts") {
-					body = await buildTS(await Deno.readTextFile(path))
+					body = await buildTSPath(path)
 					type = "text/javascript"
 				} else {
 					body = Deno.readFileSync(path)
@@ -68,12 +78,12 @@ async function serveHttp(conn: Deno.Conn): Promise<void> {
 			// Path doesn't exist
 			try {
 				// Maybe it's a ts file?
-				body = await buildTS(await Deno.readTextFile(path + ".ts"))
+				body = await buildTSPath(path + ".ts")
 				type = "text/javascript"
 			} catch (_ee) {
 				code = 404
 				if (ext == "html") {
-					body = await genHTML(path.split("/").slice(-2)[0], true)
+					body = genHTML(path.split("/").slice(-2)[0])
 					type = "text/html"
 					code = 200
 				}
