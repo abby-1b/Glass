@@ -5,23 +5,30 @@ export class Vec2 {
 	constructor(x: number, y: number) { this.x = x, this.y = y }
 
 	set(x: number, y: number) { this.x = x, this.y = y }
+	setVec(v: Vec2) { this.x = v.x, this.y = v.y }
+	setX(x: number) { this.x = x }
+	setY(y: number) { this.y = y }
 	copy() { return new Vec2(this.x, this.y) }
 
 	add(x: number, y: number) { this.x += x, this.y += y }
-	addVec(v: Vec2) { this.x += v.x, this.y += v.y }
 	addRet(x: number, y: number) { return new Vec2(this.x + x, this.y + y) }
+	addVec(v: Vec2) { this.x += v.x, this.y += v.y }
+	addVecRet(v: Vec2) { return new Vec2(this.x + v.x, this.y + v.y) }
 
 	sub(x: number, y: number) { this.x -= x, this.y -= y }
-	subVec(v: Vec2) { this.x -= v.x, this.y -= v.y }
 	subRet(x: number, y: number) { return new Vec2(this.x - x, this.y - y) }
+	subVec(v: Vec2) { this.x -= v.x, this.y -= v.y }
+	subVecRet(v: Vec2) { return new Vec2(this.x - v.x, this.y - v.y) }
 
 	mul(x: number, y: number) { this.x *= x, this.y *= y }
-	mulVec(v: Vec2) { this.x *= v.x, this.y *= v.y }
 	mulRet(x: number, y: number) { return new Vec2(this.x * x, this.y * y) }
+	mulVec(v: Vec2) { this.x *= v.x, this.y *= v.y }
+	mulVecRet(v: Vec2) { return new Vec2(this.x * v.x, this.y * v.y) }
 
 	div(x: number, y: number) { this.x /= x, this.y /= y }
-	divVec(v: Vec2) { this.x /= v.x, this.y /= v.y }
 	divRet(x: number, y: number) { return new Vec2(this.x / x, this.y / y) }
+	divVec(v: Vec2) { this.x /= v.x, this.y /= v.y }
+	divVecRet(v: Vec2) { return new Vec2(this.x / v.x, this.y / v.y) }
 
 	powRet(x: number, y: number) { return new Vec2(this.x ** x, this.y ** y) }
 
@@ -38,10 +45,20 @@ export class Vec2 {
 		this.x = (1 - i) * this.x + i * x
 		this.y = (1 - i) * this.y + i * y
 	}
+	lerpVec(v: Vec2, i: number) {
+		this.x = (1 - i) * this.x + i * v.x
+		this.y = (1 - i) * this.y + i * v.y
+	}
 
 	len() { return Math.hypot(this.x, this.y) }
-	normalize() { const m = Math.hypot(this.x, this.y); this.x /= m, this.y /= m }
-	normalizeRet() { const m = Math.hypot(this.x, this.y); return new Vec2(this.x / m, this.y / m) }
+	normalize() {
+		if (this.x == 0 && this.y == 0) return
+		const m = Math.hypot(this.x, this.y); this.x /= m, this.y /= m
+	}
+	normalizeRet() {
+		if (this.x == 0 && this.y == 0) return new Vec2(0, 0)
+		const m = Math.hypot(this.x, this.y); return new Vec2(this.x / m, this.y / m)
+	}
 
 	dist(v: Vec2) {
 		return Math.hypot(this.x - v.x, this.y - v.y)
