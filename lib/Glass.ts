@@ -1,6 +1,7 @@
 import { GlassNode } from "./GlassNode"
 import { Scene } from "./Scene"
-import { Vec2 } from "./Math"
+import { Editor } from "./Editor"
+import { Rect, Vec2 } from "./Math"
 
 class GlassInstance {
 	protected frameFn = (delta: number) => {}
@@ -30,6 +31,9 @@ class GlassInstance {
 	public texData = new Float32Array(6)
 	public uniforms: {[key: string]: WebGLUniformLocation} = {}
 	public translation: [number, number] = [0, 0]
+
+	static fontLetters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!?[]_*|+-/\\.()@\"',<>&:%\n"
+	protected fontTexture: WebGLTexture
 
 	constructor() {}
 
@@ -83,6 +87,7 @@ class GlassInstance {
 		window.addEventListener("resize", (e) => {
 			this.width = window.innerWidth
 			this.height = window.innerHeight
+			this.scene.size.set(this.width, this.height)
 			this.gl.canvas.width = this.width
 			this.gl.canvas.height = this.height
 			this.gl.viewport(0, 0, this.width, this.height)
@@ -99,6 +104,17 @@ class GlassInstance {
 			window.requestAnimationFrame(frameCallback)
 		}
 		frameCallback()
+
+		// Setup text rendering
+		this.fontTexture = this.newTexture()
+		const fontImg = new Image()
+		fontImg.onload = () => {
+			this.gl.bindTexture(this.gl.TEXTURE_2D, this.fontTexture)
+			this.gl.texImage2D(this.gl.TEXTURE_2D, 0, this.gl.RGBA, this.gl.RGBA, this.gl.UNSIGNED_BYTE, fontImg)
+			fontImg.onload = null
+		}
+		fontImg.src = "../../lib/font.png"
+		// fontImg.src = "data:image/bmp;base64,Qk0WDgAAAAAAADYAAAAoAAAAJwEAAAQAAAABABgAAAAAAOANAAASCwAAEgsAAAAAAAAAAAAAAAAA////////AAAA////AAAAAAAAAAAA////////////AAAAAAAAAAAA////AAAAAAAAAAAA////////AAAAAAAAAAAAAAAA////AAAA////////////////////AAAAAAAAAAAA////AAAA////////AAAA////AAAAAAAAAAAAAAAA////////AAAAAAAA////////AAAA////AAAAAAAA////AAAAAAAAAAAAAAAA////AAAA////////AAAA////AAAA////////AAAA////////AAAAAAAA////////AAAA////////////////////AAAAAAAAAAAA////AAAA////////AAAA////AAAAAAAAAAAAAAAA////////////AAAA////////////AAAAAAAA////////////////AAAA////////AAAAAAAAAAAA////////AAAAAAAA////AAAA////////AAAA////////////AAAAAAAAAAAAAAAA////AAAAAAAAAAAAAAAA////////AAAAAAAA////////AAAAAAAAAAAAAAAA////AAAAAAAAAAAAAAAA////////////AAAAAAAA////AAAAAAAAAAAAAAAA////AAAAAAAAAAAAAAAA////AAAAAAAA////////////////AAAAAAAAAAAA////////////AAAAAAAA////////AAAAAAAA////////////AAAAAAAA////////////AAAAAAAAAAAA////AAAAAAAAAAAA////////AAAAAAAAAAAAAAAA////////////////////////////AAAAAAAA////////////AAAAAAAA////////////////////////////AAAAAAAA////////////////////AAAAAAAA////////AAAAAAAA////////////////AAAAAAAA////AAAAAAAA////////////AAAAAAAAAAAAAAAA////////////////////////////////////////////////AAAA////////////////////AAAAAAAA////AAAAAAAA////////////////AAAAAAAAAAAA////////AAAA////////////AAAA////////AAAA////AAAAAAAAAAAAAAAAAAAA////AAAAAAAA////AAAA////AAAA////////////////AAAA////////AAAA////AAAAAAAAAAAA////////AAAAAAAAAAAA////////AAAA////////AAAA////AAAAAAAAAAAAAAAA////////AAAA////////////AAAA////////AAAA////AAAAAAAA////////////AAAA////////////////AAAA////////AAAA////AAAA////////AAAA////AAAA////////AAAA////AAAAAAAAAAAA////////AAAA////AAAAAAAA////AAAAAAAAAAAA////////////////////AAAA////////////AAAA////////AAAA////////AAAA////////AAAA////AAAA////AAAAAAAA////AAAA////////AAAAAAAA////////////AAAA////////////AAAA////////////////AAAAAAAA////AAAA////////AAAAAAAA////////AAAAAAAA////////////////////AAAAAAAA////AAAAAAAAAAAAAAAA////////////AAAAAAAA////AAAAAAAAAAAAAAAA////////AAAAAAAA////////AAAAAAAA////AAAA////AAAAAAAAAAAAAAAA////////////////////////////////////////////////AAAAAAAA////////////AAAAAAAA////////////////////////////////AAAAAAAA////////////AAAAAAAA////////AAAAAAAAAAAAAAAA////AAAAAAAAAAAAAAAA////////AAAAAAAA////////////AAAAAAAA////////////////////////////////AAAAAAAA////////////AAAAAAAA////////////////////AAAA////////////////////////////////////////////////AAAA////////////////AAAAAAAA////////////AAAAAAAA////////AAAA////AAAA////////////////////////////////AAAA////////////AAAAAAAA////////AAAA////AAAA////AAAAAAAA////AAAA////////////////AAAA////////AAAA////AAAA////////////////AAAA////////////////AAAA////////////////AAAA////////AAAA////////AAAA////////////////////////AAAA////AAAA////AAAA////////AAAA////////////////AAAAAAAA////AAAA////AAAA////////AAAA////AAAA////////AAAA////AAAA////////AAAA////AAAA////////AAAA////AAAA////////AAAA////AAAA////////////////////////AAAA////////AAAA////////AAAA////AAAA////////AAAA////AAAA////////AAAA////////AAAAAAAA////////AAAA////AAAA////////////////////AAAA////AAAAAAAA////AAAA////////AAAAAAAA////////////////AAAAAAAA////////AAAAAAAAAAAA////AAAA////AAAAAAAA////AAAAAAAA////////////AAAAAAAA////////////////////AAAAAAAA////AAAA////AAAAAAAA////AAAA////AAAAAAAA////////AAAAAAAA////////////////AAAAAAAA////////AAAAAAAA////////////AAAAAAAA////////////////////////////////AAAAAAAA////////////AAAAAAAA////////AAAAAAAAAAAAAAAA////AAAAAAAAAAAAAAAA////////AAAAAAAA////////////AAAAAAAA////////////////////////////////AAAAAAAA////////////AAAAAAAA////////AAAAAAAA////AAAA////AAAA////AAAA////////////AAAA////////////////////////////////////////AAAAAAAA////AAAAAAAA////////////////AAAA////AAAA////////AAAA////////////////////AAAA////////AAAA////AAAAAAAA////////AAAAAAAAAAAA////////////AAAAAAAAAAAA////AAAAAAAAAAAA////////AAAAAAAAAAAAAAAA////AAAAAAAAAAAAAAAA////////AAAAAAAAAAAA////AAAA////////AAAA////AAAAAAAAAAAAAAAA////////AAAAAAAAAAAA////AAAA////////AAAA////AAAA////////////////AAAAAAAAAAAAAAAA////AAAAAAAAAAAA////////////AAAAAAAA////////AAAAAAAAAAAA////////////AAAAAAAA////////AAAAAAAAAAAA////////AAAAAAAAAAAAAAAA////AAAAAAAAAAAAAAAA////AAAA////////AAAA////AAAA////////AAAA////AAAA////////AAAA////AAAAAAAA////AAAA////AAAA////////AAAA////AAAAAAAAAAAAAAAA////AAAAAAAAAAAAAAAA////AAAAAAAAAAAA////////AAAAAAAAAAAAAAAA////AAAAAAAAAAAAAAAA////AAAA////AAAAAAAA////AAAAAAAAAAAAAAAA////AAAAAAAAAAAAAAAA////AAAAAAAAAAAAAAAA////AAAAAAAAAAAA////////AAAAAAAAAAAAAAAA////////AAAAAAAA////////AAAAAAAAAAAAAAAA////////AAAAAAAAAAAA////AAAAAAAAAAAA////////////////////////////////////////////////////AAAAAAAA////////////AAAAAAAA////////////////////////////////////AAAAAAAA////AAAAAAAA////////////////////////////////////////AAAAAAAA////AAAAAAAA////////////AAAAAAAAAAAAAAAA////AAAA////AAAA////////////AAAA////////////////////////////////////////////////////////////////////////////////AAAA////////////////////////////AAAA////////AAAA////AAAA"
 
 		// Inputs
 		window.addEventListener("mousemove", (e) => {
@@ -226,6 +242,34 @@ class GlassInstance {
 		this.gl.drawArrays(this.gl.TRIANGLE_STRIP, 0, 4)
 	}
 
+	public text(txt: string, x: number, y: number) {
+		txt = txt.toUpperCase()
+		this.gl.bindTexture(this.gl.TEXTURE_2D, this.fontTexture)
+		const size = 8
+		for (let c = 0; c < txt.length; c++) {
+			if (txt[c] == " ") continue
+			const ofs = size * 1.25 * c
+			this.vertexData[0] = x + ofs
+			this.vertexData[1] = y
+			this.vertexData[2] = x + size + ofs
+			this.vertexData[3] = y
+			this.vertexData[4] = x + ofs
+			this.vertexData[5] = y + size
+			this.vertexData[6] = x + size + ofs
+			this.vertexData[7] = y + size
+			this.gl.bufferData(Glass.gl.ARRAY_BUFFER, Glass.vertexData, Glass.gl.DYNAMIC_DRAW)
+			this.texData[0] = this.vertexData[0]
+			this.texData[1] = this.vertexData[1]
+			this.texData[2] = (GlassInstance.fontLetters.indexOf(txt[c])) * 5 / 295
+			this.texData[3] = 0
+			this.texData[4] = 4 / 295 / size
+			this.texData[5] = 1 / size
+			this.gl.uniform1fv(this.uniforms.texInfo, this.texData)
+			this.gl.uniform4fv(this.uniforms.color, [1, 1, 1, -1])
+			this.gl.drawArrays(this.gl.TRIANGLE_STRIP, 0, 4)
+		}
+	}
+
 	protected frame(delta: number) {
 		if (delta > 3) delta = 1
 		this.lastDelta = delta
@@ -241,6 +285,9 @@ class GlassInstance {
 		this.physicsFn(delta), this.scene.physics(delta)
 		this.frameFn(delta)
 		this.scene.render(delta)
+
+		Editor.render()
+
 		this.frameCount++
 	}
 }
@@ -261,7 +308,7 @@ function buildSP(gl: WebGL2RenderingContext, vert: string, frag: string): WebGLP
 	return program
 }
 
-export const Glass = new GlassInstance();
+export const Glass = new GlassInstance()
 
 export function globalize(dict: {[key: string]: any}) {
 	window[Object.keys(dict)[0]] = dict[Object.keys(dict)[0]]
