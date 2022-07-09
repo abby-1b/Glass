@@ -4,7 +4,7 @@ import { Glass } from "./Glass";
 
 export class PhysicsBody extends GlassNode {
 	mass: number
-	static friction = new Vec2(0.9, 0.9)
+	static friction = new Vec2(0.93, 0.992)
 	static bodies: PhysicsBody[] = []
 
 	friction = new Vec2(1, 1)
@@ -17,10 +17,21 @@ export class PhysicsBody extends GlassNode {
 }
 
 export class PhysicsActor extends PhysicsBody {
-	velocity: Vec2 = new Vec2(0, 0)
+	static gravity = new Vec2(0, 0.04)
+	// static zeroVel = new Vec2(0.01, 0.01)
 
-	public render(delta: number) {
-		// Physics calculations
+	velocity: Vec2 = new Vec2(0, 0)
+	touchedFlags = 0
+	static BOTTOM = 1
+	static TOP = 2
+	static LEFT = 4
+	static RIGHT = 8
+
+	isStatic = false
+
+	public physics(delta: number) {
+		this.touchedFlags = 0
+		this.velocity.addVec(PhysicsActor.gravity.mulRet(delta, delta))
 		this.velocity.mulVec(PhysicsBody.friction.powRet(delta, delta))
 		this.pos.addVec(this.velocity.mulRet(delta, delta))
 		for (let o = 0; o < PhysicsBody.bodies.length; o++) {
@@ -29,7 +40,7 @@ export class PhysicsActor extends PhysicsBody {
 				(this.size.x + this.size.y + PhysicsBody.bodies[o].size.x + PhysicsBody.bodies[o].size.y)) continue
 			this.avoidCollision(PhysicsBody.bodies[o])
 		}
-		super.render(delta)
+		if (this.velocity.x == 0 && this.velocity.y == 0) this.isStatic = false
 	}
 
 	private intersects(obj: PhysicsBody): boolean {
@@ -48,13 +59,14 @@ export class PhysicsActor extends PhysicsBody {
 			(this.pos.y + this.size.y) - obj .pos.y,
 			(obj .pos.y + obj .size.y) - this.pos.y
 		]
-		if (overlaps[0] < overlaps[1] && overlaps[0] < overlaps[2] && overlaps[0] < overlaps[3])
-			this.velocity.x = 0, this.pos.x -= overlaps[0]
-		else if (overlaps[1] < overlaps[2] && overlaps[1] < overlaps[3])
-			this.velocity.x = 0, this.pos.x += overlaps[1]
-		else if (overlaps[2] < overlaps[3])
-			this.velocity.y = 0, this.pos.y -= overlaps[2]
-		else
-			this.velocity.y = 0, this.pos.y += overlaps[3]
+		if (overlaps[0] < overlaps[1] && overlaps[0] < overlaps[2] && overlaps[0] < overlaps[3]) {
+			this.velocity.x = Math.max(this.velocity.x, 0), this.pos.x -= overlaps[0], this.touchedFlags |= PhysicsActor.RIGHT
+		} else if (overlaps[1] < overlaps[2] && overlaps[1] < overlaps[3]) {
+			this.velocity.x = Math.min(this.velocity.x, 0), this.pos.x += overlaps[1], this.touchedFlags |= PhysicsActor.LEFT
+		} else if (overlaps[2] < overlaps[3]) {
+			this.velocity.y = Math.min(this.velocity.y, 0), this.pos.y -= overlaps[2], this.touchedFlags |= PhysicsActor.BOTTOM
+		} else {
+			this.velocity.y = Math.max(this.velocity.y, 0), this.pos.y += overlaps[3], this.touchedFlags |= PhysicsActor.TOP
+		}
 	}
 }
