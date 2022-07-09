@@ -1,46 +1,94 @@
-import { Glass } from "../../lib/Glass"
+import { Glass, globalize } from "../../lib/Glass"
 import { Sprite } from "../../lib/Sprite"
 import { PhysicsActor, PhysicsBody } from "../../lib/Physics"
-import { rand, Vec2 } from "../../lib/Math";
+import { Vec2 } from "../../lib/Math";
+import { disposeEmitNodes } from "typescript";
 
+const bodies: PhysicsActor[] = []
 let player: PhysicsActor
 let platform: PhysicsBody
 
 function setup() {
 	console.log(Glass)
+	Glass.pixelated()
 	Glass.scene.has(
 		new PhysicsActor()
 			.name("Player")
 			.has(
-				new Sprite("Assets/test.png")
-				.edit((spr) => { spr.size.x = 64, spr.size.y = 64 })
+				new Sprite("Assets/player.png")
+					.edit((spr) => {
+						spr.rect.width = 16
+						spr.rect.height = 16
+						spr.size.set(16, 16)
+						spr.pos.setX(-3)
+						spr.showHitbox = false
+					})
 			).edit(self => {
-				self.pos.x = Glass.width / 2 - 32
-				self.pos.y = Glass.height / 2 - 32
-				self.size.x = 64, self.size.y = 64
+				self.pos.x = Glass.width / 2 - 8
+				self.pos.y = Glass.height / 2 - 16
+				self.size.set(10, 16)
 			}),
 		new PhysicsBody()
 			.name("Platform")
 			.has(
 				new Sprite("Assets/test.png")
-				.edit((spr) => { spr.size.x = 128, spr.size.y = 32, spr.rect.width = 48 })
+					.edit((spr) => { spr.size.x = 1024, spr.size.y = 32, spr.rect.width = 384 })
 			).edit(self => {
-				self.pos.x = Glass.width / 2 - 64
+				self.pos.x = Glass.width / 2 - 512
 				self.pos.y = Glass.height / 2 - 16
-				self.size.x = 128, self.size.y = 32
+				self.size.x = 1024, self.size.y = 32
 			}),
 	)
 	player = Glass.scene.get("Player") as PhysicsActor
 	platform = Glass.scene.get("Platform") as PhysicsBody
+
+	Glass.onInput([" ", "w", "ArrowUp"], "jump", () => {
+		if (player.touchedFlags & PhysicsActor.BOTTOM)
+			player.velocity.setY(-Glass.lastDelta * 2)
+		else
+			die()
+	})
+	Glass.onInput(["a", "A", "ArrowLeft"], "left")
+	Glass.onInput(["d", "D", "ArrowRight"], "right")
+
+	globalize({player})
 }
 
 function frame(delta: number) {
-	player.pos.lerp(Glass.width / 2 - 32, Glass.height / 2 - 32, 0.05)
-	// player.velocity.addVec(player.pos.subRet(Glass.mouseX - 32, Glass.mouseY - 32).mulRet(-0.1, -0.1))
-	// Glass.rect(player.pos.x + player.velocity.x * delta, player.pos.y + player.velocity.y * delta, player.size.x, player.size.y)
-	if (Glass.frameCount % 20 == 0) {
-		player.velocity.addVec(new Vec2(20, 0).rotated(rand(Math.PI * 2)))
-	}
+	let movX = 0
+	if (Glass.ongoing("left")) movX--
+	if (Glass.ongoing("right")) movX++
+	// if (Glass.frameCount % 20 == 0) console.log(Glass.events)
+	player.velocity.add(movX * 0.35, 0)
+	Glass.follow(player)
+	;(player.children[0] as Sprite).flipped = (player.velocity.x < 0)
+}
+
+function die() {
+	Glass.scene.has(
+		new PhysicsActor()
+			.name("Body")
+			.has(
+				new Sprite("Assets/player.png")
+					.edit((spr) => {
+						spr.rect.width = 16
+						spr.rect.height = 16
+						spr.frame = 8 + Math.floor(Math.random() * 3)
+						spr.size.set(16, 16)
+						spr.pos.set(-1, -7)
+						spr.showHitbox = false
+						spr.flipped = (player.children[0] as Sprite).flipped
+					})
+			).edit(self => {
+				self.pos.setVec(player.pos)
+				self.size.set(14, 9)
+				self.velocity.setVec(player.velocity)
+			})
+	)
+
+	player.velocity.set(0, 0)
+	player.pos.set(0, 0)
+	// bodies.push()
 }
 
 Glass.init(setup, frame, () => {})
