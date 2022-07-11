@@ -14,7 +14,7 @@ class GlassInstance {
 	isPixelated = false
 
 	/** All events that exist */
-	protected eventFunctions: {[key: string]: () => void} = {}
+	protected eventFunctions: {[key: string]: (() => void)[]} = {}
 	protected allEvents: {[key: string]: string[]} = {}
 	/** Currently ongoing events list */
 	events: string[] = []
@@ -32,7 +32,7 @@ class GlassInstance {
 	public uniforms: {[key: string]: WebGLUniformLocation} = {}
 	public translation: [number, number] = [0, 0]
 
-	static fontLetters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!?[]_*|+-/\\.()@\"',<>&:%\n"
+	static fontLetters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!?[]_*|+-/\\.()@\"',<>&:%#"
 	protected fontTexture: WebGLTexture
 
 	constructor() {}
@@ -50,7 +50,7 @@ class GlassInstance {
 		this.frameFn = frame === undefined ? () => {} : frame
 		this.physicsFn = physics === undefined ? () => {} : physics
 
-		this.scene = new Scene()
+		this.scene = new Scene().name("Root")
 
 		this.gl = document.body.appendChild(document.createElement("canvas")).getContext("webgl2") as WebGL2RenderingContext
 		this.program = buildSP(this.gl, `#version 300 es
@@ -114,7 +114,6 @@ class GlassInstance {
 			fontImg.onload = null
 		}
 		fontImg.src = "../../lib/font.png"
-		// fontImg.src = "data:image/bmp;base64,Qk0WDgAAAAAAADYAAAAoAAAAJwEAAAQAAAABABgAAAAAAOANAAASCwAAEgsAAAAAAAAAAAAAAAAA////////AAAA////AAAAAAAAAAAA////////////AAAAAAAAAAAA////AAAAAAAAAAAA////////AAAAAAAAAAAAAAAA////AAAA////////////////////AAAAAAAAAAAA////AAAA////////AAAA////AAAAAAAAAAAAAAAA////////AAAAAAAA////////AAAA////AAAAAAAA////AAAAAAAAAAAAAAAA////AAAA////////AAAA////AAAA////////AAAA////////AAAAAAAA////////AAAA////////////////////AAAAAAAAAAAA////AAAA////////AAAA////AAAAAAAAAAAAAAAA////////////AAAA////////////AAAAAAAA////////////////AAAA////////AAAAAAAAAAAA////////AAAAAAAA////AAAA////////AAAA////////////AAAAAAAAAAAAAAAA////AAAAAAAAAAAAAAAA////////AAAAAAAA////////AAAAAAAAAAAAAAAA////AAAAAAAAAAAAAAAA////////////AAAAAAAA////AAAAAAAAAAAAAAAA////AAAAAAAAAAAAAAAA////AAAAAAAA////////////////AAAAAAAAAAAA////////////AAAAAAAA////////AAAAAAAA////////////AAAAAAAA////////////AAAAAAAAAAAA////AAAAAAAAAAAA////////AAAAAAAAAAAAAAAA////////////////////////////AAAAAAAA////////////AAAAAAAA////////////////////////////AAAAAAAA////////////////////AAAAAAAA////////AAAAAAAA////////////////AAAAAAAA////AAAAAAAA////////////AAAAAAAAAAAAAAAA////////////////////////////////////////////////AAAA////////////////////AAAAAAAA////AAAAAAAA////////////////AAAAAAAAAAAA////////AAAA////////////AAAA////////AAAA////AAAAAAAAAAAAAAAAAAAA////AAAAAAAA////AAAA////AAAA////////////////AAAA////////AAAA////AAAAAAAAAAAA////////AAAAAAAAAAAA////////AAAA////////AAAA////AAAAAAAAAAAAAAAA////////AAAA////////////AAAA////////AAAA////AAAAAAAA////////////AAAA////////////////AAAA////////AAAA////AAAA////////AAAA////AAAA////////AAAA////AAAAAAAAAAAA////////AAAA////AAAAAAAA////AAAAAAAAAAAA////////////////////AAAA////////////AAAA////////AAAA////////AAAA////////AAAA////AAAA////AAAAAAAA////AAAA////////AAAAAAAA////////////AAAA////////////AAAA////////////////AAAAAAAA////AAAA////////AAAAAAAA////////AAAAAAAA////////////////////AAAAAAAA////AAAAAAAAAAAAAAAA////////////AAAAAAAA////AAAAAAAAAAAAAAAA////////AAAAAAAA////////AAAAAAAA////AAAA////AAAAAAAAAAAAAAAA////////////////////////////////////////////////AAAAAAAA////////////AAAAAAAA////////////////////////////////AAAAAAAA////////////AAAAAAAA////////AAAAAAAAAAAAAAAA////AAAAAAAAAAAAAAAA////////AAAAAAAA////////////AAAAAAAA////////////////////////////////AAAAAAAA////////////AAAAAAAA////////////////////AAAA////////////////////////////////////////////////AAAA////////////////AAAAAAAA////////////AAAAAAAA////////AAAA////AAAA////////////////////////////////AAAA////////////AAAAAAAA////////AAAA////AAAA////AAAAAAAA////AAAA////////////////AAAA////////AAAA////AAAA////////////////AAAA////////////////AAAA////////////////AAAA////////AAAA////////AAAA////////////////////////AAAA////AAAA////AAAA////////AAAA////////////////AAAAAAAA////AAAA////AAAA////////AAAA////AAAA////////AAAA////AAAA////////AAAA////AAAA////////AAAA////AAAA////////AAAA////AAAA////////////////////////AAAA////////AAAA////////AAAA////AAAA////////AAAA////AAAA////////AAAA////////AAAAAAAA////////AAAA////AAAA////////////////////AAAA////AAAAAAAA////AAAA////////AAAAAAAA////////////////AAAAAAAA////////AAAAAAAAAAAA////AAAA////AAAAAAAA////AAAAAAAA////////////AAAAAAAA////////////////////AAAAAAAA////AAAA////AAAAAAAA////AAAA////AAAAAAAA////////AAAAAAAA////////////////AAAAAAAA////////AAAAAAAA////////////AAAAAAAA////////////////////////////////AAAAAAAA////////////AAAAAAAA////////AAAAAAAAAAAAAAAA////AAAAAAAAAAAAAAAA////////AAAAAAAA////////////AAAAAAAA////////////////////////////////AAAAAAAA////////////AAAAAAAA////////AAAAAAAA////AAAA////AAAA////AAAA////////////AAAA////////////////////////////////////////AAAAAAAA////AAAAAAAA////////////////AAAA////AAAA////////AAAA////////////////////AAAA////////AAAA////AAAAAAAA////////AAAAAAAAAAAA////////////AAAAAAAAAAAA////AAAAAAAAAAAA////////AAAAAAAAAAAAAAAA////AAAAAAAAAAAAAAAA////////AAAAAAAAAAAA////AAAA////////AAAA////AAAAAAAAAAAAAAAA////////AAAAAAAAAAAA////AAAA////////AAAA////AAAA////////////////AAAAAAAAAAAAAAAA////AAAAAAAAAAAA////////////AAAAAAAA////////AAAAAAAAAAAA////////////AAAAAAAA////////AAAAAAAAAAAA////////AAAAAAAAAAAAAAAA////AAAAAAAAAAAAAAAA////AAAA////////AAAA////AAAA////////AAAA////AAAA////////AAAA////AAAAAAAA////AAAA////AAAA////////AAAA////AAAAAAAAAAAAAAAA////AAAAAAAAAAAAAAAA////AAAAAAAAAAAA////////AAAAAAAAAAAAAAAA////AAAAAAAAAAAAAAAA////AAAA////AAAAAAAA////AAAAAAAAAAAAAAAA////AAAAAAAAAAAAAAAA////AAAAAAAAAAAAAAAA////AAAAAAAAAAAA////////AAAAAAAAAAAAAAAA////////AAAAAAAA////////AAAAAAAAAAAAAAAA////////AAAAAAAAAAAA////AAAAAAAAAAAA////////////////////////////////////////////////////AAAAAAAA////////////AAAAAAAA////////////////////////////////////AAAAAAAA////AAAAAAAA////////////////////////////////////////AAAAAAAA////AAAAAAAA////////////AAAAAAAAAAAAAAAA////AAAA////AAAA////////////AAAA////////////////////////////////////////////////////////////////////////////////AAAA////////////////////////////AAAA////////AAAA////AAAA"
 
 		// Inputs
 		window.addEventListener("mousemove", (e) => {
@@ -133,7 +132,7 @@ class GlassInstance {
 						// the game state potentially being processed at the
 						// same time as the function gets ran.
 						if (this.eventFunctions[n])
-							this.eventFunctions[n]()
+							this.eventFunctions[n].forEach(f => f())
 					}
 				})
 			}
@@ -155,7 +154,7 @@ class GlassInstance {
 					if (!this.events.includes(n)) {
 						this.events.push(n)
 						if (this.eventFunctions[n])
-							this.eventFunctions[n]()
+							this.eventFunctions[n].forEach(f => f())
 					}
 				})
 		})
@@ -172,10 +171,17 @@ class GlassInstance {
 			// this.keysPressed.splice(0, this.keysPressed.length)
 			this.mouseDown = false
 		})
+
+		// Editor.init()
 	}
 
 	public onInput(triggers: string[], eventName: string, run?: () => void) {
-		if (run) this.eventFunctions[eventName] = run
+		if (run) {
+			if (eventName in this.eventFunctions)
+				this.eventFunctions[eventName].push(run)
+			else
+				this.eventFunctions[eventName] = [run]
+		}
 		triggers.forEach(t => {
 			if (typeof this.allEvents[t] === "undefined")
 				this.allEvents[t] = [eventName]
@@ -260,17 +266,19 @@ class GlassInstance {
 			this.gl.bufferData(Glass.gl.ARRAY_BUFFER, Glass.vertexData, Glass.gl.DYNAMIC_DRAW)
 			this.texData[0] = this.vertexData[0]
 			this.texData[1] = this.vertexData[1]
-			this.texData[2] = (GlassInstance.fontLetters.indexOf(txt[c])) * 5 / 295
+			this.texData[2] = (GlassInstance.fontLetters.indexOf(txt[c])) * 5 / 300
 			this.texData[3] = 0
-			this.texData[4] = 4 / 295 / size
+			this.texData[4] = 4 / 300 / size
 			this.texData[5] = 1 / size
 			this.gl.uniform1fv(this.uniforms.texInfo, this.texData)
-			this.gl.uniform4fv(this.uniforms.color, [1, 1, 1, -1])
+			this.gl.uniform4fv(this.uniforms.color, [this.drawColor[0], this.drawColor[1], this.drawColor[2], -this.drawColor[3]])
 			this.gl.drawArrays(this.gl.TRIANGLE_STRIP, 0, 4)
 		}
 	}
 
 	protected frame(delta: number) {
+		this.translation[0] = 0
+		this.translation[1] = 0
 		if (delta > 3) delta = 1
 		this.lastDelta = delta
 		this.gl.clearColor(0.7, 1, 1, 1)
@@ -286,7 +294,7 @@ class GlassInstance {
 		this.frameFn(delta)
 		this.scene.render(delta)
 
-		Editor.render()
+		// Editor.render()
 
 		this.frameCount++
 	}
@@ -311,5 +319,6 @@ function buildSP(gl: WebGL2RenderingContext, vert: string, frag: string): WebGLP
 export const Glass = new GlassInstance()
 
 export function globalize(dict: {[key: string]: any}) {
-	window[Object.keys(dict)[0]] = dict[Object.keys(dict)[0]]
+	Object.keys(dict).forEach(k => window[k] = dict[k])
 }
+globalize({Glass})
