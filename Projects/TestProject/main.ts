@@ -1,8 +1,7 @@
 import { Glass, globalize } from "../../lib/Glass"
 import { Sprite } from "../../lib/Sprite"
 import { PhysicsActor, PhysicsBody } from "../../lib/Physics"
-import { Vec2 } from "../../lib/Math";
-import { disposeEmitNodes } from "typescript";
+import { Vec2 } from "../../lib/Math"
 
 const bodies: PhysicsActor[] = []
 let player: PhysicsActor
