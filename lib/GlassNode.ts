@@ -8,7 +8,7 @@ export class GlassNode {
 		GlassNode.allNodes[id] = undefined
 	}
 
-	private nodeName: string
+	protected nodeName: string
 
 	id: number
 	pos: Vec2 = new Vec2(0, 0)
@@ -25,6 +25,9 @@ export class GlassNode {
 	public name(name: string): this {
 		this.nodeName = name
 		return this
+	}
+	public getName(unique = false) {
+		return (this.nodeName ?? this.constructor.name) + (unique ? "#" + this.id : "")
 	}
 	public get(name: string, supressError = false): GlassNode | undefined {
 		if (this.nodeName == name) return this
