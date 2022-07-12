@@ -85,8 +85,8 @@ class GlassInstance {
 		this.uniforms.screenScale = this.gl.getUniformLocation(this.program, "screen_scale") as WebGLUniformLocation
 		this.uniforms.translate = this.gl.getUniformLocation(this.program, "translate") as WebGLUniformLocation
 		window.addEventListener("resize", (e) => {
-			this.width = window.innerWidth
-			this.height = window.innerHeight
+			this.width = Math.ceil(window.innerWidth / 2)
+			this.height = Math.ceil(window.innerHeight / 2)
 			this.scene.size.set(this.width, this.height)
 			this.gl.canvas.width = this.width
 			this.gl.canvas.height = this.height

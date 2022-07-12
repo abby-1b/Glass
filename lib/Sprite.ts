@@ -3,7 +3,7 @@ import { GlassNode } from "./GlassNode"
 import { Rect } from "./Math"
 
 export class Sprite extends GlassNode {
-	texture: WebGLTexture
+	protected texture: WebGLTexture
 	textureWidth = -1
 	textureHeight = -1
 
