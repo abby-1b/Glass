@@ -45,6 +45,7 @@ async function serveHttp(conn: Deno.Conn): Promise<void> {
 	const httpConn = Deno.serveHttp(conn)
 	for await (const requestEvent of httpConn) {
 		let path: string = requestEvent.request.url.slice(21)
+		if (path.includes("?")) path = path.split("?")[0]
 		if (path[0] != "/") path = "/" + path
 		path = "." + path
 		const ext = path.split(".")[2] ?? "txt"
