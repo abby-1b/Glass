@@ -60,8 +60,15 @@ export class Vec2 {
 		const m = Math.hypot(this.x, this.y); return new Vec2(this.x / m, this.y / m)
 	}
 
+	floor() { this.x = Math.floor(this.x), this.y = Math.floor(this.y) }
+	floorRet() { return new Vec2(Math.floor(this.x), Math.floor(this.y)) }
+
 	dist(v: Vec2) {
 		return Math.hypot(this.x - v.x, this.y - v.y)
+	}
+
+	unwrap(): [number, number] {
+		return [this.x, this.y]
 	}
 }
 

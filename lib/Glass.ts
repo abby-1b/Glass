@@ -4,6 +4,8 @@ import { Editor } from "./Editor"
 import { Rect, Vec2 } from "./Math"
 
 class GlassInstance {
+	mainPath: string
+
 	protected frameFn = (delta: number) => {}
 	protected physicsFn = (delta: number) => {}
 
@@ -11,6 +13,7 @@ class GlassInstance {
 	width: number = 0
 	height: number = 0
 	scene: Scene
+	pixelSize = 2
 	isPixelated = false
 
 	/** All events that exist */
@@ -21,6 +24,7 @@ class GlassInstance {
 	mouseX: number = 0
 	mouseY: number = 0
 	mouseDown: boolean = false
+	mouseRightDown: boolean = false
 
 	public frameCount = 0
 
@@ -46,7 +50,13 @@ class GlassInstance {
 			this.gl.canvas.style.imageRendering = "unset"
 	}
 
-	public init(setup: () => void | undefined, frame: ((delta: number) => void) | undefined, physics: ((delta: number) => void) | undefined) {
+	public async init(
+		setup: (() => void) | undefined,
+		frame: ((delta: number) => void) | undefined,
+		physics: ((delta: number) => void) | undefined,
+		url: string
+	) {
+		this.mainPath = new URL(url).pathname.split("/").slice(0, -1).join("/")
 		this.frameFn = frame === undefined ? () => {} : frame
 		this.physicsFn = physics === undefined ? () => {} : physics
 
@@ -85,8 +95,8 @@ class GlassInstance {
 		this.uniforms.screenScale = this.gl.getUniformLocation(this.program, "screen_scale") as WebGLUniformLocation
 		this.uniforms.translate = this.gl.getUniformLocation(this.program, "translate") as WebGLUniformLocation
 		window.addEventListener("resize", (e) => {
-			this.width = Math.ceil(window.innerWidth / 2)
-			this.height = Math.ceil(window.innerHeight / 2)
+			this.width = Math.ceil(window.innerWidth / this.pixelSize)
+			this.height = Math.ceil(window.innerHeight / this.pixelSize)
 			this.scene.size.set(this.width, this.height)
 			this.gl.canvas.width = this.width
 			this.gl.canvas.height = this.height
@@ -94,16 +104,6 @@ class GlassInstance {
 			this.gl.uniform2fv(this.uniforms.screenScale, [2 / this.width, -2 / this.height])
 		})
 		window.dispatchEvent(new Event('resize'))
-
-		setup === undefined ? {} : setup()
-
-		let t = 0
-		const frameCallback = () => {
-			this.frame((performance.now() - t) / 16.666)
-			t = performance.now()
-			window.requestAnimationFrame(frameCallback)
-		}
-		frameCallback()
 
 		// Setup text rendering
 		this.fontTexture = this.newTexture()
@@ -116,34 +116,40 @@ class GlassInstance {
 		fontImg.src = "../../lib/font.png"
 
 		// Inputs
-		window.addEventListener("mousemove", (e) => {
-			this.mouseX = e.clientX
-			this.mouseY = e.clientY
+		window.addEventListener('contextmenu', e => {
+			e.preventDefault()
+			return false
 		})
-		window.addEventListener("mousedown", () => {
-			this.mouseDown = true
-			if ("mouseDown" in this.allEvents) {
-				this.allEvents["mouseDown"].forEach(n => {
+		window.addEventListener("mousemove", e => {
+			this.mouseX = Math.floor(e.clientX / this.pixelSize)
+			this.mouseY = Math.floor(e.clientY / this.pixelSize)
+		})
+		window.addEventListener("mousedown", e => {
+			if (e.button == 0) this.mouseDown = true
+			else this.mouseRightDown = true
+			const evName = e.button == 0 ? "mouseDown" : "mouseRightDown"
+			if (evName in this.allEvents) {
+				this.allEvents[evName].forEach(n => {
 					if (!this.events.includes(n)) {
 						this.events.push(n)
-						// Keep in mind that running functions on the fly
-						// like this (not aligned with any frame bounds) may
-						// cause undefined behaviour on some browsers due to
-						// the game state potentially being processed at the
-						// same time as the function gets ran.
+						// Keep in mind that running functions on the fly like
+						// this (not aligned with any frame bounds) may cause
+						// undefined behaviour because the game state can be processed
+						// at the same time as the callback function gets ran.
 						if (this.eventFunctions[n])
 							this.eventFunctions[n].forEach(f => f())
 					}
 				})
 			}
 		})
-		window.addEventListener("mouseup", () => {
-			this.mouseDown = false
-			if ("mouseDown" in this.allEvents)
-				this.allEvents["mouseDown"].forEach(n => {
-					const idx = this.events.indexOf(n)
-					if (idx != -1)
-						this.events.splice(idx, 1)
+		window.addEventListener("mouseup", e => {
+			if (e.button == 0) this.mouseDown = false
+			else this.mouseRightDown = false
+			const evName = e.button == 0 ? "mouseDown" : "mouseRightDown"
+			if (evName in this.allEvents)
+				this.allEvents[evName].forEach(n => {
+					for (let i = 0; i < this.events.length; i++)
+						if (this.events[i] == n) { this.events.splice(i, 1); break }
 				})
 
 		})
@@ -161,9 +167,8 @@ class GlassInstance {
 		window.addEventListener("keyup", (e) => {
 			if (e.key in this.allEvents)
 				this.allEvents[e.key].forEach(n => {
-					const idx = this.events.indexOf(n)
-					if (idx != -1)
-						this.events.splice(idx, 1)
+					for (let i = 0; i < this.events.length; i++)
+						if (this.events[i] == n) { this.events.splice(i, 1); break }
 				})
 			// this.keysPressed.splice(this.keysPressed.indexOf(e.key), 1)
 		})
@@ -172,7 +177,20 @@ class GlassInstance {
 			this.mouseDown = false
 		})
 
-		// Editor.init()
+		// The main setup function is called before any other user-defined code,
+		// unless said code is outside of a function. I think that's enough control tbh.
+		setup === undefined ? {} : setup()
+
+		// Then, any objects' setup functions are called.
+		await this.scene.init()
+		
+		let t = 0
+		const frameCallback = () => {
+			this.frame((performance.now() - t) / 16.666)
+			t = performance.now()
+			window.requestAnimationFrame(frameCallback)
+		}
+		frameCallback()
 	}
 
 	public onInput(triggers: string[], eventName: string, run?: () => void) {
