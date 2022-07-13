@@ -1,11 +1,11 @@
 import { Glass, globalize } from "../../lib/Glass"
 import { Sprite } from "../../lib/Sprite"
 import { PhysicsActor, PhysicsBody } from "../../lib/Physics"
-import { Vec2 } from "../../lib/Math"
+import { TileMap } from "../../lib/TileMap"
+import { BitMap } from "../../lib/BitMap"
 
 const bodies: PhysicsActor[] = []
 let player: PhysicsActor
-let platform: PhysicsBody
 
 function setup() {
 	console.log(Glass)
@@ -27,25 +27,27 @@ function setup() {
 				self.pos.y = Glass.height / 2 - 16
 				self.size.set(10, 16)
 			}),
-		new PhysicsBody()
+		new TileMap("Assets/testTileset.png", "Assets/testTileset.png", 8, 8)
 			.name("Platform")
-			.has(
-				new Sprite("Assets/test.png")
-					.edit((spr) => { spr.size.x = 1024, spr.size.y = 32, spr.rect.width = 384 })
-			).edit(self => {
-				self.pos.x = Glass.width / 2 - 512
-				self.pos.y = Glass.height / 2 - 16
-				self.size.x = 1024, self.size.y = 32
+			.edit(self => {
+				// self.pos.x = Glass.width / 2 - 512
+				// self.pos.y = Glass.height / 2 - 16
+				// self.size.x = 1024, self.size.y = 32
 			}),
+		new BitMap(10, 10)
+			.edit(bm => {
+				bm.pos.x += 10
+				bm.pos.y += 10
+			})
 	)
 	player = Glass.scene.get("Player") as PhysicsActor
-	platform = Glass.scene.get("Platform") as PhysicsBody
+	// platform = Glass.scene.get("Platform") as PhysicsBody
 
 	Glass.onInput([" ", "w", "ArrowUp"], "jump", () => {
-		if (player.touchedFlags & PhysicsActor.BOTTOM)
+		// if (player.touchedFlags & PhysicsActor.BOTTOM)
 			player.velocity.setY(-Glass.lastDelta * 2)
-		else
-			die()
+		// else
+		// 	die()
 	})
 	Glass.onInput(["a", "A", "ArrowLeft"], "left")
 	Glass.onInput(["d", "D", "ArrowRight"], "right")
@@ -61,6 +63,10 @@ function frame(delta: number) {
 	player.velocity.add(movX * 0.35, 0)
 	Glass.follow(player)
 	;(player.children[0] as Sprite).flipped = (player.velocity.x < 0)
+	if (player.pos.y > Glass.scene.size.y / 2) {
+		player.velocity.y = 0
+		player.pos.y --
+	}
 }
 
 function die() {
@@ -90,4 +96,4 @@ function die() {
 	// bodies.push()
 }
 
-Glass.init(setup, frame, () => {})
+Glass.init(setup, frame, () => {}, import.meta.url)
