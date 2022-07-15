@@ -212,7 +212,7 @@ class GlassInstance {
 	}
 
 	public follow(node: GlassNode) {
-		this.scene.pos.lerpVec(new Vec2(Glass.width / 2, Glass.height / 2).subVecRet(node.pos), 0.1)
+		this.scene.pos.lerpVec(new Vec2(Glass.width / 2, Glass.height / 2).subVecRet(node.pos.addVecRet(node.size.mulRet(0.5, 0.5))), 0.1)
 	}
 
 	public translate(x: number, y: number) {
@@ -312,7 +312,7 @@ class GlassInstance {
 		this.frameFn(delta)
 		this.scene.render(delta)
 
-		// Editor.render()
+		Editor.render()
 
 		this.frameCount++
 	}
