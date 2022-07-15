@@ -83,10 +83,6 @@ export class Rect {
 		this.width = width
 		this.height = height
 	}
-
-	virtualOvelap() {
-		
-	}
 }
 
 export function rand(to: number) {
