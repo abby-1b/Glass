@@ -1,5 +1,6 @@
 import { Glass } from "./Glass";
 import { GlassNode } from "./GlassNode";
+import { Rect } from "./Math";
 import { PhysicsBody } from "./Physics"
 
 export class TileMap extends GlassNode {
@@ -44,7 +45,6 @@ export class TileMap extends GlassNode {
 					if (n in bmps) bmps[n].push(t)
 					else bmps[n] = [t]
 				}
-				console.log(bmps)
 
 				// Calculate failed bitmaps
 				const backupBmps: {[key: number]: number} = {
@@ -65,6 +65,7 @@ export class TileMap extends GlassNode {
 					500: 432, 502: 438, 503: 438, 508: 504,
 					509: 504, 505: 504,
 				}
+				// 406: 146
 				for (const b in backupBmps)
 					if (!(b in bmps)) bmps[b] = bmps[backupBmps[b]]
 
@@ -108,12 +109,53 @@ export class TileMap extends GlassNode {
 					}
 				}
 
+				// Start grouping tiles into colliders
+				let dat = new Array(map.width * map.height)
+				for (let a = 0; a < dat.length; a++)
+					dat[a] = this.getType(a % map.width, Math.floor(a / map.width)) - 2
+				
+				let colls: [Rect, number][] = []
+				let idx = -1
+				for (let a = 0; a < dat.length; a++) {
+					const x = a % map.width, y = Math.floor(a / map.width)
+					if (dat[a] != -1) continue
+					if (x > 0 && dat[a - 1] != -2)
+						dat[a] = dat[a - 1], colls[idx][0].width += 1
+					else {
+						dat[a] = ++idx
+						colls[colls.length] = [new Rect(x, y, 1, 1), 
+							(dat[a - 1 - map.width] == -2 && dat[a - map.width] != -2 ? dat[a - map.width] : 0)]
+					}
+				}
+				console.log(colls)
+				for (let c = 1; c < colls.length; c++) {
+					if (colls[c][1] == 0) continue
+					let m = colls[colls[c][1]]
+					while (m[1] < 0) m = colls[-m[1]]
+					if (m[0].width == colls[c][0].width)
+						m[0].height += 1, colls[c][1] *= -1
+					else
+						colls[c][1] = 0
+				}
+				for (let c = 0; c < colls.length; c++)
+					if (colls[c][1] >= 0)
+						this.children.push(new PhysicsBody().edit(p => {
+							p.parent = this
+							p.pos.set(colls[c][0].x * tileWidth, colls[c][0].y * tileHeight)
+							p.size.set(colls[c][0].width * tileWidth, colls[c][0].height * tileHeight)
+							p.showHitbox = true
+						}))
+
+				// Draw them (for debugging)
+				// for (let r = 0; r < colls.length; r++) {
+				// 	ctx.strokeStyle = `rgb(${255 * Math.random()}, ${255 * Math.random()}, ${255 * Math.random()})`
+				// 	ctx.strokeRect(colls[r][0].x * tileWidth + 0.5, colls[r][0].y * tileHeight + 0.5, colls[r][0].width * tileWidth - 1, colls[r][0].height * tileHeight - 1)
+				// }
+
 				// Cleanup & send texture to WebGL
 				this.data = undefined
 				Glass.gl.bindTexture(Glass.gl.TEXTURE_2D, this.texture)
 				Glass.gl.texImage2D(Glass.gl.TEXTURE_2D, 0, Glass.gl.RGBA, Glass.gl.RGBA, Glass.gl.UNSIGNED_BYTE, cnv)
-
-				
 			})
 		}).catch(err => { this.loadStatus--, console.error(err) })
 	}
@@ -163,7 +205,6 @@ export class TileMap extends GlassNode {
 	}
 
 	public render(delta: number) {
-		super.render(delta)
 		const x = Glass.isPixelated ? Math.floor(this.pos.x) : this.pos.x
 			, y = Glass.isPixelated ? Math.floor(this.pos.y) : this.pos.y
 		Glass.gl.bindTexture(Glass.gl.TEXTURE_2D, this.texture)
@@ -185,5 +226,6 @@ export class TileMap extends GlassNode {
 		Glass.gl.uniform1fv(Glass.uniforms.texInfo, Glass.texData)
 		Glass.gl.uniform4fv(Glass.uniforms.color, this.tint)
 		Glass.gl.drawArrays(Glass.gl.TRIANGLE_STRIP, 0, 4)
+		super.render(delta)
 	}
 }

@@ -29,14 +29,8 @@ function setup() {
 				self.size.set(10, 16)
 			}),
 		new TileMap("Assets/testTileset.png", "Assets/testTileset.png", 8, 8, "00002wVp-t-00MQIG03-oIJ+V+UwVopINJ+MQJ2Vp-tuJ+V+62VopM0J+V+u000030")
-			.name("Platform"),
-		new Button()
-			.name("Start")
-			.has(
-				new Sprite("Assets/tilesetBitmap.png")
-			).edit(btn => {
-				btn.children[0].onLoad(() => btn.fitContent())
-			})
+			.name("Platform")
+			// .edit(tm => tm.pos.set(64, 64)),
 	)
 	player = Glass.scene.get("Player") as PhysicsActor
 	// platform = Glass.scene.get("Platform") as PhysicsBody
@@ -54,7 +48,6 @@ function setup() {
 }
 
 function frame(delta: number) {
-	Glass.scene.get("Start")?.center()
 	let movX = 0
 	if (Glass.ongoing("left")) movX--
 	if (Glass.ongoing("right")) movX++
@@ -62,10 +55,10 @@ function frame(delta: number) {
 	player.velocity.add(movX * 0.35, 0)
 	Glass.follow(player)
 	;(player.children[0] as Sprite).flipped = (player.velocity.x < 0)
-	if (player.pos.y > Glass.scene.size.y / 2) {
-		player.velocity.y = 0
-		player.pos.y --
-	}
+	// if (player.pos.y > Glass.scene.size.y / 2) {
+	// 	player.velocity.y = 0
+	// 	player.pos.y --
+	// }
 }
 
 function die() {
