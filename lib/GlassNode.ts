@@ -23,6 +23,7 @@ export class GlassNode {
 
 	/** The loading status of a node. If this number is zero, the node is completely loaded. */
 	loadStatus: number = 1
+	protected loadFn: ((n: GlassNode) => void)[] | undefined = []
 
 	constructor() {
 		this.id = GlassNode.id++
@@ -33,6 +34,14 @@ export class GlassNode {
 		this.setupFn === undefined ? 0 : this.setupFn(this)
 		for (let c = 0; c < this.children.length; c++)
 			await this.children[c].init()
+		this.loadFn?.forEach(f => f(this))
+		this.loadFn = undefined
+	}
+
+	public onLoad(fn: (n: this) => void): this {
+		if (this.loadStatus == 0) fn(this)
+		else (this.loadFn as ((n: this) => void)[]).push(fn)
+		return this
 	}
 
 	public async init(): Promise<void> {
@@ -73,6 +82,22 @@ export class GlassNode {
 		for (let c = 0; c < this.children.length; c++)
 			if (this.children[c].get(name, true)) return this.children[c]
 		if (!supressError) console.log("Node `" + name + "` not found")
+	}
+
+	public fitContent(padding = 0) {
+		if (this.children.length > 0) {
+			const min = new Vec2(9e9, 9e9)
+			const max = new Vec2(0, 0)
+			for (let c = 0; c < this.children.length; c++) {
+				if (this.children[c].pos.x < min.x) min.x = this.children[c].pos.x
+				if (this.children[c].pos.y < min.y) min.y = this.children[c].pos.y
+				if (this.children[c].pos.x + this.children[c].size.x > max.x) max.x = this.children[c].pos.x + this.children[c].size.x
+				if (this.children[c].pos.y + this.children[c].size.y > max.y) max.y = this.children[c].pos.y + this.children[c].size.y
+			}
+			if (padding != 0) min.sub(padding, padding), max.add(padding, padding)
+			this.children.forEach(c => c.pos.subVec(min))
+			this.size.setVec(max)
+		}
 	}
 
 	public script(src: string): this {
@@ -123,9 +148,10 @@ export class GlassNode {
 			this.children[c].physics(delta)
 	}
 
-	public center() {
+	public center(from?: GlassNode) {
+		if (from === undefined) from = this.parent as GlassNode
 		this.pos.subVec(
-			this.pos.subVecRet(this.size.mulRet(-0.5, -0.5)).subVecRet((this.parent as GlassNode).size.mulRet(0.5, 0.5))
+			this.pos.subVecRet(this.size.mulRet(-0.5, -0.5)).subVecRet(from.size.mulRet(0.5, 0.5))
 		)
 		// console.log(this.pos.subVecRet(this.size.mulRet(0.5, 0.5)).subVecRet((this.parent as GlassNode).size.mulRet(0.5, 0.5)))
 	}

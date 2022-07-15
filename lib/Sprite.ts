@@ -13,11 +13,11 @@ export class Sprite extends GlassNode {
 	tint: [number, number, number, number] = [1, 1, 1, -1]
 
 	isLoaded = false
-	protected loadFn: ((sp: Sprite) => void)[] | undefined = []
 
 	constructor(src: string) {
 		super()
 		this.texture = Glass.newTexture()
+		this.loadStatus++
 		const img = new Image()
 		img.onload = () => {
 			this.textureWidth = img.width
@@ -30,16 +30,9 @@ export class Sprite extends GlassNode {
 			Glass.gl.texImage2D(Glass.gl.TEXTURE_2D, 0, Glass.gl.RGBA, Glass.gl.RGBA, Glass.gl.UNSIGNED_BYTE, img)
 			img.onload = null
 			;(this.loadFn as ((sp: Sprite) => void)[]).map(fn => fn(this))
-			this.loadFn = undefined
-			this.isLoaded = true
+			this.loadStatus--
 		}
 		img.src = src
-	}
-
-	onLoad(fn: (sp: Sprite) => void): this {
-		if (this.isLoaded) fn(this)
-		else (this.loadFn as ((sp: Sprite) => void)[]).push(fn)
-		return this
 	}
 
 	public render(delta: number) {
