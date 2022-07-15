@@ -14,7 +14,13 @@ export function setup(self: BitMap) {
 	self.tint[3] = -0.5
 
 	;(this.children[0] as Sprite).onLoad(sp => {
+		self.resize(sp.size.x / 8 * 3, sp.size.y / 8 * 3)
+		self.size.mul(mul * ratio, mul * ratio)
 		sp.size.mul(mul, mul)
+	})
+
+	Glass.onInput(["s"], "BitmapSave", () => {
+		console.log(self.toString())
 	})
 }
 

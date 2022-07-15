@@ -11,7 +11,7 @@ function setup() {
 	Glass.pixelated()
 	Glass.scene.has(
 		new FitContent().has(
-			BitMap.from("00002J+V+-00MQI00V+IJ+V+UJ+MQIJ+MQGJ+V+uJ+V+0J+MQ0J+V+000000", 30, 12)
+			BitMap.from("00002J+V+-00MQI00V+IJ+V+UJ+MQIJ+MQJJ+V+-J+V+6J+MQmJ+V+u0000O", 30, 12)
 				.name("BitMap")
 				.script("bitmap")
 				.has(
