@@ -43,10 +43,6 @@ export class BitMap extends GlassNode {
 		return ret
 	}
 
-	toTileSet(): string {
-		return ""
-	}
-
 	resize(width: number, height: number) {
 		let dat = this.ctx.getImageData(0, 0, this.canvas.width, this.canvas.height)
 		this.size.x = this.canvas.width = width
