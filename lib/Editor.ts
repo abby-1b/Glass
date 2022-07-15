@@ -30,7 +30,6 @@ class EditorInstance {
 	}
 
 	protected renderNode(n: GlassNode, indent = 0, vertical = 0, level = 0, path = ""): number {
-		if (Glass.frameCount < 1) console.log(path)
 		const open = this.openPaths.includes(n.id) || (n.children.length == 0)
 		const txt = (open ? "" : ">") + n.getName(true)
 
