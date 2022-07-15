@@ -3,6 +3,7 @@ import { Sprite } from "../../lib/Sprite"
 import { PhysicsActor, PhysicsBody } from "../../lib/Physics"
 import { TileMap } from "../../lib/TileMap"
 import { BitMap } from "../../lib/BitMap"
+import { Button } from "../../lib/Button"
 
 const bodies: PhysicsActor[] = []
 let player: PhysicsActor
@@ -27,17 +28,14 @@ function setup() {
 				self.pos.y = Glass.height / 2 - 16
 				self.size.set(10, 16)
 			}),
-		new TileMap("Assets/testTileset.png", "Assets/testTileset.png", 8, 8)
-			.name("Platform")
-			.edit(self => {
-				// self.pos.x = Glass.width / 2 - 512
-				// self.pos.y = Glass.height / 2 - 16
-				// self.size.x = 1024, self.size.y = 32
-			}),
-		new BitMap(10, 10)
-			.edit(bm => {
-				bm.pos.x += 10
-				bm.pos.y += 10
+		new TileMap("Assets/testTileset.png", "Assets/testTileset.png", 8, 8, "00002wVp-t-00MQIG03-oIJ+V+UwVopINJ+MQJ2Vp-tuJ+V+62VopM0J+V+u000030")
+			.name("Platform"),
+		new Button()
+			.name("Start")
+			.has(
+				new Sprite("Assets/tilesetBitmap.png")
+			).edit(btn => {
+				btn.children[0].onLoad(() => btn.fitContent())
 			})
 	)
 	player = Glass.scene.get("Player") as PhysicsActor
@@ -47,7 +45,7 @@ function setup() {
 		// if (player.touchedFlags & PhysicsActor.BOTTOM)
 			player.velocity.setY(-Glass.lastDelta * 2)
 		// else
-		// 	die()
+			// die()
 	})
 	Glass.onInput(["a", "A", "ArrowLeft"], "left")
 	Glass.onInput(["d", "D", "ArrowRight"], "right")
@@ -56,6 +54,7 @@ function setup() {
 }
 
 function frame(delta: number) {
+	Glass.scene.get("Start")?.center()
 	let movX = 0
 	if (Glass.ongoing("left")) movX--
 	if (Glass.ongoing("right")) movX++
