@@ -68,7 +68,7 @@ export class GlassNode {
 	public getRealPos(): Vec2 {
 		let ret = this.pos.copy()
 		let p = this.parent
-		while (p !== undefined)
+		while (p !== undefined && p !== Glass.scene)
 			ret.addVec(p.pos), p = p.parent
 		return ret
 	}

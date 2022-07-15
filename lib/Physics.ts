@@ -36,7 +36,7 @@ export class PhysicsActor extends PhysicsBody {
 		this.pos.addVec(this.velocity.mulRet(delta, delta))
 		for (let o = 0; o < PhysicsBody.bodies.length; o++) {
 			if (PhysicsBody.bodies[o] == this
-				|| this.pos.dist(PhysicsBody.bodies[o].pos) > 
+				|| this.pos.dist(PhysicsBody.bodies[o].getRealPos()) > 
 				(this.size.x + this.size.y + PhysicsBody.bodies[o].size.x + PhysicsBody.bodies[o].size.y)) continue
 			this.avoidCollision(PhysicsBody.bodies[o])
 		}
@@ -44,20 +44,23 @@ export class PhysicsActor extends PhysicsBody {
 	}
 
 	private intersects(obj: PhysicsBody): boolean {
-		return (this.pos.y + this.size.y > obj.pos.y
-			&& this.pos.x + this.size.x > obj.pos.x
-			&& this.pos.y < (obj.pos.y + obj.size.y)
-			&& this.pos.x < (obj.pos.x + obj.size.x))
+		const rPos = obj.getRealPos()
+		return (this.pos.y + this.size.y > rPos.y
+			&& this.pos.x + this.size.x > rPos.x
+			&& this.pos.y < (rPos.y + obj.size.y)
+			&& this.pos.x < (rPos.x + obj.size.x))
 	}
 
 	private avoidCollision(obj: PhysicsBody) {
 		if (!this.intersects(obj)) return
 		this.velocity.mulVec(obj.friction)
+
+		const rPos = obj.getRealPos()
 		const overlaps = [
-			(this.pos.x + this.size.x) - obj .pos.x,
-			(obj .pos.x + obj .size.x) - this.pos.x,
-			(this.pos.y + this.size.y) - obj .pos.y,
-			(obj .pos.y + obj .size.y) - this.pos.y
+			(this.pos.x + this.size.x) - rPos    .x,
+			(rPos    .x + obj .size.x) - this.pos.x,
+			(this.pos.y + this.size.y) - rPos    .y,
+			(rPos    .y + obj .size.y) - this.pos.y
 		]
 		if (overlaps[0] < overlaps[1] && overlaps[0] < overlaps[2] && overlaps[0] < overlaps[3]) {
 			this.velocity.x = Math.max(this.velocity.x, 0), this.pos.x -= overlaps[0], this.touchedFlags |= PhysicsActor.RIGHT
