@@ -1,0 +1,1065 @@
+
+<head>
+	<title>TestProject</title>
+	<meta name="apple-mobile-web-app-capable" content="yes">
+	<script>window.onload=()=>{
+
+ class Vec2 {
+    x;
+    y;
+    constructor(x, y){
+        this.x = x, this.y = y;
+    }
+    set(x, y) {
+        this.x = x, this.y = y;
+    }
+    setVec(v) {
+        this.x = v.x, this.y = v.y;
+    }
+    setX(x) {
+        this.x = x;
+    }
+    setY(y) {
+        this.y = y;
+    }
+    copy() {
+        return new Vec2(this.x, this.y);
+    }
+    add(x, y) {
+        this.x += x, this.y += y;
+    }
+    addRet(x, y) {
+        return new Vec2(this.x + x, this.y + y);
+    }
+    addVec(v) {
+        this.x += v.x, this.y += v.y;
+    }
+    addVecRet(v) {
+        return new Vec2(this.x + v.x, this.y + v.y);
+    }
+    sub(x, y) {
+        this.x -= x, this.y -= y;
+    }
+    subRet(x, y) {
+        return new Vec2(this.x - x, this.y - y);
+    }
+    subVec(v) {
+        this.x -= v.x, this.y -= v.y;
+    }
+    subVecRet(v) {
+        return new Vec2(this.x - v.x, this.y - v.y);
+    }
+    mul(x, y) {
+        this.x *= x, this.y *= y;
+    }
+    mulRet(x, y) {
+        return new Vec2(this.x * x, this.y * y);
+    }
+    mulVec(v) {
+        this.x *= v.x, this.y *= v.y;
+    }
+    mulVecRet(v) {
+        return new Vec2(this.x * v.x, this.y * v.y);
+    }
+    div(x, y) {
+        this.x /= x, this.y /= y;
+    }
+    divRet(x, y) {
+        return new Vec2(this.x / x, this.y / y);
+    }
+    divVec(v) {
+        this.x /= v.x, this.y /= v.y;
+    }
+    divVecRet(v) {
+        return new Vec2(this.x / v.x, this.y / v.y);
+    }
+    powRet(x, y) {
+        return new Vec2(this.x ** x, this.y ** y);
+    }
+    rotated(angle) {
+        const c = Math.cos(angle);
+        const s = Math.sin(angle);
+        return new Vec2(c * this.x - s * this.y, s * this.x + c * this.y);
+    }
+    lerp(x, y, i) {
+        this.x = (1 - i) * this.x + i * x;
+        this.y = (1 - i) * this.y + i * y;
+    }
+    lerpVec(v, i) {
+        this.x = (1 - i) * this.x + i * v.x;
+        this.y = (1 - i) * this.y + i * v.y;
+    }
+    len() {
+        return Math.hypot(this.x, this.y);
+    }
+    normalize() {
+        if (this.x == 0 && this.y == 0) return;
+        const m = Math.hypot(this.x, this.y);
+        this.x /= m, this.y /= m;
+    }
+    normalizeRet() {
+        if (this.x == 0 && this.y == 0) return new Vec2(0, 0);
+        const m = Math.hypot(this.x, this.y);
+        return new Vec2(this.x / m, this.y / m);
+    }
+    floor() {
+        this.x = Math.floor(this.x), this.y = Math.floor(this.y);
+    }
+    floorRet() {
+        return new Vec2(Math.floor(this.x), Math.floor(this.y));
+    }
+    dist(v) {
+        return Math.hypot(this.x - v.x, this.y - v.y);
+    }
+    unwrap() {
+        return [
+            this.x,
+            this.y
+        ];
+    }
+}
+ class Rect {
+    x;
+    y;
+    width;
+    height;
+    constructor(x, y, width, height){
+        this.x = x;
+        this.y = y;
+        this.width = width;
+        this.height = height;
+    }
+}
+ function rand(to) {
+    return Math.random() * to;
+}
+ function lerp(a, b, i) {
+    return (1 - i) * a + i * b;
+}
+ class GlassNode {
+    scriptSrc;
+    setupFn;
+    frameFn;
+    static id = 0;
+    // static allNodes: (GlassNode | undefined)[] = []
+    // static removeNode(id: number) {
+    // 	GlassNode.allNodes[id] = undefined
+    // }
+    nodeName;
+    id;
+    pos = new Vec2(0, 0);
+    size = new Vec2(0, 0);
+    showHitbox = true;
+    children = [];
+    parent;
+    /** The loading status of a node. If this number is zero, the node is completely loaded. */ loadStatus = 1;
+    loadFn = [];
+    constructor(){
+        this.id = GlassNode.id++;
+    // GlassNode.allNodes.push(this)
+    }
+    async continueInit() {
+        this.setupFn === undefined ? 0 : this.setupFn(this);
+        for(let c = 0; c < this.children.length; c++)await this.children[c].init();
+        this.loadFn?.forEach((f)=>f(this)
+        );
+        this.loadFn = undefined;
+    }
+    onLoad(fn) {
+        if (this.loadStatus == 0) fn(this);
+        else this.loadFn.push(fn);
+        return this;
+    }
+    async init() {
+        this.loadStatus--;
+        if (this.loadStatus == 0) {
+            await this.continueInit() // Load children
+            ;
+            return;
+        }
+        return new Promise(async (resolve)=>{
+            const interval = setInterval(async ()=>{
+                if (this.loadStatus == 0) await clearInterval(interval), await this.continueInit(), resolve(void 0);
+            }, 1);
+        });
+    }
+    name(name) {
+        this.nodeName = name;
+        return this;
+    }
+    getRealPos() {
+        let ret = this.pos.copy();
+        let p = this.parent;
+        while(p !== undefined && p !== Glass.scene)ret.addVec(p.pos), p = p.parent;
+        return ret;
+    }
+    getName(unique = false) {
+        return (this.nodeName ?? this.constructor.name) + (unique ? "#" + this.id : "");
+    }
+    get(name, supressError = false) {
+        if (this.nodeName == name) return this;
+        for(let c = 0; c < this.children.length; c++)if (this.children[c].get(name, true)) return this.children[c];
+        if (!supressError) console.log("Node `" + name + "` not found");
+    }
+    fitContent(padding = 0) {
+        if (this.children.length > 0) {
+            const min = new Vec2(9000000000, 9000000000);
+            const max = new Vec2(0, 0);
+            for(let c1 = 0; c1 < this.children.length; c1++){
+                if (this.children[c1].pos.x < min.x) min.x = this.children[c1].pos.x;
+                if (this.children[c1].pos.y < min.y) min.y = this.children[c1].pos.y;
+                if (this.children[c1].pos.x + this.children[c1].size.x > max.x) max.x = this.children[c1].pos.x + this.children[c1].size.x;
+                if (this.children[c1].pos.y + this.children[c1].size.y > max.y) max.y = this.children[c1].pos.y + this.children[c1].size.y;
+            }
+            if (padding != 0) min.sub(padding, padding), max.add(padding, padding);
+            this.children.forEach((c)=>c.pos.subVec(min)
+            );
+            this.size.setVec(max);
+        }
+    }
+    script(src) {
+        this.scriptSrc = src;
+        this.loadStatus++;
+        import(Glass.mainPath + "/" + src).then((i)=>{
+            if ("setup" in i) this.setupFn = i.setup;
+            if ("frame" in i) this.frameFn = i.frame;
+            this.loadStatus--;
+        }).catch((err)=>{
+            console.log("Error loading script:\n", err);
+            this.loadStatus--;
+        });
+        return this;
+    }
+    edit(fn) {
+        fn(this);
+        return this;
+    }
+    has(...nodes) {
+        nodes.forEach((n)=>n.parent = this
+        );
+        this.children.push(...nodes);
+        return this;
+    }
+    render(delta) {
+        this.frameFn === undefined ? 0 : this.frameFn(this, delta);
+        const x = Glass.isPixelated ? Math.floor(this.pos.x) : this.pos.x, y = Glass.isPixelated ? Math.floor(this.pos.y) : this.pos.y;
+        Glass.translate(x, y);
+        for(let c = 0; c < this.children.length; c++)this.children[c].render(delta);
+        // Draw hitbox
+        if (this.showHitbox) {
+            Glass.colorf(255, 0, 0);
+            Glass.rect(0, 0, this.size.x, this.size.y);
+        }
+        Glass.translate(-x, -y);
+    }
+    physics(delta) {
+        for(let c = 0; c < this.children.length; c++)this.children[c].physics(delta);
+    }
+    center(from) {
+        if (from === undefined) from = this.parent;
+        this.pos.subVec(this.pos.subVecRet(this.size.mulRet(-0.5, -0.5)).subVecRet(from.size.mulRet(0.5, 0.5)));
+    // console.log(this.pos.subVecRet(this.size.mulRet(0.5, 0.5)).subVecRet((this.parent as GlassNode).size.mulRet(0.5, 0.5)))
+    }
+}
+/**
+ * Loads / unloads assets
+ */ // ...
+ class Scene extends GlassNode {
+}
+
+class EditorInstance {
+    text = "";
+    openPaths = [
+        0
+    ];
+    selected = "";
+    nodesLength = 0;
+    init() {
+        // Reloads all scripts
+        window.addEventListener("keydown", (k)=>{
+            if (k.key == "p" && (k.metaKey || k.ctrlKey)) Glass.scene.children.forEach((c)=>{
+                this.reloadScript(c);
+            });
+        });
+    }
+    reloadScript(node) {
+        if (node.scriptSrc !== undefined) {
+            import(Glass.mainPath + "/" + node.scriptSrc + "?" + Math.random()).then((i)=>{
+                if ("setup" in i) node.setupFn = i.setup;
+                if ("frame" in i) node.frameFn = i.frame;
+            }).catch((err)=>{
+                console.log("Error reloading script:\n", err);
+            });
+        }
+        node.children.forEach((c)=>{
+            this.reloadScript(c);
+        });
+    }
+    renderNode(n, indent = 0, vertical = 0, level = 0, path = "") {
+        const open = this.openPaths.includes(n.id) || n.children.length == 0;
+        const txt = (open ? "" : ">") + n.getName(true);
+        if (this.selected == path) {
+            Glass.colorf(0, 0, 0, 80);
+            Glass.fillRect(indent * 10 - 1, vertical * 10 - 1, txt.length * 10, 10);
+        }
+        Glass.colorf(0, 0, 0);
+        Glass.text(txt, indent * 10, vertical * 10);
+        if (!open) return 0;
+        let added = 0;
+        n.children.forEach((c)=>{
+            added++;
+            added += this.renderNode(c, indent + 1, vertical + added, level + 1, path + "/" + c.getName(true));
+        });
+        return added;
+    }
+    render() {
+        Glass.translate(2, 2);
+        this.text += Glass.events.join("");
+        Glass.colorf(255, 255, 255);
+        Glass.fillRect(0, 0, 128, this.nodesLength * 10 + 2);
+        Glass.colorf(0, 0, 0);
+        Glass.translate(2, 2);
+        this.nodesLength = this.renderNode(Glass.scene, 0, 0, 0, "Root") + 1;
+        Glass.translate(-2, -2);
+        Glass.translate(-3, -3);
+    }
+}
+ const Editor = new EditorInstance();
+globalize({
+    Editor
+});
+class GlassInstance {
+    mainPath;
+    frameFn = (delta)=>{};
+    physicsFn = (delta)=>{};
+    lastDelta = 1;
+    width = 0;
+    height = 0;
+    scene;
+    pixelSize = 2;
+    isPixelated = false;
+    /** All events that exist */ eventFunctions = {};
+    allEvents = {};
+    /** Currently ongoing events list */ events = [];
+    mouseX = 0;
+    mouseY = 0;
+    mouseDown = false;
+    mouseRightDown = false;
+    frameCount = 0;
+    program;
+    gl;
+    drawColor = [
+        1,
+        1,
+        1,
+        1
+    ];
+    vertexData = new Float32Array(8);
+    texData = new Float32Array(6);
+    uniforms = {};
+    translation = [
+        0,
+        0
+    ];
+    static fontLetters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!?[]_*|+-/\\.()@\"',<>&:%#";
+    fontTexture;
+    constructor(){}
+    pixelated(yes = true) {
+        if (yes) this.gl.canvas.style.imageRendering = "crisp-edges", this.gl.canvas.style.imageRendering = "pixelated", this.isPixelated = true;
+        else this.gl.canvas.style.imageRendering = "unset";
+    }
+    async init(setup, frame, physics, url) {
+        this.frameFn = frame === undefined ? ()=>{} : frame;
+        this.physicsFn = physics === undefined ? ()=>{} : physics;
+        this.scene = new Scene().name("Root");
+        this.gl = document.body.appendChild(document.createElement("canvas")).getContext("webgl2");
+        this.program = buildSP(this.gl, `#version 300 es
+			in vec2 vertex_pos;
+			out vec2 tex_pos;
+			uniform vec2 translate;
+			uniform vec2 screen_scale;
+			uniform float tex_info[6];
+			void main() {
+				tex_pos = vertex_pos.xy - vec2(tex_info[0], tex_info[1]);
+				gl_Position = vec4((vertex_pos + translate) * screen_scale - vec2(1.0, -1.0), 0.0, 1.0);
+			}`, `#version 300 es
+			precision highp float;
+			out vec4 out_color;
+			in vec2 tex_pos;
+			uniform sampler2D the_tex;
+			uniform vec4 color;
+			uniform float tex_info[6];
+			void main() {
+				if (color.w < 0.0) {
+					out_color = texture(the_tex, (floor(tex_pos) + 0.5) * vec2(tex_info[4], tex_info[5]) + vec2(tex_info[2], tex_info[3])) * vec4(color.r, color.g, color.b, -color.a);
+				} else { out_color = color; }
+			}`);
+        this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.gl.createBuffer());
+        const vertexPos = this.gl.getAttribLocation(this.program, "vertex_pos");
+        this.gl.vertexAttribPointer(vertexPos, 2, this.gl.FLOAT, false, 0, 0);
+        this.gl.useProgram(this.program);
+        this.gl.enableVertexAttribArray(vertexPos);
+        this.uniforms.color = this.gl.getUniformLocation(this.program, "color");
+        this.uniforms.texInfo = this.gl.getUniformLocation(this.program, "tex_info");
+        this.uniforms.screenScale = this.gl.getUniformLocation(this.program, "screen_scale");
+        this.uniforms.translate = this.gl.getUniformLocation(this.program, "translate");
+        window.addEventListener("resize", (e)=>{
+            this.width = Math.ceil(window.innerWidth / this.pixelSize);
+            this.height = Math.ceil(window.innerHeight / this.pixelSize);
+            this.scene.size.set(this.width, this.height);
+            this.gl.canvas.width = this.width;
+            this.gl.canvas.height = this.height;
+            this.gl.viewport(0, 0, this.width, this.height);
+            this.gl.uniform2fv(this.uniforms.screenScale, [
+                2 / this.width,
+                -2 / this.height
+            ]);
+        });
+        window.dispatchEvent(new Event('resize'));
+        // Setup text rendering
+        this.fontTexture = this.newTexture();
+        const fontImg = new Image();
+        fontImg.onload = ()=>{
+            this.gl.bindTexture(this.gl.TEXTURE_2D, this.fontTexture);
+            this.gl.texImage2D(this.gl.TEXTURE_2D, 0, this.gl.RGBA, this.gl.RGBA, this.gl.UNSIGNED_BYTE, fontImg);
+            fontImg.onload = null;
+        };
+        fontImg.src = "font.png"
+        // Inputs
+        window.addEventListener('contextmenu', (e)=>{
+            e.preventDefault();
+            return false;
+        });
+        window.addEventListener("mousemove", (e)=>{
+            this.mouseX = Math.floor(e.clientX / this.pixelSize);
+            this.mouseY = Math.floor(e.clientY / this.pixelSize);
+        });
+        window.addEventListener("mousedown", (e)=>{
+            if (e.button == 0) this.mouseDown = true;
+            else this.mouseRightDown = true;
+            const evName = e.button == 0 ? "mouseDown" : "mouseRightDown";
+            if (evName in this.allEvents) {
+                this.allEvents[evName].forEach((n)=>{
+                    if (!this.events.includes(n)) {
+                        this.events.push(n);
+                        // Keep in mind that running functions on the fly like
+                        // this (not aligned with any frame bounds) may cause
+                        // undefined behaviour because the game state can be processed
+                        // at the same time as the callback function gets ran.
+                        if (this.eventFunctions[n]) this.eventFunctions[n].forEach((f)=>f()
+                        );
+                    }
+                });
+            }
+        });
+        window.addEventListener("mouseup", (e)=>{
+            if (e.button == 0) this.mouseDown = false;
+            else this.mouseRightDown = false;
+            const evName = e.button == 0 ? "mouseDown" : "mouseRightDown";
+            if (evName in this.allEvents) this.allEvents[evName].forEach((n)=>{
+                for(let i = 0; i < this.events.length; i++)if (this.events[i] == n) {
+                    this.events.splice(i, 1);
+                    break;
+                }
+            });
+        });
+        window.addEventListener("keydown", (e)=>{
+            if (e.repeat) return;
+            if (e.key in this.allEvents) this.allEvents[e.key].forEach((n)=>{
+                if (!this.events.includes(n)) {
+                    this.events.push(n);
+                    if (this.eventFunctions[n]) this.eventFunctions[n].forEach((f)=>f()
+                    );
+                }
+            });
+        });
+        window.addEventListener("keyup", (e)=>{
+            if (e.key in this.allEvents) this.allEvents[e.key].forEach((n)=>{
+                for(let i = 0; i < this.events.length; i++)if (this.events[i] == n) {
+                    this.events.splice(i, 1);
+                    break;
+                }
+            });
+        // this.keysPressed.splice(this.keysPressed.indexOf(e.key), 1)
+        });
+        window.addEventListener("blur", ()=>{
+            // this.keysPressed.splice(0, this.keysPressed.length)
+            this.mouseDown = false;
+        });
+        // The main setup function is called before any other user-defined code,
+        // unless said code is outside of a function. I think that's enough control tbh.
+        setup === undefined ? {} : setup();
+        // Then, any objects' setup functions are called.
+        await this.scene.init();
+        let t = 0;
+        const frameCallback = ()=>{
+            this.frame((performance.now() - t) / 16.666);
+            t = performance.now();
+            window.requestAnimationFrame(frameCallback);
+        };
+        frameCallback();
+    }
+    onInput(triggers, eventName, run) {
+        if (run) {
+            if (eventName in this.eventFunctions) this.eventFunctions[eventName].push(run);
+            else this.eventFunctions[eventName] = [
+                run
+            ];
+        }
+        triggers.forEach((t)=>{
+            if (typeof this.allEvents[t] === "undefined") this.allEvents[t] = [
+                eventName
+            ];
+            else this.allEvents[t].push(eventName);
+        });
+    }
+    ongoing(eventName) {
+        return this.events.includes(eventName);
+    }
+    follow(node) {
+        this.scene.pos.lerpVec(new Vec2(Glass.width / 2, Glass.height / 2).subVecRet(node.pos.addVecRet(node.size.mulRet(0.5, 0.5))), 0.1);
+    }
+    translate(x, y) {
+        this.translation[0] += x;
+        this.translation[1] += y;
+        this.gl.uniform2fv(this.uniforms.translate, this.translation);
+    }
+    newTexture() {
+        const texture = this.gl.createTexture();
+        this.gl.bindTexture(this.gl.TEXTURE_2D, texture);
+        this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_WRAP_S, this.gl.REPEAT);
+        this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_WRAP_T, this.gl.REPEAT);
+        this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_MIN_FILTER, this.gl.NEAREST);
+        this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_MAG_FILTER, this.gl.NEAREST);
+        return texture;
+    }
+    colorf(r, g, b, a = 255) {
+        this.drawColor[0] = r / 255;
+        this.drawColor[1] = g / 255;
+        this.drawColor[2] = b / 255;
+        this.drawColor[3] = a / 255;
+    }
+    rect(x, y, w, h) {
+        this.gl.uniform4fv(this.uniforms.color, this.drawColor);
+        this.vertexData[0] = x + 0.5;
+        this.vertexData[1] = y + 0.5;
+        this.vertexData[2] = x + w - 0.5;
+        this.vertexData[3] = y + 0.5;
+        this.vertexData[4] = x + w - 0.5;
+        this.vertexData[5] = y + h - 0.5;
+        this.vertexData[6] = x + 0.5;
+        this.vertexData[7] = y + h - 0.5;
+        this.gl.bufferData(this.gl.ARRAY_BUFFER, this.vertexData, this.gl.DYNAMIC_DRAW);
+        this.gl.drawArrays(this.gl.LINE_LOOP, 0, 4);
+    }
+    fillRect(x, y, w, h) {
+        this.vertexData[0] = x;
+        this.vertexData[1] = y;
+        this.vertexData[2] = x + w;
+        this.vertexData[3] = y;
+        this.vertexData[4] = x;
+        this.vertexData[5] = y + h;
+        this.vertexData[6] = x + w;
+        this.vertexData[7] = y + h;
+        this.gl.bufferData(this.gl.ARRAY_BUFFER, this.vertexData, this.gl.DYNAMIC_DRAW);
+        this.gl.uniform4fv(this.uniforms.color, this.drawColor);
+        this.gl.drawArrays(this.gl.TRIANGLE_STRIP, 0, 4);
+    }
+    text(txt, x, y) {
+        txt = txt.toUpperCase();
+        this.gl.bindTexture(this.gl.TEXTURE_2D, this.fontTexture);
+        const size = 8;
+        for(let c = 0; c < txt.length; c++){
+            if (txt[c] == " ") continue;
+            const ofs = size * 1.25 * c;
+            this.vertexData[0] = x + ofs;
+            this.vertexData[1] = y;
+            this.vertexData[2] = x + size + ofs;
+            this.vertexData[3] = y;
+            this.vertexData[4] = x + ofs;
+            this.vertexData[5] = y + size;
+            this.vertexData[6] = x + size + ofs;
+            this.vertexData[7] = y + size;
+            this.gl.bufferData(Glass.gl.ARRAY_BUFFER, Glass.vertexData, Glass.gl.DYNAMIC_DRAW);
+            this.texData[0] = this.vertexData[0];
+            this.texData[1] = this.vertexData[1];
+            this.texData[2] = GlassInstance.fontLetters.indexOf(txt[c]) * 5 / 300;
+            this.texData[3] = 0;
+            this.texData[4] = 4 / 300 / size;
+            this.texData[5] = 1 / size;
+            this.gl.uniform1fv(this.uniforms.texInfo, this.texData);
+            this.gl.uniform4fv(this.uniforms.color, [
+                this.drawColor[0],
+                this.drawColor[1],
+                this.drawColor[2],
+                -this.drawColor[3]
+            ]);
+            this.gl.drawArrays(this.gl.TRIANGLE_STRIP, 0, 4);
+        }
+    }
+    frame(delta) {
+        this.translation[0] = 0;
+        this.translation[1] = 0;
+        if (delta > 3) delta = 1;
+        this.lastDelta = delta;
+        this.gl.clearColor(0.7, 1, 1, 1);
+        this.gl.clear(this.gl.COLOR_BUFFER_BIT);
+        this.gl.enable(this.gl.DEPTH_TEST);
+        this.gl.depthFunc(this.gl.LEQUAL);
+        this.gl.enable(this.gl.BLEND);
+        this.gl.blendFunc(this.gl.SRC_ALPHA, this.gl.ONE_MINUS_SRC_ALPHA);
+        this.physicsFn(delta), this.scene.physics(delta);
+        this.physicsFn(delta), this.scene.physics(delta);
+        this.physicsFn(delta), this.scene.physics(delta);
+        this.physicsFn(delta), this.scene.physics(delta);
+        this.frameFn(delta);
+        this.scene.render(delta);
+        Editor.render();
+        this.frameCount++;
+    }
+}
+function buildSP(gl, vert, frag) {
+    function buildSS(code, type) {
+        const s = gl.createShader(type);
+        gl.shaderSource(s, code);
+        gl.compileShader(s);
+        if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) console.log("Error compiling shader:\n" + gl.getShaderInfoLog(s));
+        return s;
+    }
+    const program = gl.createProgram();
+    gl.attachShader(program, buildSS(vert, gl.VERTEX_SHADER));
+    gl.attachShader(program, buildSS(frag, gl.FRAGMENT_SHADER));
+    gl.linkProgram(program);
+    if (!gl.getProgramParameter(program, gl.LINK_STATUS)) console.log("Error linking shader program:\n" + gl.getProgramInfoLog(program));
+    return program;
+}
+ const Glass = new GlassInstance();
+ function globalize(dict) {
+    Object.keys(dict).forEach((k)=>window[k] = dict[k]
+    );
+}
+globalize({
+    Glass
+});
+
+ class Sprite extends GlassNode {
+    texture;
+    textureWidth = -1;
+    textureHeight = -1;
+    flipped = false;
+    frame = 0;
+    rect = new Rect(0, 0, -1, -1);
+    tint = [
+        1,
+        1,
+        1,
+        -1
+    ];
+    isLoaded = false;
+    constructor(src){
+        super();
+        this.texture = Glass.newTexture();
+        this.loadStatus++;
+        const img = new Image();
+        img.onload = ()=>{
+            this.textureWidth = img.width;
+            this.textureHeight = img.height;
+            if (this.size.x == 0) this.size.x = img.width;
+            if (this.size.y == 0) this.size.y = img.height;
+            if (this.rect.width == -1) this.rect.width = img.width;
+            if (this.rect.height == -1) this.rect.height = img.height;
+            Glass.gl.bindTexture(Glass.gl.TEXTURE_2D, this.texture);
+            Glass.gl.texImage2D(Glass.gl.TEXTURE_2D, 0, Glass.gl.RGBA, Glass.gl.RGBA, Glass.gl.UNSIGNED_BYTE, img);
+            img.onload = null;
+            this.loadFn.map((fn)=>fn(this)
+            );
+            this.loadStatus--;
+        };
+        img.src = "../" + src;
+    }
+    render(delta) {
+        super.render(delta);
+        const x = Glass.isPixelated ? Math.floor(this.pos.x) : this.pos.x, y = Glass.isPixelated ? Math.floor(this.pos.y) : this.pos.y;
+        Glass.gl.bindTexture(Glass.gl.TEXTURE_2D, this.texture);
+        Glass.vertexData[0] = x;
+        Glass.vertexData[1] = y;
+        Glass.vertexData[2] = x + this.size.x;
+        Glass.vertexData[3] = y;
+        Glass.vertexData[4] = x;
+        Glass.vertexData[5] = y + this.size.y;
+        Glass.vertexData[6] = x + this.size.x;
+        Glass.vertexData[7] = y + this.size.y;
+        Glass.gl.bufferData(Glass.gl.ARRAY_BUFFER, Glass.vertexData, Glass.gl.DYNAMIC_DRAW);
+        Glass.texData[0] = Glass.vertexData[0];
+        Glass.texData[1] = Glass.vertexData[1];
+        Glass.texData[2] = (this.rect.x + (this.frame + (this.flipped ? 1 : 0)) * this.rect.width) / this.textureWidth;
+        Glass.texData[3] = this.rect.y / this.textureHeight;
+        Glass.texData[4] = this.rect.width / this.textureWidth / this.size.x * (this.flipped ? -1 : 1);
+        Glass.texData[5] = this.rect.height / this.textureHeight / this.size.y;
+        Glass.gl.uniform1fv(Glass.uniforms.texInfo, Glass.texData);
+        Glass.gl.uniform4fv(Glass.uniforms.color, this.tint);
+        Glass.gl.drawArrays(Glass.gl.TRIANGLE_STRIP, 0, 4);
+    }
+}
+
+ class PhysicsBody extends GlassNode {
+    mass;
+    static friction = new Vec2(0.93, 0.992);
+    static bodies = [];
+    friction = new Vec2(1, 1);
+    constructor(mass = 1){
+        super();
+        this.mass = mass;
+        PhysicsBody.bodies.push(this);
+    }
+}
+ class PhysicsActor extends PhysicsBody {
+    static gravity = new Vec2(0, 0.04);
+    // static zeroVel = new Vec2(0.01, 0.01)
+    velocity = new Vec2(0, 0);
+    touchedFlags = 0;
+    static BOTTOM = 1;
+    static TOP = 2;
+    static LEFT = 4;
+    static RIGHT = 8;
+    isStatic = false;
+    physics(delta) {
+        this.touchedFlags = 0;
+        this.velocity.addVec(PhysicsActor.gravity.mulRet(delta, delta));
+        this.velocity.mulVec(PhysicsBody.friction.powRet(delta, delta));
+        this.pos.addVec(this.velocity.mulRet(delta, delta));
+        for(let o = 0; o < PhysicsBody.bodies.length; o++){
+            if (PhysicsBody.bodies[o] == this || this.pos.dist(PhysicsBody.bodies[o].getRealPos()) > this.size.x + this.size.y + PhysicsBody.bodies[o].size.x + PhysicsBody.bodies[o].size.y) continue;
+            this.avoidCollision(PhysicsBody.bodies[o]);
+        }
+        if (this.velocity.x == 0 && this.velocity.y == 0) this.isStatic = false;
+    }
+    intersects(obj) {
+        const rPos = obj.getRealPos();
+        return this.pos.y + this.size.y > rPos.y && this.pos.x + this.size.x > rPos.x && this.pos.y < rPos.y + obj.size.y && this.pos.x < rPos.x + obj.size.x;
+    }
+    avoidCollision(obj) {
+        if (!this.intersects(obj)) return;
+        this.velocity.mulVec(obj.friction);
+        const rPos = obj.getRealPos();
+        const overlaps = [
+            this.pos.x + this.size.x - rPos.x,
+            rPos.x + obj.size.x - this.pos.x,
+            this.pos.y + this.size.y - rPos.y,
+            rPos.y + obj.size.y - this.pos.y
+        ];
+        if (overlaps[0] < overlaps[1] && overlaps[0] < overlaps[2] && overlaps[0] < overlaps[3]) {
+            this.velocity.x = Math.max(this.velocity.x, 0), this.pos.x -= overlaps[0], this.touchedFlags |= PhysicsActor.RIGHT;
+        } else if (overlaps[1] < overlaps[2] && overlaps[1] < overlaps[3]) {
+            this.velocity.x = Math.min(this.velocity.x, 0), this.pos.x += overlaps[1], this.touchedFlags |= PhysicsActor.LEFT;
+        } else if (overlaps[2] < overlaps[3]) {
+            this.velocity.y = Math.min(this.velocity.y, 0), this.pos.y -= overlaps[2], this.touchedFlags |= PhysicsActor.BOTTOM;
+        } else {
+            this.velocity.y = Math.max(this.velocity.y, 0), this.pos.y += overlaps[3], this.touchedFlags |= PhysicsActor.TOP;
+        }
+    }
+}
+
+ class TileMap extends GlassNode {
+    texture;
+    tileWidth;
+    tileHeight;
+    tint = [
+        1,
+        1,
+        1,
+        -1
+    ];
+    tsWidth = 0;
+    tsHeight = 0;
+    data;
+    static h64Digits = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz+-";
+    constructor(tilesetURL, mapURL, tileWidth, tileHeight, bitMap){
+        super();
+        this.tileWidth = tileWidth;
+        this.tileHeight = tileHeight;
+        this.texture = Glass.newTexture();
+        this.loadStatus += 1;
+        this.getImg(tilesetURL).then((ts)=>{
+            this.getImg(mapURL).then((map)=>{
+                this.loadStatus--;
+                // Calculate bitmaps
+                this.tsWidth = ts.width / this.tileWidth;
+                this.tsHeight = ts.height / this.tileHeight;
+                const allTiles = this.tsWidth * this.tsHeight;
+                const bmps = {};
+                for(let t = 0; t < allTiles; t++){
+                    const n = this.getTileBitMap(t, bitMap);
+                    if (n in bmps) bmps[n].push(t);
+                    else bmps[n] = [
+                        t
+                    ];
+                }
+                // Calculate failed bitmaps
+                const backupBmps = {
+                    25: 24,
+                    30: 26,
+                    31: 27,
+                    51: 50,
+                    55: 54,
+                    57: 56,
+                    60: 56,
+                    61: 56,
+                    88: 24,
+                    90: 26,
+                    91: 27,
+                    95: 27,
+                    120: 56,
+                    123: 59,
+                    127: 63,
+                    147: 146,
+                    150: 146,
+                    153: 152,
+                    158: 154,
+                    159: 155,
+                    180: 176,
+                    210: 146,
+                    211: 146,
+                    214: 146,
+                    217: 216,
+                    222: 218,
+                    223: 219,
+                    240: 176,
+                    244: 176,
+                    246: 182,
+                    306: 50,
+                    308: 48,
+                    310: 54,
+                    311: 54,
+                    312: 56,
+                    313: 56,
+                    319: 63,
+                    383: 63,
+                    376: 56,
+                    377: 56,
+                    402: 146,
+                    403: 146,
+                    407: 146,
+                    408: 152,
+                    409: 152,
+                    435: 434,
+                    436: 432,
+                    439: 438,
+                    466: 146,
+                    472: 216,
+                    473: 216,
+                    474: 218,
+                    475: 219,
+                    479: 219,
+                    496: 432,
+                    499: 434,
+                    500: 432,
+                    502: 438,
+                    503: 438,
+                    508: 504,
+                    509: 504,
+                    505: 504
+                };
+                // 406: 146
+                for(const b in backupBmps)if (!(b in bmps)) bmps[b] = bmps[backupBmps[b]];
+                // Create a canvas to draw the texture on
+                const cnv = document.createElement("canvas");
+                const ctx = cnv.getContext("2d");
+                // Quickly use it to get the imagedata from the map
+                cnv.width = map.width;
+                cnv.height = map.height;
+                ctx.drawImage(map, 0, 0);
+                this.data = ctx.getImageData(0, 0, map.width, map.height);
+                // Resize self to the actual size of the tilemap
+                this.size.x = cnv.width = this.tileWidth * map.width;
+                this.size.y = cnv.height = this.tileHeight * map.height;
+                // Autotile the tiles onto said tilemap
+                for(let x = 0; x < map.width; x++){
+                    for(let y = 0; y < map.height; y++){
+                        if (this.getType(x, y) == 0) continue;
+                        let nn = 0 | this.getType(x - 1, y - 1) | this.getType(x, y - 1) << 1 | this.getType(x + 1, y - 1) << 2 | this.getType(x - 1, y) << 3 | this.getType(x, y) << 4 | this.getType(x + 1, y) << 5 | this.getType(x - 1, y + 1) << 6 | this.getType(x, y + 1) << 7 | this.getType(x + 1, y + 1) << 8;
+                        // if (nn == 0) console.log(nn), nn = 3
+                        if (nn in bmps) {
+                            nn = bmps[nn] // TODO: pick random
+                            ;
+                            nn = nn[Math.floor(Math.random() * nn.length)];
+                            ctx.drawImage(ts, ...this.getPos(nn), tileWidth, tileHeight, x * tileWidth, y * tileHeight, tileWidth, tileHeight);
+                        } else {
+                            for(let i = 0; i < 9; i++)if ((nn & 1 << i) != 0) ctx.fillRect(x * tileWidth + 2 * (i % 3) + 1, y * tileHeight + 2 * Math.floor(i / 3) + 1, 2, 2);
+                        }
+                    }
+                }
+                // Group tiles into colliders
+                let dat = new Array(map.width * map.height);
+                for(let a = 0; a < dat.length; a++)dat[a] = this.getType(a % map.width, Math.floor(a / map.width)) - 2;
+                let colls = [];
+                let idx = -1;
+                for(let a1 = 0; a1 < dat.length; a1++){
+                    const x = a1 % map.width, y = Math.floor(a1 / map.width);
+                    if (dat[a1] != -1) continue;
+                    if (x > 0 && dat[a1 - 1] != -2) dat[a1] = dat[a1 - 1], colls[idx][0].width += 1;
+                    else {
+                        dat[a1] = ++idx;
+                        colls[colls.length] = [
+                            new Rect(x, y, 1, 1),
+                            dat[a1 - 1 - map.width] == -2 && dat[a1 - map.width] != -2 ? dat[a1 - map.width] : 0
+                        ];
+                    }
+                }
+                for(let c = 1; c < colls.length; c++){
+                    if (colls[c][1] == 0) continue;
+                    let m = colls[colls[c][1]];
+                    while(m[1] < 0)m = colls[-m[1]];
+                    if (m[0].width == colls[c][0].width) m[0].height += 1, colls[c][1] *= -1;
+                    else colls[c][1] = 0;
+                }
+                for(let c1 = 0; c1 < colls.length; c1++)if (colls[c1][1] >= 0) this.children.push(new PhysicsBody().edit((p)=>{
+                    p.parent = this;
+                    p.pos.set(colls[c1][0].x * tileWidth, colls[c1][0].y * tileHeight);
+                    p.size.set(colls[c1][0].width * tileWidth, colls[c1][0].height * tileHeight);
+                    p.showHitbox = false;
+                }));
+                // Cleanup & send texture to WebGL
+                this.data = undefined;
+                Glass.gl.bindTexture(Glass.gl.TEXTURE_2D, this.texture);
+                Glass.gl.texImage2D(Glass.gl.TEXTURE_2D, 0, Glass.gl.RGBA, Glass.gl.RGBA, Glass.gl.UNSIGNED_BYTE, cnv);
+            });
+        }).catch((err)=>{
+            this.loadStatus--, console.error(err);
+        });
+    }
+    getTileBitMap(tileId, bitMap) {
+        const w = this.tsWidth * 3;
+        const getBit = (x, y)=>{
+            const pos = x + y * w;
+            return (TileMap.h64Digits.indexOf(bitMap[Math.floor(pos / 6)]) & 1 << 5 - pos % 6) != 0 ? 1 : 0;
+        };
+        const px = tileId % this.tsWidth * 3;
+        const py = Math.floor(tileId / this.tsWidth) * 3;
+        let r = 0 | getBit(px, py) | getBit(px + 1, py) << 1 | getBit(px + 2, py) << 2 | getBit(px, py + 1) << 3 | getBit(px + 1, py + 1) << 4 | getBit(px + 2, py + 1) << 5 | getBit(px, py + 2) << 6 | getBit(px + 1, py + 2) << 7 | getBit(px + 2, py + 2) << 8;
+        return r;
+    }
+    /** Gets the type of a tile in the map. */ getType(x, y) {
+        if (x < 0 || x >= this.data.width || y < 0 || y >= this.data.height) return 0;
+        return this.data.data[(x + y * this.data.width) * 4 + 3] > 128 ? 1 : 0;
+    }
+    /** Gets the position of a tile ID in the tileSet. */ getPos(tileId) {
+        return [
+            tileId % this.tsWidth * this.tileWidth,
+            Math.floor(tileId / this.tsWidth) * this.tileHeight
+        ];
+    }
+    async getImg(url) {
+        return new Promise((resolve, reject)=>{
+            const img = new Image();
+            img.onload = ()=>resolve(img)
+            ;
+            img.onerror = (err)=>reject(err)
+            ;
+            img.src = url;
+        });
+    }
+    render(delta) {
+        const x = Glass.isPixelated ? Math.floor(this.pos.x) : this.pos.x, y = Glass.isPixelated ? Math.floor(this.pos.y) : this.pos.y;
+        Glass.gl.bindTexture(Glass.gl.TEXTURE_2D, this.texture);
+        Glass.vertexData[0] = x;
+        Glass.vertexData[1] = y;
+        Glass.vertexData[2] = x + this.size.x;
+        Glass.vertexData[3] = y;
+        Glass.vertexData[4] = x;
+        Glass.vertexData[5] = y + this.size.y;
+        Glass.vertexData[6] = x + this.size.x;
+        Glass.vertexData[7] = y + this.size.y;
+        Glass.gl.bufferData(Glass.gl.ARRAY_BUFFER, Glass.vertexData, Glass.gl.DYNAMIC_DRAW);
+        Glass.texData[0] = Glass.vertexData[0];
+        Glass.texData[1] = Glass.vertexData[1];
+        Glass.texData[2] = 0;
+        Glass.texData[3] = 0;
+        Glass.texData[4] = this.size.x / this.size.x / this.size.x;
+        Glass.texData[5] = this.size.y / this.size.y / this.size.y;
+        Glass.gl.uniform1fv(Glass.uniforms.texInfo, Glass.texData);
+        Glass.gl.uniform4fv(Glass.uniforms.color, this.tint);
+        Glass.gl.drawArrays(Glass.gl.TRIANGLE_STRIP, 0, 4);
+        super.render(delta);
+    }
+}
+const bodies = [];
+let player;
+function setup() {
+    console.log(Glass);
+    Glass.pixelated();
+    Glass.scene.has(new PhysicsActor().name("Player").has(new Sprite("Assets/player.png").edit((spr)=>{
+        spr.rect.width = 16;
+        spr.rect.height = 16;
+        spr.size.set(16, 16);
+        spr.pos.setX(-3);
+        spr.showHitbox = false;
+    })).edit((self)=>{
+        self.pos.x = Glass.width / 2 - 8;
+        self.pos.y = Glass.height / 2 - 16;
+        self.size.set(10, 16);
+    }), new TileMap("Assets/testTileset.png", "Assets/tilesetBitmap.png", 8, 8, "00002wVp-t-00MQIG03-oIJ+V+UwVopINJ+MQJ2Vp-tuJ+V+62VopM0J+V+u000030").name("Platform"));
+    player = Glass.scene.get("Player");
+    // platform = Glass.scene.get("Platform") as PhysicsBody
+    Glass.onInput([
+        " ",
+        "w",
+        "ArrowUp"
+    ], "jump", ()=>{
+        // if (player.touchedFlags & PhysicsActor.BOTTOM)
+        player.velocity.setY(-Glass.lastDelta * 2);
+    // else
+    // die()
+    });
+    Glass.onInput([
+        "a",
+        "A",
+        "ArrowLeft"
+    ], "left");
+    Glass.onInput([
+        "d",
+        "D",
+        "ArrowRight"
+    ], "right");
+    globalize({
+        player
+    });
+}
+function frame(delta) {
+    let movX = 0;
+    if (Glass.ongoing("left")) movX--;
+    if (Glass.ongoing("right")) movX++;
+    // if (Glass.frameCount % 20 == 0) console.log(Glass.events)
+    player.velocity.add(movX * 0.35, 0);
+    Glass.follow(player);
+    player.children[0].flipped = player.velocity.x < 0;
+// if (player.pos.y > Glass.scene.size.y / 2) {
+// 	player.velocity.y = 0
+// 	player.pos.y --
+// }
+}
+function die() {
+    Glass.scene.has(new PhysicsActor().name("Body").has(new Sprite("Assets/player.png").edit((spr)=>{
+        spr.rect.width = 16;
+        spr.rect.height = 16;
+        spr.frame = 8 + Math.floor(Math.random() * 3);
+        spr.size.set(16, 16);
+        spr.pos.set(-1, -7);
+        spr.showHitbox = false;
+        spr.flipped = player.children[0].flipped;
+    })).edit((self)=>{
+        self.pos.setVec(player.pos);
+        self.size.set(14, 9);
+        self.velocity.setVec(player.velocity);
+    }));
+    player.velocity.set(0, 0);
+    player.pos.set(0, 0);
+// bodies.push()
+}
+Glass.init(setup, frame, ()=>{}, "");
+
+}
+	</script>
+	<style>*{margin:0;padding:0;width:100vw;height:100vh}</style>
+</head>
+<body></body>
