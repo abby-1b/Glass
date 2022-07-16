@@ -32,11 +32,18 @@ export class Sprite extends GlassNode {
 			;(this.loadFn as ((sp: Sprite) => void)[]).map(fn => fn(this))
 			this.loadStatus--
 		}
-		img.src = src
+		if (src == "") {
+			console.log("Empty source passed to sprite.")
+			this.loadStatus--
+			return
+		}
+		const bf = /** replace "../" */ ""
+		img.src = bf + src
 	}
 
 	public render(delta: number) {
 		super.render(delta)
+		if (!this.visible) return
 		const x = Glass.isPixelated ? Math.floor(this.pos.x) : this.pos.x
 			, y = Glass.isPixelated ? Math.floor(this.pos.y) : this.pos.y
 		Glass.gl.bindTexture(Glass.gl.TEXTURE_2D, this.texture)

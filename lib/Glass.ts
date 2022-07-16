@@ -13,8 +13,10 @@ class GlassInstance {
 	width: number = 0
 	height: number = 0
 	scene: Scene
-	pixelSize = 2
+	pixelSize = 4
 	isPixelated = false
+
+	camShake = 0
 
 	/** All events that exist */
 	protected eventFunctions: {[key: string]: (() => void)[]} = {}
@@ -56,6 +58,7 @@ class GlassInstance {
 		physics: ((delta: number) => void) | undefined,
 		url: string
 	) {
+		/** no-build */
 		this.mainPath = new URL(url).pathname.split("/").slice(0, -1).join("/")
 		this.frameFn = frame === undefined ? () => {} : frame
 		this.physicsFn = physics === undefined ? () => {} : physics
@@ -113,7 +116,7 @@ class GlassInstance {
 			this.gl.texImage2D(this.gl.TEXTURE_2D, 0, this.gl.RGBA, this.gl.RGBA, this.gl.UNSIGNED_BYTE, fontImg)
 			fontImg.onload = null
 		}
-		fontImg.src = "../../lib/font.png"
+		fontImg.src = /** replace "font.png" */ "../../lib/font.png"
 
 		// Inputs
 		window.addEventListener('contextmenu', e => {
@@ -193,6 +196,10 @@ class GlassInstance {
 		frameCallback()
 	}
 
+	public get(name: string) {
+		return this.scene.get(name)
+	}
+
 	public onInput(triggers: string[], eventName: string, run?: () => void) {
 		if (run) {
 			if (eventName in this.eventFunctions)
@@ -211,8 +218,8 @@ class GlassInstance {
 		return this.events.includes(eventName)
 	}
 
-	public follow(node: GlassNode) {
-		this.scene.pos.lerpVec(new Vec2(Glass.width / 2, Glass.height / 2).subVecRet(node.pos.addVecRet(node.size.mulRet(0.5, 0.5))), 0.1)
+	public follow(node: GlassNode, xOffs = 0, yOffs = 0) {
+		this.scene.pos.lerpVec(new Vec2(Glass.width / 2, Glass.height / 2).subVecRet(node.getRealPos().addVecRet(node.size.mulRet(0.5, 0.5))).subRet(xOffs, yOffs), 0.1)
 	}
 
 	public translate(x: number, y: number) {
@@ -267,9 +274,12 @@ class GlassInstance {
 	}
 
 	public text(txt: string, x: number, y: number) {
+		x = Math.floor(x)
+		y = Math.floor(y)
 		txt = txt.toUpperCase()
 		this.gl.bindTexture(this.gl.TEXTURE_2D, this.fontTexture)
-		const size = 8
+		const size = 4
+		this.colorf(0, 0, 0)
 		for (let c = 0; c < txt.length; c++) {
 			if (txt[c] == " ") continue
 			const ofs = size * 1.25 * c
@@ -295,11 +305,14 @@ class GlassInstance {
 	}
 
 	protected frame(delta: number) {
+		this.scene.pos.add((Math.random() - 0.5) * this.camShake, (Math.random() - 0.5) * this.camShake)
+		this.camShake *= 0.8
+
 		this.translation[0] = 0
 		this.translation[1] = 0
 		if (delta > 3) delta = 1
 		this.lastDelta = delta
-		this.gl.clearColor(0.7, 1, 1, 1)
+		this.gl.clearColor(2/3, 1, 0, 1)
 		this.gl.clear(this.gl.COLOR_BUFFER_BIT)
 		this.gl.enable(this.gl.DEPTH_TEST)
 		this.gl.depthFunc(this.gl.LEQUAL)
@@ -312,7 +325,8 @@ class GlassInstance {
 		this.frameFn(delta)
 		this.scene.render(delta)
 
-		Editor.render()
+		/** no-build */
+		// Editor.render()
 
 		this.frameCount++
 	}

@@ -75,7 +75,7 @@ async function serveHttp(conn: Deno.Conn): Promise<void> {
 					body = Deno.readFileSync(path)
 				}
 			}
-		} catch (_e) {
+		} catch (_) {
 			// Path doesn't exist
 			try {
 				// Maybe it's a ts file?

@@ -3,7 +3,7 @@ import { GlassNode } from "./GlassNode"
 
 export class BitMap extends GlassNode {
 	protected texture: WebGLTexture
-	protected canvas: HTMLCanvasElement
+	canvas: HTMLCanvasElement
 	protected ctx: CanvasRenderingContext2D
 
 	tint: [number, number, number, number] = [0, 0, 0, -1]

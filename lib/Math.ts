@@ -50,6 +50,10 @@ export class Vec2 {
 		this.y = (1 - i) * this.y + i * v.y
 	}
 
+	/** Returns the length of the fractional component of the vector,  */
+	fractLen(): number {
+		return Math.hypot(Math.round(this.x) - this.x, Math.round(this.y) - this.y)
+	}
 	len() { return Math.hypot(this.x, this.y) }
 	normalize() {
 		if (this.x == 0 && this.y == 0) return
@@ -62,6 +66,9 @@ export class Vec2 {
 
 	floor() { this.x = Math.floor(this.x), this.y = Math.floor(this.y) }
 	floorRet() { return new Vec2(Math.floor(this.x), Math.floor(this.y)) }
+	
+	round() { this.x = Math.round(this.x), this.y = Math.round(this.y) }
+	roundRet() { return new Vec2(Math.round(this.x), Math.round(this.y)) }
 
 	dist(v: Vec2) {
 		return Math.hypot(this.x - v.x, this.y - v.y)

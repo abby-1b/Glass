@@ -11,11 +11,11 @@ function setup() {
 	Glass.pixelated()
 	Glass.scene.has(
 		new FitContent().has(
-			BitMap.from("00002J+V+-00MQI00V+IJ+V+UJ+MQIJ+MQJJ+V+-J+V+6J+MQmJ+V+u0000O", 30, 12)
+			BitMap.from("00002x02Vp-t-u000MQIJ0003-oI00J+V+Uu02VopIN00J+MQJu02Vp-t-00J+V+6u02VopM+00J+V+-u000003+00", 45, 12)
 				.name("BitMap")
 				.script("bitmap")
 				.has(
-					new Sprite("../TestProject/Assets/testTileset.png")
+					new Sprite("../GMTK/Assets/tileSet.png")
 						.name("TileSet")
 				)
 		)

@@ -17,7 +17,8 @@ export class GlassNode {
 	id: number
 	pos: Vec2 = new Vec2(0, 0)
 	size: Vec2 = new Vec2(0, 0)
-	showHitbox: boolean = true
+	visible = true
+	showHitbox: boolean = false
 	children: GlassNode[] = []
 	parent: GlassNode | undefined
 
@@ -78,7 +79,7 @@ export class GlassNode {
 	}
 
 	public get(name: string, supressError = false): GlassNode | undefined {
-		if (this.nodeName == name) return this
+		if (this.getName() == name) return this
 		for (let c = 0; c < this.children.length; c++)
 			if (this.children[c].get(name, true)) return this.children[c]
 		if (!supressError) console.log("Node `" + name + "` not found")

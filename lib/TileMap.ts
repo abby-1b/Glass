@@ -5,7 +5,6 @@ import { PhysicsBody } from "./Physics"
 
 export class TileMap extends GlassNode {
 	protected texture: WebGLTexture
-	colliders: PhysicsBody[] = []
 	tileWidth: number
 	tileHeight: number
 
@@ -13,7 +12,7 @@ export class TileMap extends GlassNode {
 
 	tsWidth = 0
 	tsHeight = 0
-	data: ImageData | undefined
+	data: ImageData
 
 	static h64Digits = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz+-"
 	
@@ -22,7 +21,8 @@ export class TileMap extends GlassNode {
 		mapURL: string,
 		tileWidth: number,
 		tileHeight: number,
-		bitMap: string
+		bitMap: string,
+		collision = true
 	) {
 		super()
 		this.tileWidth = tileWidth
@@ -33,8 +33,6 @@ export class TileMap extends GlassNode {
 
 		this.getImg(tilesetURL).then(ts => {
 			this.getImg(mapURL).then(map => {
-				this.loadStatus--
-
 				// Calculate bitmaps
 				this.tsWidth = ts.width / this.tileWidth
 				this.tsHeight = ts.height / this.tileHeight
@@ -48,24 +46,83 @@ export class TileMap extends GlassNode {
 
 				// Calculate failed bitmaps
 				const backupBmps: {[key: number]: number} = {
-					25: 24,   30: 26,   31: 27,   51: 50,  
-					55: 54,   57: 56,   60: 56,   61: 56,  
-					88: 24,   90: 26,   91: 27,   95: 27,  
-					120: 56,  123: 59,  127: 63,  147: 146,
-					150: 146, 153: 152, 158: 154, 159: 155,
-					180: 176, 210: 146, 211: 146, 214: 146,
-					217: 216, 222: 218, 223: 219, 240: 176,
-					244: 176, 246: 182, 306: 50,  308: 48, 
-					310: 54,  311: 54,  312: 56,  313: 56, 
-					319: 63,  383: 63,  376: 56,  377: 56, 
-					402: 146, 403: 146, 407: 146, 408: 152,
-					409: 152, 435: 434, 436: 432, 439: 438,
-					466: 146, 472: 216, 473: 216, 474: 218,
-					475: 219, 479: 219, 496: 432, 499: 434,
-					500: 432, 502: 438, 503: 438, 508: 504,
-					509: 504, 505: 504,
+					19: 18,
+					23: 18,
+					25: 24,  
+					30: 26,  
+					31: 27,  
+					51: 50,  
+					55: 54,  
+					57: 56,  
+					60: 56,  
+					61: 56,  
+					88: 24,  
+					89: 24,
+					90: 26,  
+					91: 27,  
+					95: 27,  
+					120: 56, 
+					121: 56,
+					123: 59, 
+					127: 63, 
+					147: 146,
+					150: 146,
+					151: 146,
+					153: 152,
+					158: 154,
+					159: 155,
+					180: 176,
+					210: 146,
+					211: 146,
+					214: 146,
+					217: 216,
+					222: 218,
+					223: 219,
+					240: 176,
+					244: 176,
+					246: 182,
+					249: 248,
+					304: 48,
+					306: 50, 
+					308: 48, 
+					310: 54, 
+					311: 54, 
+					312: 56, 
+					313: 56, 
+					316: 56,
+					319: 63, 
+					383: 63, 
+					376: 56, 
+					377: 56, 
+					400: 144,
+					402: 146,
+					403: 146,
+					406: 146,
+					407: 146,
+					408: 152,
+					409: 152,
+					435: 434,
+					436: 432,
+					439: 438,
+					464: 144,
+					466: 146,
+					467: 146,
+					470: 146,
+					471: 146,
+					472: 216,
+					473: 216,
+					474: 218,
+					475: 219,
+					479: 219,
+					496: 432,
+					499: 434,
+					500: 432,
+					502: 438,
+					503: 438,
+					508: 504,
+					509: 504,
+					505: 504,
 				}
-				// 406: 146
 				for (const b in backupBmps)
 					if (!(b in bmps)) bmps[b] = bmps[backupBmps[b]]
 
@@ -86,7 +143,7 @@ export class TileMap extends GlassNode {
 				// Autotile the tiles onto said tilemap
 				for (let x = 0; x < map.width; x++) {
 					for (let y = 0; y < map.height; y++) {
-						if (this.getType(x, y) == 0) continue
+						// if (this.getType(x, y) == 0) continue
 						let nn: number | number[] = 0
 							| (this.getType(x - 1, y - 1))
 							| (this.getType(x    , y - 1) << 1)
@@ -97,65 +154,66 @@ export class TileMap extends GlassNode {
 							| (this.getType(x - 1, y + 1) << 6)
 							| (this.getType(x    , y + 1) << 7)
 							| (this.getType(x + 1, y + 1) << 8)
-						// if (nn == 0) console.log(nn), nn = 3
+						// const bnn = nn
 						if (nn in bmps) {
-							nn = bmps[nn] // TODO: pick random
+							nn = bmps[nn]
 							nn = nn[Math.floor(Math.random() * (nn.length))]
 							ctx.drawImage(ts, ...this.getPos(nn), tileWidth, tileHeight, x * tileWidth, y * tileHeight, tileWidth, tileHeight)
 						} else {
-							for (let i = 0; i < 9; i++)
-								if ((nn & (1 << i)) != 0) ctx.fillRect(x * tileWidth + 2 * (i % 3) + 1, y * tileHeight + 2 * Math.floor(i / 3) + 1, 2, 2)
+							if (this.getType(x, y) != 0) console.log("Missed autotile:", nn)
+							nn = bmps[0]
+							nn = nn[Math.floor(Math.random() * (nn.length))]
+							ctx.drawImage(ts, ...this.getPos(nn), tileWidth, tileHeight, x * tileWidth, y * tileHeight, tileWidth, tileHeight)
+						}
+						// const s = 1
+						// for (let i = 0; i < 9; i++)
+						// 	if ((bnn & (1 << i)) != 0) ctx.fillRect(x * tileWidth + s * (i % 3) + 1, y * tileHeight + s * Math.floor(i / 3) + 1, s, s)
+					}
+				}
+
+				if (collision) {
+					// Group tiles into colliders
+					let dat = new Array(map.width * map.height)
+					for (let a = 0; a < dat.length; a++)
+						dat[a] = this.getType(a % map.width, Math.floor(a / map.width)) - 2
+					
+					let colls: [Rect, number][] = []
+					let idx = -1
+					for (let a = 0; a < dat.length; a++) {
+						const x = a % map.width, y = Math.floor(a / map.width)
+						if (dat[a] != -1) continue
+						if (x > 0 && dat[a - 1] != -2)
+							dat[a] = dat[a - 1], colls[idx][0].width += 1
+						else {
+							dat[a] = ++idx
+							colls[colls.length] = [new Rect(x, y, 1, 1), 
+								(dat[a - 1 - map.width] == -2 && dat[a - map.width] != -2 ? dat[a - map.width] : 0)]
 						}
 					}
-				}
-
-				// Start grouping tiles into colliders
-				let dat = new Array(map.width * map.height)
-				for (let a = 0; a < dat.length; a++)
-					dat[a] = this.getType(a % map.width, Math.floor(a / map.width)) - 2
-				
-				let colls: [Rect, number][] = []
-				let idx = -1
-				for (let a = 0; a < dat.length; a++) {
-					const x = a % map.width, y = Math.floor(a / map.width)
-					if (dat[a] != -1) continue
-					if (x > 0 && dat[a - 1] != -2)
-						dat[a] = dat[a - 1], colls[idx][0].width += 1
-					else {
-						dat[a] = ++idx
-						colls[colls.length] = [new Rect(x, y, 1, 1), 
-							(dat[a - 1 - map.width] == -2 && dat[a - map.width] != -2 ? dat[a - map.width] : 0)]
+					for (let c = 1; c < colls.length; c++) {
+						if (colls[c][1] == 0) continue
+						let m = colls[colls[c][1]]
+						while (m[1] < 0) m = colls[-m[1]]
+						if (m[0].width == colls[c][0].width)
+							m[0].height += 1, colls[c][1] *= -1
+						else
+							colls[c][1] = 0
 					}
+					for (let c = 0; c < colls.length; c++)
+						if (colls[c][1] >= 0)
+							this.children.push(new PhysicsBody().edit(p => {
+								p.parent = this
+								p.pos.set(colls[c][0].x * tileWidth, colls[c][0].y * tileHeight)
+								p.size.set(colls[c][0].width * tileWidth, colls[c][0].height * tileHeight)
+								p.showHitbox = false
+							}))
 				}
-				console.log(colls)
-				for (let c = 1; c < colls.length; c++) {
-					if (colls[c][1] == 0) continue
-					let m = colls[colls[c][1]]
-					while (m[1] < 0) m = colls[-m[1]]
-					if (m[0].width == colls[c][0].width)
-						m[0].height += 1, colls[c][1] *= -1
-					else
-						colls[c][1] = 0
-				}
-				for (let c = 0; c < colls.length; c++)
-					if (colls[c][1] >= 0)
-						this.children.push(new PhysicsBody().edit(p => {
-							p.parent = this
-							p.pos.set(colls[c][0].x * tileWidth, colls[c][0].y * tileHeight)
-							p.size.set(colls[c][0].width * tileWidth, colls[c][0].height * tileHeight)
-							p.showHitbox = true
-						}))
-
-				// Draw them (for debugging)
-				// for (let r = 0; r < colls.length; r++) {
-				// 	ctx.strokeStyle = `rgb(${255 * Math.random()}, ${255 * Math.random()}, ${255 * Math.random()})`
-				// 	ctx.strokeRect(colls[r][0].x * tileWidth + 0.5, colls[r][0].y * tileHeight + 0.5, colls[r][0].width * tileWidth - 1, colls[r][0].height * tileHeight - 1)
-				// }
-
 				// Cleanup & send texture to WebGL
-				this.data = undefined
+				// this.data = undefined
 				Glass.gl.bindTexture(Glass.gl.TEXTURE_2D, this.texture)
 				Glass.gl.texImage2D(Glass.gl.TEXTURE_2D, 0, Glass.gl.RGBA, Glass.gl.RGBA, Glass.gl.UNSIGNED_BYTE, cnv)
+
+				this.loadStatus--
 			})
 		}).catch(err => { this.loadStatus--, console.error(err) })
 	}
@@ -182,8 +240,8 @@ export class TileMap extends GlassNode {
 	}
 
 	/** Gets the type of a tile in the map. */
-	protected getType(x: number, y: number): number { // 1 if the tile is there, 0 if air.
-		if (x < 0 || x >= (this.data as ImageData).width || y < 0 || y >= (this.data as ImageData).height) return 0
+	public getType(x: number, y: number): number { // 1 if the tile is there, 0 if air.
+		if (x < 0 || x >= (this.data as ImageData).width || y < 0 || y >= (this.data as ImageData).height) return 1
 		return (this.data as ImageData).data[(x + y * (this.data as ImageData).width) * 4 + 3] > 128 ? 1 : 0
 	}
 

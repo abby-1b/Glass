@@ -24,11 +24,11 @@ function setup() {
 						spr.showHitbox = false
 					})
 			).edit(self => {
-				self.pos.x = Glass.width / 2 - 8
+				self.pos.x = Glass.width - 8
 				self.pos.y = Glass.height / 2 - 16
 				self.size.set(10, 16)
 			}),
-		new TileMap("Assets/testTileset.png", "Assets/testTileset.png", 8, 8, "00002wVp-t-00MQIG03-oIJ+V+UwVopINJ+MQJ2Vp-tuJ+V+62VopM0J+V+u000030")
+		new TileMap("Assets/testTileset.png", "Assets/testTileset.png", 8, 8, "00002wVp-t-00MQIG03-oIJ+V+UwVopINJ+MQJ2Vp-tuJ+V+62VopM0J+V+u000030", false)
 			.name("Platform")
 			// .edit(tm => tm.pos.set(64, 64)),
 	)
@@ -55,10 +55,10 @@ function frame(delta: number) {
 	player.velocity.add(movX * 0.35, 0)
 	Glass.follow(player)
 	;(player.children[0] as Sprite).flipped = (player.velocity.x < 0)
-	// if (player.pos.y > Glass.scene.size.y / 2) {
-	// 	player.velocity.y = 0
-	// 	player.pos.y --
-	// }
+	if (player.pos.y > Glass.scene.size.y / 2) {
+		player.velocity.y = 0
+		player.pos.y --
+	}
 }
 
 function die() {

@@ -3,6 +3,8 @@ import { GlassNode } from "./GlassNode"
 
 class EditorInstance {
 	text = ""
+	textSize = 4
+	ts = 5
 
 	openPaths: number[] = [0]
 	selected = ""
@@ -35,10 +37,10 @@ class EditorInstance {
 
 		if (this.selected == path) {
 			Glass.colorf(0, 0, 0, 80)
-			Glass.fillRect(indent * 10 - 1, vertical * 10 - 1, txt.length * 10, 10)
+			Glass.fillRect(indent * this.ts - 1, vertical * this.ts - 1, txt.length * this.ts, this.ts)
 		}
 		Glass.colorf(0, 0, 0)
-		Glass.text(txt, indent * 10, vertical * 10)
+		Glass.text(txt, indent * this.ts, vertical * this.ts)
 		if (!open) return 0
 		let added = 0
 		n.children.forEach(c => {
@@ -49,15 +51,15 @@ class EditorInstance {
 	}
 
 	public render() {
-		Glass.translate(2, 2)
+		Glass.translate(this.textSize / 4, this.textSize / 4)
 		this.text += Glass.events.join("")
 		Glass.colorf(255, 255, 255)
-		Glass.fillRect(0, 0, 128, this.nodesLength * 10 + 2)
+		Glass.fillRect(0, 0, 128, this.nodesLength * this.ts + this.textSize / 4)
 
 		Glass.colorf(0, 0, 0)
-		Glass.translate(2, 2)
+		Glass.translate(this.textSize / 4, this.textSize / 4)
 		this.nodesLength = this.renderNode(Glass.scene, 0, 0, 0, "Root") + 1
-		Glass.translate(-2, -2)
+		Glass.translate(-this.textSize / 4, -this.textSize / 4)
 
 		Glass.translate(-3, -3)
 	}
