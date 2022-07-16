@@ -5,6 +5,8 @@ import { TileMap } from "../../lib/TileMap";
 
 export let onTurn = 0
 
+const pieces: Piece[] = []
+
 export class Piece extends Sprite {
 	parent: TileMap
 
@@ -39,6 +41,8 @@ export class Piece extends Sprite {
 			sp.size.x = sp.rect.width = 10
 		})
 		this.has(this.dice)
+
+		pieces.push(this)
 	}
 
 	public roll() {
@@ -50,12 +54,22 @@ export class Piece extends Sprite {
 		this.movesLeft += Math.floor(Math.random() * (4 + this.diceType * 2)) + 1
 	}
 
+	public interactWith(p: Piece) {}
+
 	public moveBy(x: number, y: number): boolean { // this.diceType < 0 || 
 		const switching = ((this.tmPos.x % 2 == 0 && x < 0)
 			|| (this.tmPos.x % 2 == 1 && x > 0)
 			|| (this.tmPos.y % 2 == 0 && y < 0)
 			|| (this.tmPos.y % 2 == 1 && y > 0))
-		if (((!switching) || this.diceType < 0 || this.movesLeft > 0) && this.parent.getType(Math.floor((this.tmPos.x + x) / 2), Math.floor((this.tmPos.y + y) / 2)) == 0) {
+		if (((!switching) || this.diceType < 0 || this.movesLeft > 0) && this.parent.getType(Math.floor((this.tmPos.x + x) / 2), Math.floor((this.tmPos.y + y) / 2)) == 0 && ((): boolean => {
+			const nPos = this.tmPos.addRet(x, y)
+			for (let p = 0; p < pieces.length; p++)
+				if (pieces[p].tmPos.equalsVec(nPos)) {
+					pieces[p].interactWith(this)
+					return false
+				}
+			return true
+		})()) {
 			this.tmPos.add(x, y)
 			if (switching) this.movesLeft--
 			return true
@@ -65,6 +79,12 @@ export class Piece extends Sprite {
 		}
 	}
 
+	public randMove() {
+		if (Math.random() < 0.5)
+			this.moveBy(1 * (Math.random() < 0.5 ? 1 : -1), 0)
+		else
+			this.moveBy(0, 1 * (Math.random() < 0.5 ? 1 : -1))
+	}
 	public makeMove() {}
 
 	public render(delta: number) {
@@ -98,26 +118,34 @@ export class Piece extends Sprite {
 		if (this.pos.fractLen() < 0.1) this.pos.round()
 		super.render(delta)
 		if (this.diceType >= 0) Glass.text(this.movesLeft + "", ...this.getRealPos().addRet(6, 3 + this.dice.pos.y).unwrap())
+		
 	}
 }
 
 export class FriendlyPiece extends Piece {
+	speech: Sprite
+
 	constructor(type: string) {
 		super(type)
+		this.speech = new Sprite("Assets/speech.png")
+			.edit(s => s.pos.set(-4, -15))
+		this.has(this.speech)
+		this.diceType = -1
 	}
 
-	makeMove() {
-		this.moveBy(-1, 0)
+	public makeMove(): void {
+		// this.randMove()
 	}
 
-	render(delta: number) {
-		super.render(delta)
+	interactWith() {
+		
 	}
 }
 
 export class PlayerPiece extends Piece {
 	canRoll = true
 	repeatTime = 0
+
 	constructor(type: string) {
 		super(type)
 		Glass.onInput([" "], "Roll", () => { this.roll() })
@@ -129,7 +157,7 @@ export class PlayerPiece extends Piece {
 
 	async init() {
 		super.init()
-		this.tmPos.set(this.parent.data.width / 2, this.parent.data.height)
+		this.tmPos.set(this.parent.data.width, this.parent.data.height)
 	}
 
 	moveBy(x: number, y: number): boolean {

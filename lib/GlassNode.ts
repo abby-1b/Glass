@@ -101,6 +101,17 @@ export class GlassNode {
 		}
 	}
 
+	protected ySortIndex = 0
+	public ySort() {
+		if (this.children.length < 2) return
+		this.ySortIndex = (this.ySortIndex + 1) % (this.children.length - 1)
+		if (this.children[this.ySortIndex].pos.y > this.children[this.ySortIndex + 1].pos.y) {
+			const tmp = this.children[this.ySortIndex]
+			this.children[this.ySortIndex] = this.children[this.ySortIndex + 1]
+			this.children[this.ySortIndex + 1] = tmp
+		}
+	}
+
 	public script(src: string): this {
 		this.scriptSrc = src
 		this.loadStatus++

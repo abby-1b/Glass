@@ -64,6 +64,9 @@ export class Vec2 {
 		const m = Math.hypot(this.x, this.y); return new Vec2(this.x / m, this.y / m)
 	}
 
+	equals(x: number, y: number) { return this.x == x && this.y == y }
+	equalsVec(v: Vec2) { return this.x == v.x && this.y == v.y }
+
 	floor() { this.x = Math.floor(this.x), this.y = Math.floor(this.y) }
 	floorRet() { return new Vec2(Math.floor(this.x), Math.floor(this.y)) }
 	
