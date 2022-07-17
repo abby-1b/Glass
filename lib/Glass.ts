@@ -6,17 +6,15 @@ import { Rect, Vec2 } from "./Math"
 class GlassInstance {
 	mainPath: string
 
-	protected frameFn = (delta: number) => {}
-	protected physicsFn = (delta: number) => {}
-
 	lastDelta = 1
 	width: number = 0
 	height: number = 0
 	scene: Scene
 	pixelSize = 4
 	isPixelated = false
-
+	bg: [number, number, number] = [2/3, 1, 0]
 	camShake = 0
+	camPos = new Vec2(0, 0)
 
 	/** All events that exist */
 	protected eventFunctions: {[key: string]: (() => void)[]} = {}
@@ -41,7 +39,29 @@ class GlassInstance {
 	static fontLetters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!?[]_*|+-/\\.()@\"',<>&:%#"
 	protected fontTexture: WebGLTexture
 
-	constructor() {}
+	constructor() {
+		/** no-build */
+		if (false) {
+			console.log(`This was made with the Glass game engine!
+############################
+##                        ##
+##    ##    ##            ##
+##  ##    ##              ##
+##      ##                ##
+##    ##                  ##
+##  ##                    ##
+##                        ##
+##                        ##
+##                        ##
+##                        ##
+##                        ##
+##                        ##
+############################
+
+https://github.com/CodeIGuess/Glass
+`)
+		/** no-build */}
+	}
 
 	public pixelated(yes: boolean = true) {
 		if (yes)
@@ -54,18 +74,13 @@ class GlassInstance {
 
 	public async init(
 		setup: (() => void) | undefined,
-		frame: ((delta: number) => void) | undefined,
-		physics: ((delta: number) => void) | undefined,
 		url: string
 	) {
 		/** no-build */
 		this.mainPath = new URL(url).pathname.split("/").slice(0, -1).join("/")
-		this.frameFn = frame === undefined ? () => {} : frame
-		this.physicsFn = physics === undefined ? () => {} : physics
-
 		this.scene = new Scene().name("Root")
 
-		this.gl = document.body.appendChild(document.createElement("canvas")).getContext("webgl2") as WebGL2RenderingContext
+		this.gl = document.body.appendChild(document.createElement("canvas")).getContext("webgl2", {antialias: false}) as WebGL2RenderingContext
 		this.program = buildSP(this.gl, `#version 300 es
 			in vec2 vertex_pos;
 			out vec2 tex_pos;
@@ -200,7 +215,13 @@ class GlassInstance {
 		return this.scene.get(name)
 	}
 
-	public onInput(triggers: string[], eventName: string, run?: () => void) {
+	/**
+	 * Adds an input to the scene, and doesn't check what the callback function does.
+	 * @param triggers Keys that will trigger the event.
+	 * @param eventName The event that will be triggered
+	 * @param run The callback function that will be ran when the event is triggered.
+	 */
+	public alwaysOnInput(triggers: string[], eventName: string, run?: () => void) {
 		if (run) {
 			if (eventName in this.eventFunctions)
 				this.eventFunctions[eventName].push(run)
@@ -214,12 +235,34 @@ class GlassInstance {
 				this.allEvents[t].push(eventName)
 		})
 	}
+	/**
+	 * Adds an input to the scene, and only runs the callback if the provided node is currently loaded.
+	 * @param node The node that will be checked upon event trigger.
+	 * @param triggers Keys that will trigger the event.
+	 * @param eventName The event that will be triggered
+	 * @param run The callback function that will be ran when the event is triggered.
+	 */
+	public loadedOnInput(node: GlassNode, triggers: string[], eventName: string, run?: () => void) {
+		if (run) {
+			if (eventName in this.eventFunctions)
+				this.eventFunctions[eventName].push(() => {if(node.isInGlass())run()})
+			else
+				this.eventFunctions[eventName] = [() => {if(node.isInGlass())run()}]
+		}
+		triggers.forEach(t => {
+			if (typeof this.allEvents[t] === "undefined")
+				this.allEvents[t] = [eventName]
+			else
+				this.allEvents[t].push(eventName)
+		})
+	}
 	public ongoing(eventName: string) {
 		return this.events.includes(eventName)
 	}
 
-	public follow(node: GlassNode, xOffs = 0, yOffs = 0) {
-		this.scene.pos.lerpVec(new Vec2(Glass.width / 2, Glass.height / 2).subVecRet(node.getRealPos().addVecRet(node.size.mulRet(0.5, 0.5))).subRet(xOffs, yOffs), 0.1)
+	public follow(node: GlassNode, xOffs = 0, yOffs = 0, amount = 0.1) {
+		this.camPos.lerpVec(new Vec2(Glass.width / 2, Glass.height / 2).subVecRet(node.getRealPos().addVecRet(node.size.mulRet(0.5, 0.5))).subRet(xOffs, yOffs), amount)
+		// this.scene.pos.lerpVec(new Vec2(Glass.width / 2, Glass.height / 2).subVecRet(node.getRealPos().addVecRet(node.size.mulRet(0.5, 0.5))).subRet(xOffs, yOffs), 0.1)
 	}
 
 	public translate(x: number, y: number) {
@@ -245,6 +288,32 @@ class GlassInstance {
 		this.drawColor[3] = a / 255
 	}
 
+	public line(x1: number, y1: number, x2: number, y2: number) {
+		this.gl.uniform4fv(this.uniforms.color, this.drawColor)
+		this.vertexData[0] = x1 + 0.5
+		this.vertexData[1] = y1 + 0.5
+		this.vertexData[2] = x2 - 0.5
+		this.vertexData[3] = y2 - 0.5
+		this.gl.bufferData(this.gl.ARRAY_BUFFER, this.vertexData, this.gl.DYNAMIC_DRAW)
+		this.gl.drawArrays(this.gl.LINES, 0, 2)
+	}
+	public thickLine(x1: number, y1: number, x2: number, y2: number, thickness = 5) {
+		const a = Math.atan2(y2 - y1, x2 - x1) + Math.PI / 2
+		const s = Math.sin(a) * thickness / 2
+		const c = Math.cos(a) * thickness / 2
+		this.gl.uniform4fv(this.uniforms.color, this.drawColor)
+		this.vertexData[0] = x1 - c
+		this.vertexData[1] = y1 - s
+		this.vertexData[2] = x1 + c
+		this.vertexData[3] = y1 + s
+		this.vertexData[4] = x2 - c
+		this.vertexData[5] = y2 - s
+		this.vertexData[6] = x2 + c
+		this.vertexData[7] = y2 + s
+		this.gl.bufferData(this.gl.ARRAY_BUFFER, this.vertexData, this.gl.DYNAMIC_DRAW)
+		this.gl.drawArrays(this.gl.TRIANGLE_STRIP, 0, 4)
+	}
+
 	public rect(x: number, y: number, w: number, h: number) {
 		this.gl.uniform4fv(this.uniforms.color, this.drawColor)
 		this.vertexData[0] = x + 0.5
@@ -260,6 +329,7 @@ class GlassInstance {
 	}
 
 	public fillRect(x: number, y: number, w: number, h: number) {
+		this.gl.uniform4fv(this.uniforms.color, this.drawColor)
 		this.vertexData[0] = x
 		this.vertexData[1] = y
 		this.vertexData[2] = x + w
@@ -269,28 +339,31 @@ class GlassInstance {
 		this.vertexData[6] = x + w
 		this.vertexData[7] = y + h
 		this.gl.bufferData(this.gl.ARRAY_BUFFER, this.vertexData, this.gl.DYNAMIC_DRAW)
-		this.gl.uniform4fv(this.uniforms.color, this.drawColor)
 		this.gl.drawArrays(this.gl.TRIANGLE_STRIP, 0, 4)
 	}
 
-	public text(txt: string, x: number, y: number) {
+	public text(txt: string, x: number, y: number, width: number = Glass.width, size = 4, limit = Infinity) {
 		x = Math.floor(x)
 		y = Math.floor(y)
 		txt = txt.toUpperCase()
 		this.gl.bindTexture(this.gl.TEXTURE_2D, this.fontTexture)
-		const size = 4
-		this.colorf(0, 0, 0)
+		let tx = 0
+		let ty = 0
 		for (let c = 0; c < txt.length; c++) {
-			if (txt[c] == " ") continue
-			const ofs = size * 1.25 * c
-			this.vertexData[0] = x + ofs
-			this.vertexData[1] = y
-			this.vertexData[2] = x + size + ofs
-			this.vertexData[3] = y
-			this.vertexData[4] = x + ofs
-			this.vertexData[5] = y + size
-			this.vertexData[6] = x + size + ofs
-			this.vertexData[7] = y + size
+			if (c > limit) break
+			if (txt[c] == ' ') { tx++; continue }
+			else if (txt[c] == '\n') { tx = 0, ty++; continue }
+			let xOfs = size * 1.25 * (tx++)
+			if ((xOfs + size * 1.25) > width) xOfs = 0, tx = 1, ty++
+			const yOfs = size * 1.25 * ty
+			this.vertexData[0] = x + xOfs
+			this.vertexData[1] = y + yOfs
+			this.vertexData[2] = x + size + xOfs
+			this.vertexData[3] = y + yOfs
+			this.vertexData[4] = x + xOfs
+			this.vertexData[5] = y + size + yOfs
+			this.vertexData[6] = x + size + xOfs
+			this.vertexData[7] = y + size + yOfs
 			this.gl.bufferData(Glass.gl.ARRAY_BUFFER, Glass.vertexData, Glass.gl.DYNAMIC_DRAW)
 			this.texData[0] = this.vertexData[0]
 			this.texData[1] = this.vertexData[1]
@@ -302,27 +375,27 @@ class GlassInstance {
 			this.gl.uniform4fv(this.uniforms.color, [this.drawColor[0], this.drawColor[1], this.drawColor[2], -this.drawColor[3]])
 			this.gl.drawArrays(this.gl.TRIANGLE_STRIP, 0, 4)
 		}
+		return (ty + 1) * size * 1.25
 	}
 
 	protected frame(delta: number) {
-		this.scene.pos.add((Math.random() - 0.5) * this.camShake, (Math.random() - 0.5) * this.camShake)
-		this.camShake *= 0.8
+		this.camPos.add((Math.random() - 0.5) * this.camShake, (Math.random() - 0.5) * this.camShake)
+		this.camShake *= 0.85
 
-		this.translation[0] = 0
-		this.translation[1] = 0
+		this.translation[0] = Math.floor(this.camPos.x)
+		this.translation[1] = Math.floor(this.camPos.y)
 		if (delta > 3) delta = 1
 		this.lastDelta = delta
-		this.gl.clearColor(2/3, 1, 0, 1)
+		this.gl.clearColor(...this.bg, 1)
 		this.gl.clear(this.gl.COLOR_BUFFER_BIT)
 		this.gl.enable(this.gl.DEPTH_TEST)
 		this.gl.depthFunc(this.gl.LEQUAL)
 		this.gl.enable(this.gl.BLEND)
 		this.gl.blendFunc(this.gl.SRC_ALPHA, this.gl.ONE_MINUS_SRC_ALPHA)
-		this.physicsFn(delta), this.scene.physics(delta)
-		this.physicsFn(delta), this.scene.physics(delta)
-		this.physicsFn(delta), this.scene.physics(delta)
-		this.physicsFn(delta), this.scene.physics(delta)
-		this.frameFn(delta)
+		this.scene.physics(delta)
+		this.scene.physics(delta)
+		this.scene.physics(delta)
+		this.scene.physics(delta)
 		this.scene.render(delta)
 
 		/** no-build */

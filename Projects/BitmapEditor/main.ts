@@ -11,15 +11,16 @@ function setup() {
 	Glass.pixelated()
 	Glass.scene.has(
 		new FitContent().has(
-			BitMap.from("00002x02Vp-t-u000MQIJ0003-oI00J+V+Uu02VopIN00J+MQJu02Vp-t-00J+V+6u02VopM+00J+V+-u000003+00", 45, 12)
+			BitMap.from("00002xJ+V+--00MQIJ00V+IGJ+V+UuJ+MQIuJ+MQJuJ+V+-uJ+V+6uJ+MQtmJ+V+-u0000Vm", 36, 12)
 				.name("BitMap")
-				.script("bitmap")
+				.setScript("bitmap")
 				.has(
 					new Sprite("../GMTK/Assets/tileSet.png")
 						.name("TileSet")
 				)
 		)
 	)
+	Glass.bg = [170, 255, 255]
 	bitMap = Glass.scene.get("BitMap") as BitMap
 	globalize({bitMap})
 }
@@ -28,5 +29,5 @@ function frame() {
 	bitMap.center()
 }
 
-await Glass.init(setup, frame, () => {}, import.meta.url)
+await Glass.init(setup, import.meta.url)
 Editor.init()

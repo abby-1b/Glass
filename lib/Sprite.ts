@@ -43,18 +43,15 @@ export class Sprite extends GlassNode {
 
 	public render(delta: number) {
 		super.render(delta)
-		if (!this.visible) return
-		const x = Glass.isPixelated ? Math.floor(this.pos.x) : this.pos.x
-			, y = Glass.isPixelated ? Math.floor(this.pos.y) : this.pos.y
 		Glass.gl.bindTexture(Glass.gl.TEXTURE_2D, this.texture)
-		Glass.vertexData[0] = x
-		Glass.vertexData[1] = y
-		Glass.vertexData[2] = x + this.size.x
-		Glass.vertexData[3] = y
-		Glass.vertexData[4] = x
-		Glass.vertexData[5] = y + this.size.y
-		Glass.vertexData[6] = x + this.size.x
-		Glass.vertexData[7] = y + this.size.y
+		Glass.vertexData[0] = 0
+		Glass.vertexData[1] = 0
+		Glass.vertexData[2] = this.size.x
+		Glass.vertexData[3] = 0
+		Glass.vertexData[4] = 0
+		Glass.vertexData[5] = this.size.y
+		Glass.vertexData[6] = this.size.x
+		Glass.vertexData[7] = this.size.y
 		Glass.gl.bufferData(Glass.gl.ARRAY_BUFFER, Glass.vertexData, Glass.gl.DYNAMIC_DRAW)
 		Glass.texData[0] = Glass.vertexData[0]
 		Glass.texData[1] = Glass.vertexData[1]

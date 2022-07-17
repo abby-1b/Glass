@@ -5,7 +5,7 @@ export class Vec2 {
 	constructor(x: number, y: number) { this.x = x, this.y = y }
 
 	set(x: number, y: number) { this.x = x, this.y = y }
-	setVec(v: Vec2) { this.x = v.x, this.y = v.y }
+	setVec(v: Vec2) { this.x = v.x + 0, this.y = v.y + 0 }
 	setX(x: number) { this.x = x }
 	setY(y: number) { this.y = y }
 	copy() { return new Vec2(this.x, this.y) }

@@ -6,6 +6,12 @@ import { Sprite } from "../../lib/Sprite"
 let mul = 2
 let ratio = 8 / 3
 
+function resize(self: BitMap, x: number, y: number) {
+	self.resize(self.canvas.width + x, self.canvas.height + y)
+	self.size.mul(mul * ratio, mul * ratio)
+	;(self.children[0] as Sprite).size.setVec(self.size)
+}
+
 export function setup(self: BitMap) {
 	console.log("Ran setup!")
 	self.size.mul(mul * ratio, mul * ratio)
@@ -17,15 +23,12 @@ export function setup(self: BitMap) {
 		sp.size.setVec(self.size)
 	})
 
-	Glass.onInput(["s"], "BitmapSave", () => {
+	Glass.loadedOnInput(self, ["s"], "BitmapSave", () => {
 		console.log(self.toString())
 	})
 
-	Glass.onInput(["d"], "BitmapGrow", () => {
-		self.resize(self.canvas.width + 3, self.canvas.height)
-		self.size.mul(mul * ratio, mul * ratio)
-		;(self.children[0] as Sprite).size.setVec(self.size)
-	})
+	Glass.loadedOnInput(self, ["d"], "BitmapD", () => { resize(self, 3, 0) })
+	Glass.loadedOnInput(self, ["a"], "BitmapA", () => { resize(self, -3, 0) })
 }
 
 export function frame(self: BitMap, _delta: number) {

@@ -7,7 +7,7 @@ export class Button extends GlassNode {
 
 	constructor() {
 		super()
-		Glass.onInput(["mouseDown"], "ButtonInput#" + this.id, () => {
+		Glass.loadedOnInput(this, ["mouseDown"], "ButtonInput#" + this.id, () => {
 			const mPos = new Vec2(Glass.mouseX, Glass.mouseY).subVecRet(this.getRealPos())
 			if (mPos.x >= 0 && mPos.y >= 0
 				&& mPos.x <= this.size.x && mPos.y <= this.size.y) {

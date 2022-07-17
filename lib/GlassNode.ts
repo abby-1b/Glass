@@ -1,10 +1,11 @@
 import { Vec2 } from "./Math"
 import { Glass } from "./Glass"
+import { Module } from "./Module"
+import { Scene } from "./Scene"
 
 export class GlassNode {
 	scriptSrc: string | undefined
-	setupFn: ((self: GlassNode) => void) | undefined
-	frameFn: ((self: GlassNode, delta: number) => void) | undefined
+	script: Module | undefined
 
 	static id = 0
 	// static allNodes: (GlassNode | undefined)[] = []
@@ -32,17 +33,15 @@ export class GlassNode {
 	}
 
 	private async continueInit() {
-		this.setupFn === undefined ? 0 : this.setupFn(this)
-		for (let c = 0; c < this.children.length; c++)
-			await this.children[c].init()
+		if (this.script?.setup) this.script.setup(this)
+		for (let c = 0; c < this.children.length; c++) {
+			if (this.children[c] instanceof Scene)
+				await (this.children[c] as Scene).sceneInit()
+			else
+				await this.children[c].init()
+		}
 		this.loadFn?.forEach(f => f(this))
 		this.loadFn = undefined
-	}
-
-	public onLoad(fn: (n: this) => void): this {
-		if (this.loadStatus == 0) fn(this)
-		else (this.loadFn as ((n: this) => void)[]).push(fn)
-		return this
 	}
 
 	public async init(): Promise<void> {
@@ -59,6 +58,22 @@ export class GlassNode {
 					resolve(void 0)
 			}, 1)
 		})
+	}
+
+	public onLoad(fn: (n: this) => void): this {
+		if (this.loadStatus == 0) fn(this)
+		else (this.loadFn as ((n: this) => void)[]).push(fn)
+		return this
+	}
+
+	public isInGlass() {
+		let p: GlassNode | undefined = this
+		while (p !== undefined) {
+			p = p.parent
+			if ((p as Scene).unloaded) return false
+			if (p == Glass.scene) return true
+		}
+		return false
 	}
 
 	public name(name: string): this {
@@ -80,8 +95,10 @@ export class GlassNode {
 
 	public get(name: string, supressError = false): GlassNode | undefined {
 		if (this.getName() == name) return this
-		for (let c = 0; c < this.children.length; c++)
-			if (this.children[c].get(name, true)) return this.children[c]
+		for (let c = 0; c < this.children.length; c++) {
+			const cr = this.children[c].get(name, true)
+			if (cr) return cr
+		}
 		if (!supressError) console.log("Node `" + name + "` not found")
 	}
 
@@ -104,25 +121,23 @@ export class GlassNode {
 	protected ySortIndex = 0
 	public ySort() {
 		if (this.children.length < 2) return
-		this.ySortIndex = (this.ySortIndex + 1) % (this.children.length - 1)
-		if (this.children[this.ySortIndex].pos.y > this.children[this.ySortIndex + 1].pos.y) {
-			const tmp = this.children[this.ySortIndex]
-			this.children[this.ySortIndex] = this.children[this.ySortIndex + 1]
-			this.children[this.ySortIndex + 1] = tmp
+		for (let t = 0; t < 3; t++) {
+			this.ySortIndex = (this.ySortIndex + 1) % (this.children.length - 1)
+			if (this.children[this.ySortIndex].pos.y > this.children[this.ySortIndex + 1].pos.y) {
+				const tmp = this.children[this.ySortIndex]
+				this.children[this.ySortIndex] = this.children[this.ySortIndex + 1]
+				this.children[this.ySortIndex + 1] = tmp
+			}
 		}
 	}
 
-	public script(src: string): this {
+	public setScript(src: string): this {
 		this.scriptSrc = src
 		this.loadStatus++
-		import(Glass.mainPath + "/" + src).then(i => {
-			if ("setup" in i) this.setupFn = i.setup
-			if ("frame" in i) this.frameFn = i.frame
+		(async ()=> {
+			this.script = await import(Glass.mainPath + '/' + src)
 			this.loadStatus--
-		}).catch(err => {
-			console.log("Error loading script:\n", err)
-			this.loadStatus--
-		})
+		})()
 		return this
 	}
 
@@ -138,21 +153,22 @@ export class GlassNode {
 	}
 
 	public render(delta: number) {
-		this.frameFn === undefined ? 0 : this.frameFn(this, delta)
+		if (this.script?.frame) this.script.frame(this, delta)
 
-		const x = Glass.isPixelated ? Math.floor(this.pos.x) : this.pos.x
-			, y = Glass.isPixelated ? Math.floor(this.pos.y) : this.pos.y
-		Glass.translate(x, y)
 		for (let c = 0; c < this.children.length; c++)
-			this.children[c].render(delta)
+			if (this.children[c].visible) {
+				const x = Glass.isPixelated ? Math.floor(this.children[c].pos.x) : this.children[c].pos.x
+					, y = Glass.isPixelated ? Math.floor(this.children[c].pos.y) : this.children[c].pos.y
+				Glass.translate(x, y)
+				this.children[c].render(delta)
+				Glass.translate(-x, -y)
+			}
 		
 		// Draw hitbox
 		if (this.showHitbox) {
 			Glass.colorf(255, 0, 0)
 			Glass.rect(0, 0, this.size.x, this.size.y)
 		}
-
-		Glass.translate(-x, -y)
 	}
 
 	public physics(delta: number) {
@@ -162,9 +178,17 @@ export class GlassNode {
 
 	public center(from?: GlassNode) {
 		if (from === undefined) from = this.parent as GlassNode
-		this.pos.subVec(
-			this.pos.subVecRet(this.size.mulRet(-0.5, -0.5)).subVecRet(from.size.mulRet(0.5, 0.5))
-		)
-		// console.log(this.pos.subVecRet(this.size.mulRet(0.5, 0.5)).subVecRet((this.parent as GlassNode).size.mulRet(0.5, 0.5)))
+		const vec = from.size.mulRet(0.5, 0.5)
+		if (from == Glass.scene) vec.subVec(Glass.camPos)
+		this.pos.subVec(this.pos.subVecRet(this.size.mulRet(-0.5, -0.5)).subVecRet(vec))
+	}
+
+	public hide(): this {
+		this.visible = false
+		return this
+	}
+	public show(): this {
+		this.visible = true
+		return this
 	}
 }

@@ -1,31 +1,13 @@
-import { Glass, globalize } from "../../lib/Glass";
-import { TileMap } from "../../lib/TileMap";
-import { FriendlyPiece, Piece, PlayerPiece } from "./Piece";
-
-let player: PlayerPiece
+import { Glass } from "../../lib/Glass";
+import { Scene } from "../../lib/Scene";
 
 function setup() {
 	Glass.pixelated(true)
-
-	player = new PlayerPiece("Player").name("Player")
-	const friends: FriendlyPiece[] = [
-		new FriendlyPiece("Clerk").onLoad(p => p.tmPos.set(50, 91)),
-		new FriendlyPiece("Brother").onLoad(p => p.tmPos.set(51, 90)),
-	]
-
-	const tileMap = new TileMap("Assets/tileSet.png", "Assets/tileMap.png", 32, 16, "00002x02Vp-t-u000MQIJ0003-oI00J+V+Uu02VopIN00J+MQJu02Vp-t-00J+V+6u02VopM+00J+V+-u000003+00", false)
-		.name("TileMap")
-		.has(player, ...friends)
-	
-	Glass.scene.has(tileMap)
-
-	globalize({friends})
-	globalize({player})
+	Glass.scene.has(
+		new Scene().name("StartScreen").setScript("start.ts"),
+		new Scene().name("Overworld").hide().setScript("overworld.ts"),
+		new Scene().name("Battle").hide().setScript("battle.ts")
+	)
 }
 
-function frame() {
-	Glass.follow(player, 0, 4)
-	Glass.scene.children[0].ySort()
-}
-
-Glass.init(setup, frame, () => {}, import.meta.url)
+Glass.init(setup, import.meta.url)
