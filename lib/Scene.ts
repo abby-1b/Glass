@@ -29,12 +29,12 @@ export class Scene extends GlassNode {
 			Glass.fillRect(0, 0, this.size.x, this.size.y)
 			Glass.translate(tr[0], tr[1])
 			if (this.transitionAmount >= 255) {
+				;(this.transitionTo as Scene).show()
 				if (this.transitionData && (this.transitionTo as Scene).script?.takeData) (this.transitionTo as Scene).script?.takeData(this.transitionTo as Scene, this.transitionData)
 				;(this.transitionTo as Scene).transitionType = this.transitionType
 				;(this.transitionTo as Scene).transitionAmount = 254
 				;(this.transitionTo as Scene).transitionSpeed = -this.transitionSpeed
 				this.transitionType = this.transitionAmount = this.transitionSpeed = 0
-				;(this.transitionTo as Scene).show()
 				this.transitionTo = undefined
 				this.hide()
 			}
@@ -88,7 +88,7 @@ export class Scene extends GlassNode {
 		})
 	}
 
-	public get(name: string, supressError = false): GlassNode | undefined {
+	public get(name: string, supressError = true): GlassNode | undefined {
 		if (this.getName() == name) return this
 		if (this.unloaded) return
 		for (let c = 0; c < this.children.length; c++) {

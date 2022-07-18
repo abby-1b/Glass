@@ -28,7 +28,7 @@ export class OptionBox extends TextBox {
 		this.text.shift()
 		this.limit = 0
 		this.options[0][1](this.onSelect)
-		if (this.options.length > 0) this.options.shift()
+		this.options.shift()
 		if (this.text.length == 0) {
 			setTimeout(() => { this.finishFns.map(fn => fn()), this.finishFns = [] }, 16)
 		}

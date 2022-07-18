@@ -10,11 +10,20 @@ export let onTurn = 0
 
 const pieces: Piece[] = []
 
+const eHealth = {
+	"Snake": 8,
+	"Plant": 12
+}
+
 export class Piece extends Sprite {
+	public removePieceSelf() {
+		pieces.splice(pieces.indexOf(this), 1)
+		super.removeChildSelf()
+	}
 	parent: TileMap
 	type: string
 
-	health = 100
+	health = 10
 
 	tmPos: Vec2 = new Vec2(0, 0)
 
@@ -47,6 +56,7 @@ export class Piece extends Sprite {
 			sp.size.x = sp.rect.width = 10
 		})
 		this.has(this.diceSprite)
+		if (this.type in eHealth) this.health = eHealth[this.type]
 
 		pieces.push(this)
 	}
@@ -110,6 +120,7 @@ export class Piece extends Sprite {
 	}
 
 	public render(delta: number) {
+		if (!this.parent) return // Evil
 		this.diceSprite.visible = this.diceType >= -1
 		this.rollTime -= delta
 		if (this.rollTime > 4 && Glass.frameCount % Math.floor(7 - 5 * (this.rollTime / 60)) == 0) {
@@ -139,14 +150,15 @@ export class Piece extends Sprite {
 			.addVecRet(this.vel), 0.6)
 		if (this.pos.fractLen() < 0.1) this.pos.round()
 		super.render(delta)
-		// if (this.diceType >= 0) Glass.text(this.movesLeft + "", ...this.getRealPos().addRet(6, 3 + this.diceSprite.pos.y).unwrap())
+		Glass.colorf(0, 0, 0)
+		Glass.text(this.health + "", 5, -6)
 	}
 }
 
 export class EnemyPiece extends Piece {
 	cycle = 3
-	teamRange = 5
-	range = 3
+	teamRange = 6
+	range = 4
 	makeMove() {
 		this.cycle = (this.cycle + 1) % 4
 		if (this.cycle == 0) this.moveBy(1, 0)
@@ -162,6 +174,7 @@ export class EnemyPiece extends Piece {
 						ens.push(pieces[p])
 					}
 				}
+				/// @ts-ignore
 				PlayerPiece.curr.fight(ens)
 			}
 		}
@@ -232,7 +245,7 @@ export class PlayerPiece extends Piece {
 	repeatTimer: [number, number, number, number] = [0, 0, 0, 0]
 	recievingItem = false
 
-	dice: [number, number, number] = [0, 0, 0]
+	dice: [number, number, number] = [1, 1, 1]
 	items: {[key: string]: number} = {}
 	giveItem(name: string, count = 1) {
 		this.recievingItem = true
@@ -262,7 +275,7 @@ export class PlayerPiece extends Piece {
 
 	async init() {
 		super.init()
-		this.tpTo(Math.floor(this.parent.data.width * 1.4), this.parent.data.height - 1)
+		this.tpTo(Math.floor(this.parent.data.width * 0.5), this.parent.data.height - 1)
 		Glass.follow(this, 0, 4, 1)
 	}
 

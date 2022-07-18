@@ -93,7 +93,7 @@ export class GlassNode {
 		return (this.nodeName ?? this.constructor.name) + (unique ? "#" + this.id : "")
 	}
 
-	public get(name: string, supressError = false): GlassNode | undefined {
+	public get(name: string, supressError = true): GlassNode | undefined {
 		if (this.getName() == name) return this
 		for (let c = 0; c < this.children.length; c++) {
 			const cr = this.children[c].get(name, true)
@@ -135,7 +135,10 @@ export class GlassNode {
 		this.scriptSrc = src
 		this.loadStatus++
 		(async ()=> {
-			this.script = await import(Glass.mainPath + '/' + src)
+			let a = ".js"
+			/** no-build */
+			a = ".ts"
+			this.script = await import(Glass.mainPath + '/' + src + a)
 			this.loadStatus--
 		})()
 		return this
@@ -189,6 +192,13 @@ export class GlassNode {
 	}
 	public show(): this {
 		this.visible = true
+		return this
+	}
+
+	public removeChildSelf(): this {
+		if (!this.parent) return this
+		this.parent.children.splice(this.parent.children.indexOf(this), 1)
+		this.parent = undefined
 		return this
 	}
 }

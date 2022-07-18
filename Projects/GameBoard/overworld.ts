@@ -8,12 +8,20 @@ import { TileMap } from "../../lib/TileMap"
 import { EnemyPiece, FriendlyPiece, PlayerPiece } from "./Piece"
 
 let player: PlayerPiece
+let already = false
+
+export function takeData(data?: {playerMove?: boolean}) {
+	Glass.follow(player, 0, 0, 1)
+	player.canMove = true
+}
 
 export function setup(self: Scene) {
+	if (already) return
+	already = true
 	player = new PlayerPiece().name("Player")
 	const friends: FriendlyPiece[] = [
 		new FriendlyPiece("Clerk")
-			// .onLoad(p => p.tpTo(96, 95))
+			.onLoad(p => p.tpTo(96, 95))
 			.firstSay([
 				"Oh, you're finally awake!",
 				"I've been waiting far too long! I really need your help!",
@@ -32,8 +40,7 @@ export function setup(self: Scene) {
 			.thenSay(["please, bring him back."])
 			.thenSay(["bring him back."])
 			.onMove(p => { if (p.tmPos.y > 93 && player.tmPos.y > 93) p.tmPos.y = player.tmPos.y }),
-		new FriendlyPiece("Brother")
-			.onLoad(p => p.tmPos.set(51, 90)),
+		// new FriendlyPiece("Brother").onLoad(p => p.tmPos.set(51, 90)),
 	]
 
 	self.has(
@@ -42,6 +49,7 @@ export function setup(self: Scene) {
 				{ url: "Assets/tileSafe.png", color: [0, 255, 0, 255] },
 				{ url: "Assets/tileFloor.png", color: [255, 255, 255, 255] },
 				{ out: true, color: [255, 0, 0, 255] },
+				{ out: true, color: [0, 21, 255, 255] },
 			], "Assets/tileMap.png", 32, 16, false, (tm: TileMap, outs: [number, number, number]) => {
 				const p = new EnemyPiece(outs[2] == 3 ? "Snake" : "Plant")
 				tm.has(p)
@@ -58,7 +66,7 @@ export function setup(self: Scene) {
 					sp.size.x = 96
 					sp.size.y = 96
 					sp.pos.set(42, 42)
-				}).setScript("itemPopup.ts")
+				}).setScript("itemPopup")
 			).hide(),
 	)
 	player = Glass.get("Player") as PlayerPiece

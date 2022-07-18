@@ -51,6 +51,8 @@ class EditorInstance {
 	}
 
 	public render() {
+		const tr = [Glass.translation[0], Glass.translation[1]]
+		Glass.translate(-Glass.translation[0], -Glass.translation[1])
 		Glass.translate(this.textSize / 4, this.textSize / 4)
 		this.text += Glass.events.join("")
 		Glass.colorf(255, 255, 255)
@@ -59,9 +61,7 @@ class EditorInstance {
 		Glass.colorf(0, 0, 0)
 		Glass.translate(this.textSize / 4, this.textSize / 4)
 		this.nodesLength = this.renderNode(Glass.scene, 0, 0, 0, "Root") + 1
-		Glass.translate(-this.textSize / 4, -this.textSize / 4)
-
-		Glass.translate(-3, -3)
+		Glass.translate(tr[0], tr[1])
 	}
 }
 export const Editor = new EditorInstance()

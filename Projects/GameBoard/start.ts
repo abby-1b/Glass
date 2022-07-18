@@ -2,6 +2,7 @@ import { Button } from "../../lib/Button";
 import { Glass } from "../../lib/Glass";
 import { Scene } from "../../lib/Scene";
 import { Sprite } from "../../lib/Sprite";
+import { TileMap } from "../../lib/TileMap";
 
 let animating = false
 
@@ -10,6 +11,10 @@ let sprite: Sprite
 
 export function setup(self: Scene) {
 	self.has(
+		new TileMap([
+			{ url: "Assets/tileSet.png", color: [0, 0, 0, 255], bitMap: "00002xJ+V+--00MQIJ00V+IGJ+V+UuJ+MQIuJ+MQJuJ+V+-uJ+V+6uJ+MQtmJ+V+-u0000Vm" },
+			{ url: "Assets/tileFloor.png", color: [255, 255, 255, 255] },
+		], "Assets/battleMap.png", 32, 16).name("TM"),
 		new Button().name("StartButton").has(
 			new Sprite("Assets/playButton.png").onLoad(sp => {
 				sp.rect.width = 26
@@ -35,6 +40,7 @@ export function setup(self: Scene) {
 }
 
 export function frame(self: Scene) {
+	Glass.get("TM")?.pos.set(-40 - Math.sin(Glass.frameCount / 300) * 40, 0)
 	button.center()
 	if (animating && sprite.frame < 5 && Glass.frameCount % 4 == 0) {
 		sprite.frame++

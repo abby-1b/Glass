@@ -1,7 +1,7 @@
 import { GlassNode } from "./GlassNode"
 import { Scene } from "./Scene"
-import { Editor } from "./Editor"
 import { Rect, Vec2 } from "./Math"
+// import { Editor } from "./Editor"
 
 class GlassInstance {
 	mainPath: string
@@ -78,6 +78,11 @@ https://github.com/CodeIGuess/Glass
 	) {
 		/** no-build */
 		this.mainPath = new URL(url).pathname.split("/").slice(0, -1).join("/")
+		/** no-build */
+		if (false) {
+			this.mainPath = "."
+		/** no-build */
+		}
 		this.scene = new Scene().name("Root")
 
 		this.gl = document.body.appendChild(document.createElement("canvas")).getContext("webgl2", {antialias: false}) as WebGL2RenderingContext
@@ -272,6 +277,7 @@ https://github.com/CodeIGuess/Glass
 	}
 
 	public newTexture(): WebGLTexture {
+		// console.log(this, this.gl)
 		const texture = this.gl.createTexture() as WebGLTexture
 		this.gl.bindTexture(this.gl.TEXTURE_2D, texture)
 		this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_WRAP_S, this.gl.REPEAT)
