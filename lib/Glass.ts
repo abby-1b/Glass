@@ -296,10 +296,10 @@ https://github.com/CodeIGuess/Glass
 
 	public line(x1: number, y1: number, x2: number, y2: number) {
 		this.gl.uniform4fv(this.uniforms.color, this.drawColor)
-		this.vertexData[0] = x1 + 0.5
-		this.vertexData[1] = y1 + 0.5
-		this.vertexData[2] = x2 - 0.5
-		this.vertexData[3] = y2 - 0.5
+		this.vertexData[0] = x1 - 0.5
+		this.vertexData[1] = y1 - 0.5
+		this.vertexData[2] = x2// - 0.5
+		this.vertexData[3] = y2// - 0.5
 		this.gl.bufferData(this.gl.ARRAY_BUFFER, this.vertexData, this.gl.DYNAMIC_DRAW)
 		this.gl.drawArrays(this.gl.LINES, 0, 2)
 	}
