@@ -3,16 +3,17 @@
  * This can then be compiled to a target language.
  */
 
-class Argument { name: string; type: string; constructor(name: string, type = "unknown") { this.name = name, this.type = type } }
+class Variable { name: string; type: string; constructor(name: string, type = "unknown") { this.name = name, this.type = type } }
 
 class TreeNode {
+	iterated = false // This is currently here to mitigate type issues. Do NOT remove.
 	static match(_tokens: string[]): boolean { return false }
 	static make(_tokens: string[]): TreeNode { return new TreeNode() }
 }
 class BlockNode extends TreeNode { children: TreeNode[] = [] }
 class FunctionNode extends BlockNode {
 	name = "fnName"
-	args: Argument[] = []
+	args: Variable[] = []
 	type = "unknown"
 
 	static match(tokens: string[]): boolean { return tokens[0] == "fn" }
@@ -20,22 +21,82 @@ class FunctionNode extends BlockNode {
 		const fn = new FunctionNode()
 		tokens.shift()
 		fn.name = tokens.shift()!
-		fn.args.push(...splitComma(getClause(tokens)!).map(a => new Argument(a[0], a[2])))
-		fn.children = treeify(getClause(tokens))
+		fn.args.push(...splitComma(getClause(tokens)!).map(a => new Variable(a[0], a[2])))
+		fn.children = treeify(getClause(tokens), true, fn.args)
 		return fn
 	}
 }
 class StatementNode extends TreeNode {
 	name = "nop"
-	arg: TreeNode | undefined
+	arg!: TreeNode
 
 	static matchingTokens = ["return", "break", "continue", "nop"]
 	static match(tokens: string[]): boolean { return StatementNode.matchingTokens.includes(tokens[0]) }
 	static make(tokens: string[]): StatementNode {
 		const st = new StatementNode()
 		st.name = tokens.shift()!
-		st.arg = getClause(tokens)
+		const arg = treeify(getClause(tokens))
+		if (arg.length > 1) console.log(arg), error(Err.TREE, "Tree-ifying getClause returned more than one node.")
+		st.arg = arg[0]
 		return st
+	}
+}
+class OperatorNode extends TreeNode {
+	name!: string
+	left?: TreeNode
+	right?: TreeNode
+
+	static matchingTokens = "+-*/%&|^"
+	static match(tokens: string[]): boolean { return OperatorNode.matchingTokens.includes(tokens[0][0]) }
+	static make(tokens: string[]): OperatorNode {
+		const op = new OperatorNode()
+		op.name = tokens.shift()!
+		return op
+	}
+
+	take(nodes: TreeNode[], pos: number) {
+		this.left = nodes[pos - 1]
+		this.right = nodes[pos + 1]
+		nodes.splice(pos - 1, 1)
+		nodes.splice(pos, 1)
+	}
+}
+
+class ParenNode extends TreeNode {
+	children: TreeNode[] = []
+	static match(tokens: string[]): boolean { return tokens[0] == "(" }
+	static make(tokens: string[]): ParenNode {
+		const pr = new ParenNode()
+		pr.children.push(...treeify(getClause(tokens)))
+		return pr
+	}
+}
+
+class VarNode extends TreeNode {
+	name!: string
+
+	static lastVar: Variable // TODO: Use in `make`
+	static match(tokens: string[]): boolean {
+		VarNode.lastVar = getVar(tokens[0])!
+		return VarNode.lastVar !== undefined
+	}
+	static make(tokens: string[]): VarNode {
+		const vr = new VarNode()
+		vr.name = tokens.shift()!
+		return vr
+	}
+}
+
+class NumberLiteralNode extends TreeNode {
+	value!: string
+
+	static match(tokens: string[]): boolean {
+		return "0123456789".includes(tokens[0][0])
+	}
+	static make(tokens: string[]): NumberLiteralNode {
+		const vr = new NumberLiteralNode()
+		vr.value = tokens.shift()!
+		return vr
 	}
 }
 
@@ -43,12 +104,17 @@ const nodes: (typeof TreeNode)[] = [
 	TreeNode,
 	BlockNode,
 	FunctionNode,
-	StatementNode
+	StatementNode,
+	OperatorNode,
+	VarNode,
+	NumberLiteralNode,
+	ParenNode
 ]
 
 enum Err {
 	TOKEN = "TOKENIZATION",
-	CLAUSE = "CLAUSE FETCHING"
+	CLAUSE = "CLAUSE FETCHING",
+	TREE = "TREE PARSING"
 }
 
 function error(num: Err, msg?: string) {
@@ -119,13 +185,28 @@ function getClause(tokens: string[], removeStartEnd = true): string[] {
 	return ret
 }
 
-function treeify(tokens: string[]): TreeNode[] {
-	const retNode: TreeNode[] = []
+type Scope = { vars: Variable[], hard: boolean } // A soft scope means it can access variables from the scope before it.
+let scopePos = -1
+const scopeVars: Scope[] = []
+function getVar(name: string): Variable | undefined {
+	for (let s = scopeVars.length - 1; s >= 0; s--) {
+		for (let v = scopeVars[s].vars.length - 1; v >= 0; v--)
+			if (scopeVars[s].vars[v].name == name) return scopeVars[s].vars[v]
+		if (scopeVars[s].hard) break
+	}
+}
+
+function treeify(tokens: string[], hardScope = false, vars: Variable[] = []): TreeNode[] {
+	const retNodes: TreeNode[] = []
+	scopePos++
+	scopeVars.push({ vars, hard: hardScope })
+
+	// First pass: Turn everything into nodes
 	while (tokens.length > 0) {
 		let found = false
 		for (let n = 0; n < nodes.length; n++) {
 			if (nodes[n].match(tokens)) {
-				retNode.push(nodes[n].make(tokens))
+				retNodes.push(nodes[n].make(tokens))
 				found = true
 				break
 			}
@@ -135,7 +216,16 @@ function treeify(tokens: string[]): TreeNode[] {
 			console.log("Token `" + tokens.shift()! + "` not recognized.")
 		}
 	}
-	return retNode
+
+	// Second pass: group operation nodes
+	for (let n = 0; n < retNodes.length; n++) if (retNodes[n] instanceof OperatorNode && "*/%".includes((retNodes[n] as OperatorNode).name)) (retNodes[n] as OperatorNode).take(retNodes, n--)
+	for (let n = 0; n < retNodes.length; n++) if (retNodes[n] instanceof OperatorNode && "+-" .includes((retNodes[n] as OperatorNode).name)) (retNodes[n] as OperatorNode).take(retNodes, n--)
+	for (let n = 0; n < retNodes.length; n++) if (retNodes[n] instanceof OperatorNode && "&|" .includes((retNodes[n] as OperatorNode).name)) (retNodes[n] as OperatorNode).take(retNodes, n--)
+	for (let n = 0; n < retNodes.length; n++) if (retNodes[n] instanceof OperatorNode && ["&&","||"].includes((retNodes[n] as OperatorNode).name)) (retNodes[n] as OperatorNode).take(retNodes, n--)
+
+	scopePos--
+	scopeVars.pop()
+	return retNodes
 }
 
 function parse(code: string) {
@@ -148,7 +238,7 @@ function parse(code: string) {
 parse(`
 fn add(x: i32, y: i32)
 {
-	return x + y
+	return 2 * (x + y)
 }
 `)
 
