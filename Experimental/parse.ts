@@ -3,10 +3,21 @@
  * This can then be compiled to a target language.
  */
 
-class Variable { name: string; type: string; constructor(name: string, type = "unknown") { this.name = name, this.type = type } }
+type Type = string[]
+function sameTypes(a: Type, b: Type): boolean {
+	if (a === b) return true
+	if (a == null || b == null) return false
+	if (a.length !== b.length) return false
+
+	for (let i = 0; i < a.length; ++i)
+		if (a[i] !== b[i]) return false
+	return true
+}
+
+class Variable { name: string; type: Type; constructor(name: string, type: string[] = []) { this.name = name, this.type = type } }
 
 class TreeNode {
-	iterated = false // This is currently here to mitigate type issues. Do NOT remove.
+	type: Type = [] // This is currently here to mitigate type issues. Do NOT remove.
 	static match(_tokens: string[]): boolean { return false }
 	static make(_tokens: string[]): TreeNode { return new TreeNode() }
 }
@@ -14,15 +25,16 @@ class BlockNode extends TreeNode { children: TreeNode[] = [] }
 class FunctionNode extends BlockNode {
 	name = "fnName"
 	args: Variable[] = []
-	type = "unknown"
 
 	static match(tokens: string[]): boolean { return tokens[0] == "fn" }
 	static make(tokens: string[]): FunctionNode {
 		const fn = new FunctionNode()
 		tokens.shift()
 		fn.name = tokens.shift()!
-		fn.args.push(...splitComma(getClause(tokens)!).map(a => new Variable(a[0], a[2])))
-		fn.children = treeify(getClause(tokens), true, fn.args)
+		fn.args.push(...splitComma(getClause(tokens)!).map(a => new Variable(a[0], [a[2]])))
+		const tn = treeify(getClause(tokens), true, fn.args)
+		fn.children = tn[0]
+		fn.type.push(...tn[1])
 		return fn
 	}
 }
@@ -35,9 +47,11 @@ class StatementNode extends TreeNode {
 	static make(tokens: string[]): StatementNode {
 		const st = new StatementNode()
 		st.name = tokens.shift()!
-		const arg = treeify(getFullClause(tokens))
+
+		const arg = treeify(getFullClause(tokens))[0]
 		if (arg.length > 1) console.log(arg), error(Err.TREE, "Tree-ifying getClause returned more than one node.")
 		st.arg = arg[0]
+		st.type = st.arg.type
 		return st
 	}
 }
@@ -54,9 +68,17 @@ class OperatorNode extends TreeNode {
 		return op
 	}
 
+	static getNewType(operator: string, left: TreeNode, right: TreeNode): Type {
+		if (sameTypes(left.type, right.type)) return left.type
+		if (sameTypes(left.type, ["f32"]) || sameTypes(right.type, ["f32"])) return ["f32"]
+		console.log("Types not equal!")
+		return []
+	}
+
 	take(nodes: TreeNode[], pos: number) {
 		this.left = nodes[pos - 1]
 		this.right = nodes[pos + 1]
+		this.type.push(...OperatorNode.getNewType(this.name, this.left, this.right))
 		nodes.splice(pos - 1, 1)
 		nodes.splice(pos, 1)
 	}
@@ -65,9 +87,11 @@ class OperatorNode extends TreeNode {
 class ParenNode extends TreeNode {
 	children: TreeNode[] = []
 	static match(tokens: string[]): boolean { return tokens[0] == "(" }
-	static make(tokens: string[]): ParenNode {
+	static make(tokens: string[]): TreeNode {
+		const t = treeify(getClause(tokens, true))[0]
+		if (t.length == 1) return t[0]
 		const pr = new ParenNode()
-		pr.children.push(...treeify(getClause(tokens, true)))
+		pr.children.push(...t)
 		return pr
 	}
 }
@@ -83,6 +107,7 @@ class VarNode extends TreeNode {
 	static make(tokens: string[]): VarNode {
 		const vr = new VarNode()
 		vr.name = tokens.shift()!
+		vr.type = this.lastVar.type
 		return vr
 	}
 }
@@ -92,10 +117,12 @@ class NumberLiteralNode extends TreeNode {
 
 	static match(tokens: string[]): boolean {
 		return "0123456789".includes(tokens[0][0])
+			|| (tokens[0].length > 1 && tokens[0][0] == "." && "0123456789".includes(tokens[0][1]))
 	}
 	static make(tokens: string[]): NumberLiteralNode {
 		const vr = new NumberLiteralNode()
 		vr.value = tokens.shift()!
+		vr.type = [vr.value.includes(".") ? "f32" : "i32"]
 		return vr
 	}
 }
@@ -189,10 +216,10 @@ function getFullClause(tokens: string[]): string[] {
 	while (tokens[0] == '\n') tokens.shift()
 	const ret: string[] = []
 	const first = tokens[0]
-	let isFullOne = true
+	let isFullOne = "({[".includes(tokens[0])
 	let n = 0
 	while (tokens.length > 0) {
-		if (n == 0 && tokens[0] != first) isFullOne = false
+		if (isFullOne && n == 0 && tokens[0] != first) isFullOne = false
 		if ("({[".includes(tokens[0])) n++
 		if ("]}),".includes(tokens[0])) n--
 		if (n < 0) break
@@ -219,12 +246,13 @@ function getVar(name: string): Variable | undefined {
 	}
 }
 
-function treeify(tokens: string[], hardScope = false, vars: Variable[] = []): TreeNode[] {
+function treeify(tokens: string[], hardScope = false, vars: Variable[] = []): [TreeNode[], Type] {
 	const retNodes: TreeNode[] = []
 	scopePos++
 	scopeVars.push({ vars, hard: hardScope })
 
 	// First pass: Turn everything into nodes
+	const returnType: string[] = []
 	while (tokens.length > 0) {
 		let found = false
 		for (let n = 0; n < nodes.length; n++) {
@@ -238,6 +266,9 @@ function treeify(tokens: string[], hardScope = false, vars: Variable[] = []): Tr
 			if (tokens[0] == '\n') { tokens.shift(); continue }
 			console.log("Token `" + tokens.shift()! + "` not recognized.")
 		}
+		if (retNodes[retNodes.length - 1] instanceof StatementNode) {
+			returnType.push(...(retNodes[retNodes.length - 1] as StatementNode).type)
+		}
 	}
 
 	// Second pass: group operation nodes
@@ -248,23 +279,25 @@ function treeify(tokens: string[], hardScope = false, vars: Variable[] = []): Tr
 
 	scopePos--
 	scopeVars.pop()
-	return retNodes
+	return [retNodes, returnType]
 }
 
 function parse(code: string) {
 	const tokens = tokenize(code)
-	// console.log(tokens)
+	console.log(tokens)
 	const tree = treeify([...tokens]) // Make copy of `tokens` and parse it.
-	console.log((tree[0] as FunctionNode).children[0])
+	console.log(tree[0])
 }
 
 parse(`
-fn add(x: i32, y: i32)
-{
-	return (x + y)
-		* 2
-}
-`)
+.5
+`) // fn add(x: i32, y: f32) { return 2 * (x + y) }
+
+// const t = ["0"]
+// console.log(t)
+// console.log(getFullClause(t))
+// console.log(t)
+
 
 // TO-DO:
 //	- Return without the return keyword
