@@ -35,7 +35,7 @@ class StatementNode extends TreeNode {
 	static make(tokens: string[]): StatementNode {
 		const st = new StatementNode()
 		st.name = tokens.shift()!
-		const arg = treeify(getClause(tokens))
+		const arg = treeify(getFullClause(tokens))
 		if (arg.length > 1) console.log(arg), error(Err.TREE, "Tree-ifying getClause returned more than one node.")
 		st.arg = arg[0]
 		return st
@@ -67,7 +67,7 @@ class ParenNode extends TreeNode {
 	static match(tokens: string[]): boolean { return tokens[0] == "(" }
 	static make(tokens: string[]): ParenNode {
 		const pr = new ParenNode()
-		pr.children.push(...treeify(getClause(tokens)))
+		pr.children.push(...treeify(getClause(tokens, true)))
 		return pr
 	}
 }
@@ -143,7 +143,6 @@ function tokenize(code: string): string[] {
 			if (!whitespace.includes(code[a])) tokens.push(code[a])
 		} else lett += code[a]
 	}
-	console.log(lett)
 	return tokens
 }
 
@@ -182,6 +181,30 @@ function getClause(tokens: string[], removeStartEnd = true): string[] {
 			ret.push(tokens.shift()!)
 		}
 	}
+	return ret
+}
+
+function getFullClause(tokens: string[]): string[] {
+	if (tokens.length == 0) return []
+	while (tokens[0] == '\n') tokens.shift()
+	const ret: string[] = []
+	const first = tokens[0]
+	let isFullOne = true
+	let n = 0
+	while (tokens.length > 0) {
+		if (n == 0 && tokens[0] != first) isFullOne = false
+		if ("({[".includes(tokens[0])) n++
+		if ("]}),".includes(tokens[0])) n--
+		if (n < 0) break
+		ret.push(tokens.shift()!)
+		if (n == 0 && tokens[0] == "\n") {
+			while (tokens[0] == "\n") tokens.shift()
+			if (!"+-*/%|&^".includes((tokens[0] ?? " ")[0])) break
+		}
+	}
+	if (isFullOne) ret.shift(), ret.pop()
+	while (ret[0] == "\n") ret.shift()
+	while (ret[ret.length - 1] == "\n") ret.pop()
 	return ret
 }
 
@@ -232,13 +255,14 @@ function parse(code: string) {
 	const tokens = tokenize(code)
 	// console.log(tokens)
 	const tree = treeify([...tokens]) // Make copy of `tokens` and parse it.
-	console.log(tree[0])
+	console.log((tree[0] as FunctionNode).children[0])
 }
 
 parse(`
 fn add(x: i32, y: i32)
 {
-	return 2 * (x + y)
+	return (x + y)
+		* 2
 }
 `)
 
