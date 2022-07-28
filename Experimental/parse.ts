@@ -3,7 +3,7 @@
  * This can then be compiled to a target language.
  */
 
-type Type = string[]
+export type Type = string[]
 function sameTypes(a: Type, b: Type): boolean {
 	if (a === b) return true
 	if (a == null || b == null) return false
@@ -14,15 +14,15 @@ function sameTypes(a: Type, b: Type): boolean {
 	return true
 }
 
-class Variable { name: string; type: Type; constructor(name: string, type: string[] = []) { this.name = name, this.type = type } }
+export class Variable { name: string; type: Type; constructor(name: string, type: string[] = []) { this.name = name, this.type = type } }
 
-class TreeNode {
+export class TreeNode {
 	type: Type = [] // This is currently here to mitigate type issues. Do NOT remove.
 	static match(_tokens: string[]): boolean { return false }
 	static make(_tokens: string[]): TreeNode { return new TreeNode() }
 }
-class BlockNode extends TreeNode { children: TreeNode[] = [] }
-class FunctionNode extends BlockNode {
+export class BlockNode extends TreeNode { children: TreeNode[] = [] }
+export class FunctionNode extends BlockNode {
 	name = "fnName"
 	args: Variable[] = []
 
@@ -38,7 +38,7 @@ class FunctionNode extends BlockNode {
 		return fn
 	}
 }
-class StatementNode extends TreeNode {
+export class StatementNode extends TreeNode {
 	name = "nop"
 	arg!: TreeNode
 
@@ -55,7 +55,7 @@ class StatementNode extends TreeNode {
 		return st
 	}
 }
-class OperatorNode extends TreeNode {
+export class OperatorNode extends TreeNode {
 	name!: string
 	left?: TreeNode
 	right?: TreeNode
@@ -68,7 +68,7 @@ class OperatorNode extends TreeNode {
 		return op
 	}
 
-	static getNewType(operator: string, left: TreeNode, right: TreeNode): Type {
+	static getNewType(_operator: string, left: TreeNode, right: TreeNode): Type {
 		if (sameTypes(left.type, right.type)) return left.type
 		if (sameTypes(left.type, ["f32"]) || sameTypes(right.type, ["f32"])) return ["f32"]
 		console.log("Types not equal!")
@@ -84,7 +84,7 @@ class OperatorNode extends TreeNode {
 	}
 }
 
-class ParenNode extends TreeNode {
+export class ParenNode extends TreeNode {
 	children: TreeNode[] = []
 	static match(tokens: string[]): boolean { return tokens[0] == "(" }
 	static make(tokens: string[]): TreeNode {
@@ -96,7 +96,7 @@ class ParenNode extends TreeNode {
 	}
 }
 
-class VarNode extends TreeNode {
+export class VarNode extends TreeNode {
 	name!: string
 
 	static lastVar: Variable // TODO: Use in `make`
@@ -112,7 +112,7 @@ class VarNode extends TreeNode {
 	}
 }
 
-class NumberLiteralNode extends TreeNode {
+export class NumberLiteralNode extends TreeNode {
 	value!: string
 
 	static match(tokens: string[]): boolean {
@@ -282,22 +282,20 @@ function treeify(tokens: string[], hardScope = false, vars: Variable[] = []): [T
 	return [retNodes, returnType]
 }
 
-function parse(code: string) {
+export function parse(code: string): TreeNode[] {
 	const tokens = tokenize(code)
-	console.log(tokens)
-	const tree = treeify([...tokens]) // Make copy of `tokens` and parse it.
-	console.log(tree[0])
+	// console.log(tokens)
+	const tree = treeify(tokens) // Modifies `tokens`! rember
+	return tree[0]
 }
 
-parse(`
-.5
-`) // fn add(x: i32, y: f32) { return 2 * (x + y) }
-
-// const t = ["0"]
-// console.log(t)
-// console.log(getFullClause(t))
-// console.log(t)
-
+// parse(`
+// fn add(x: i32, y: f32) { return 2 * (x + y) }
+// `) // fn add(x: i32, y: f32) { return 2 * (x + y) }
 
 // TO-DO:
+//	- If
+//	- While
+//  - Y'know, actual language stuff.
+//  - Non-inferred function return types
 //	- Return without the return keyword
