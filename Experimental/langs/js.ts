@@ -1,6 +1,6 @@
 import { LangBase } from "./langs.ts"
+import { Type, typeMap } from "../types.ts"
 import {
-	Type,
 	TreeNode,
 	FunctionNode,
 	StatementNode,
@@ -8,11 +8,14 @@ import {
 	NumberLiteralNode
 } from "../parse.ts"
 
+const langTypeMappings = {
+	"i32": "number",
+	"f32": "number",
+}
 function toType(type: Type) {
-	return type.map(t => { return {
-		"i32": "number",
-		"f32": "number",
-	}[t] }).join(" | ")
+	return type
+		.map(t => typeMap(langTypeMappings, t))
+		.join(" | ")
 }
 
 export class Lang extends LangBase {
