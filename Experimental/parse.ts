@@ -3,16 +3,7 @@
  * This can then be compiled to a target language.
  */
 
-export type Type = string[]
-function sameTypes(a: Type, b: Type): boolean {
-	if (a === b) return true
-	if (a == null || b == null) return false
-	if (a.length !== b.length) return false
-
-	for (let i = 0; i < a.length; ++i)
-		if (a[i] !== b[i]) return false
-	return true
-}
+import { Type, operationReturns, equalTypes } from "./types.ts"
 
 export class Variable { name: string; type: Type; constructor(name: string, type: string[] = []) { this.name = name, this.type = type } }
 
@@ -32,9 +23,14 @@ export class FunctionNode extends BlockNode {
 		tokens.shift()
 		fn.name = tokens.shift()!
 		fn.args.push(...splitComma(getClause(tokens)!).map(a => new Variable(a[0], [a[2]])))
+		fn.type.push(...getType(tokens))
 		const tn = treeify(getClause(tokens), true, fn.args)
 		fn.children = tn[0]
-		fn.type.push(...tn[1])
+		const returnedTypes = tn[1]
+		if (fn.type.length == 0)
+			fn.type.push(...returnedTypes)
+		else if (!equalTypes(fn.type, returnedTypes))
+			error(Err.TYPE, "Return types don't match!")
 		return fn
 	}
 }
@@ -68,11 +64,8 @@ export class OperatorNode extends TreeNode {
 		return op
 	}
 
-	static getNewType(_operator: string, left: TreeNode, right: TreeNode): Type {
-		if (sameTypes(left.type, right.type)) return left.type
-		if (sameTypes(left.type, ["f32"]) || sameTypes(right.type, ["f32"])) return ["f32"]
-		console.log("Types not equal!")
-		return []
+	static getNewType(operator: string, left: TreeNode, right: TreeNode): Type {
+		return operationReturns(operator, left.type, right.type)
 	}
 
 	take(nodes: TreeNode[], pos: number) {
@@ -93,6 +86,19 @@ export class ParenNode extends TreeNode {
 		const pr = new ParenNode()
 		pr.children.push(...t)
 		return pr
+	}
+}
+
+export class ControlNode extends TreeNode {
+	name!: string
+	children: TreeNode[] = []
+
+	static matchingTokens = ["if", "for", "while"]
+	static match(tokens: string[]): boolean { return this.matchingTokens.includes(tokens[0]) }
+	static make(tokens: string[]): ControlNode {
+		const cn = new ControlNode()
+		cn.name = tokens.shift()!
+		return cn
 	}
 }
 
@@ -141,7 +147,9 @@ const nodes: (typeof TreeNode)[] = [
 enum Err {
 	TOKEN = "TOKENIZATION",
 	CLAUSE = "CLAUSE FETCHING",
-	TREE = "TREE PARSING"
+	TREE = "TREE PARSING",
+
+	TYPE = "TYPE"
 }
 
 function error(num: Err, msg?: string) {
@@ -157,6 +165,7 @@ function tokenize(code: string): string[] {
 		, whitespace = " \t"
 		, tokens: string[] = []
 	let lett = ""
+	code += "\n"
 	for (let a = 0; a < code.length; a++) {
 		if (code[a] == '"') {
 			while (code[++a] != '"') {
@@ -178,6 +187,24 @@ function splitComma(tokens: string[]): string[][] {
 	for (let t = 0; t < tokens.length; t++) {
 		if (tokens[t] == ',') ret.push([])
 		else ret[ret.length - 1].push(tokens[t])
+	}
+	return ret
+}
+
+function getType(tokens: string[]): string[] {
+	if (tokens[0] != ":") return []
+	tokens.shift()
+	return getOpenClause(tokens)
+}
+
+function getOpenClause(tokens: string[]): string[] {
+	const ret: string[] = []
+	let n = 0
+	while (tokens.length > 0) {
+		if (n == 0 && ["=", "{"].includes(tokens[0])) break
+		if ("({[".includes(tokens[0])) n++
+		else if ("]})".includes(tokens[0])) n++
+		ret.push(tokens.shift()!)
 	}
 	return ret
 }
@@ -259,6 +286,7 @@ function treeify(tokens: string[], hardScope = false, vars: Variable[] = []): [T
 			if (nodes[n].match(tokens)) {
 				retNodes.push(nodes[n].make(tokens))
 				found = true
+				console.log(tokens)
 				break
 			}
 		}
@@ -286,8 +314,11 @@ export function parse(code: string): TreeNode[] {
 	const tokens = tokenize(code)
 	// console.log(tokens)
 	const tree = treeify(tokens) // Modifies `tokens`! rember
+	console.log(tree[0][1])
 	return tree[0]
 }
+
+// console.log(tokenize("let a:()=>{}=>0"))
 
 // parse(`
 // fn add(x: i32, y: f32) { return 2 * (x + y) }
@@ -296,6 +327,7 @@ export function parse(code: string): TreeNode[] {
 // TO-DO:
 //	- If
 //	- While
+//  - Split "=>0" properly (no spaces screws it up)
 //  - Y'know, actual language stuff.
 //  - Non-inferred function return types
 //	- Return without the return keyword
