@@ -7,12 +7,15 @@ import {
 	VarNode,
 	LetNode,
 	OperatorNode,
-	NumberLiteralNode
+	NumberLiteralNode,
+	ConditionNode
 } from "../parse.ts"
 
 const langTypeMappings = {
 	"i32": "number",
 	"f32": "number",
+	"str": "string",
+	"boo": "boolean"
 }
 function toType(type: Type) {
 	return type
@@ -38,6 +41,10 @@ export class Lang extends LangBase {
 			return "(" + this.take(node.left!) + " " + node.name + " " + this.take(node.right!) + ")"
 		} else if (node instanceof VarNode) {
 			return node.name
+		} else if (node instanceof ConditionNode) {
+			return node.name + " (" + this.take(node.condition) + ") {\n"
+				+ this.indent(this.takeArr(node.children))
+				+ "\n}"
 		}
 
 		console.log("Language doesn't specify:", node)
