@@ -9,6 +9,7 @@ export class Variable { name: string; type: Type; constructor(name: string, type
 
 export class TreeNode {
 	type: Type = [] // This is currently here to mitigate type issues. Do NOT remove.
+	returns = false
 	static match(_tokens: string[]): boolean { return false }
 	static make(_tokens: string[]): TreeNode { return new TreeNode() }
 }
@@ -30,7 +31,7 @@ export class FunctionNode extends BlockNode {
 		if (fn.type.length == 0)
 			fn.type.push(...returnedTypes)
 		else if (!equalTypes(fn.type, returnedTypes))
-			error(Err.TYPE, "Return types don't match!")
+			console.log(fn.type, returnedTypes), error(Err.TYPE, `Function expected ${fn.type.toString()}, got ${returnedTypes}`)
 		return fn
 	}
 }
@@ -48,6 +49,8 @@ export class StatementNode extends TreeNode {
 		if (arg.length > 1) console.log(arg), error(Err.TREE, "Tree-ifying getFullClause returned more than one node.")
 		st.arg = arg[0]
 		st.type = st.arg.type
+
+		st.returns = st.name == "return"
 		return st
 	}
 }
@@ -56,8 +59,10 @@ export class OperatorNode extends TreeNode {
 	left?: TreeNode
 	right?: TreeNode
 
-	static matchingTokens = "+-*/%&|^"
-	static match(tokens: string[]): boolean { return OperatorNode.matchingTokens.includes(tokens[0][0]) }
+	static matchingTokens = ["+", "-", "*", "/", "%", "&", "&&", "|", "||", "^", "==", "!="]
+	static match(tokens: string[]): boolean {
+		return OperatorNode.matchingTokens.includes(tokens[0])
+	}
 	static make(tokens: string[]): OperatorNode {
 		const op = new OperatorNode()
 		op.name = tokens.shift()!
@@ -89,18 +94,44 @@ export class ParenNode extends TreeNode {
 	}
 }
 
-export class ControlNode extends TreeNode {
+export class ConditionNode extends TreeNode {
 	name!: string
+	condition!: TreeNode
 	children: TreeNode[] = []
 
-	static matchingTokens = ["if", "for", "while"]
+	static matchingTokens = ["if", "while"]
 	static match(tokens: string[]): boolean { return this.matchingTokens.includes(tokens[0]) }
-	static make(tokens: string[]): ControlNode {
-		const cn = new ControlNode()
+	static make(tokens: string[]): ConditionNode {
+		const cn = new ConditionNode()
 		cn.name = tokens.shift()!
+		const cond = treeify(getOpenClause(tokens))
+		if (cond[0].length > 1) console.log(cond[0]), error(Err.TREE, "Tree-ifying getFullClause returned more than one node.")
+		cn.condition = cond[0][0]
+
+		const bc = treeify(getClause(tokens), false)
+		cn.type = bc[1]
+		if (bc[1].length > 0) cn.returns = true
+		cn.children.push(...bc[0])
 		return cn
 	}
 }
+
+// For calling a function
+// export class CallNode extends TreeNode {
+// 	name!: string
+
+// 	static lastVar: Variable
+// 	static match(tokens: string[]): boolean {
+// 		VarNode.lastVar = getVar(tokens[0])!
+// 		return VarNode.lastVar !== undefined
+// 	}
+// 	static make(tokens: string[]): VarNode {
+// 		const vr = new VarNode()
+// 		vr.name = tokens.shift()!
+// 		vr.type = this.lastVar.type
+// 		return vr
+// 	}
+// }
 
 // For fetching a variable
 export class VarNode extends TreeNode {
@@ -168,15 +199,31 @@ export class NumberLiteralNode extends TreeNode {
 	}
 }
 
+export class StringLiteralNode extends TreeNode {
+	value!: string
+
+	static match(tokens: string[]): boolean {
+		return tokens[0][0] == "\""
+	}
+	static make(tokens: string[]): StringLiteralNode {
+		const vr = new StringLiteralNode()
+		vr.value = tokens.shift()!
+		vr.type = ["str"]
+		return vr
+	}
+}
+
 const nodes: (typeof TreeNode)[] = [
 	TreeNode,
 	BlockNode,
 	FunctionNode,
+	ConditionNode,
 	StatementNode,
 	OperatorNode,
 	VarNode,
 	LetNode,
 	NumberLiteralNode,
+	StringLiteralNode,
 	ParenNode
 ]
 
@@ -329,15 +376,19 @@ function treeify(tokens: string[], hardScope = false, vars: Variable[] = []): [T
 			if (tokens[0] == '\n') { tokens.shift(); continue }
 			console.log("Token `" + tokens.shift()! + "` not recognized.")
 		}
-		if (retNodes[retNodes.length - 1] instanceof StatementNode) {
-			returnType.push(...(retNodes[retNodes.length - 1] as StatementNode).type)
+		if (retNodes[retNodes.length - 1].returns) {
+			returnType.push(...retNodes[retNodes.length - 1].type)
 		}
+		// if (retNodes[retNodes.length - 1] instanceof StatementNode) {
+		// 	returnType.push(...(retNodes[retNodes.length - 1] as StatementNode).type)
+		// }
 	}
 
 	// Second pass: group operation nodes
 	for (let n = 0; n < retNodes.length; n++) if (retNodes[n] instanceof OperatorNode && "*/%".includes((retNodes[n] as OperatorNode).name)) (retNodes[n] as OperatorNode).take(retNodes, n--)
 	for (let n = 0; n < retNodes.length; n++) if (retNodes[n] instanceof OperatorNode && "+-" .includes((retNodes[n] as OperatorNode).name)) (retNodes[n] as OperatorNode).take(retNodes, n--)
 	for (let n = 0; n < retNodes.length; n++) if (retNodes[n] instanceof OperatorNode && "&|" .includes((retNodes[n] as OperatorNode).name)) (retNodes[n] as OperatorNode).take(retNodes, n--)
+	for (let n = 0; n < retNodes.length; n++) if (retNodes[n] instanceof OperatorNode && ["==","!="].includes((retNodes[n] as OperatorNode).name)) (retNodes[n] as OperatorNode).take(retNodes, n--)
 	for (let n = 0; n < retNodes.length; n++) if (retNodes[n] instanceof OperatorNode && ["&&","||"].includes((retNodes[n] as OperatorNode).name)) (retNodes[n] as OperatorNode).take(retNodes, n--)
 
 	scopePos--
@@ -364,11 +415,16 @@ export function parse(code: string): TreeNode[] {
 // `) // fn add(x: i32, y: f32) { return 2 * (x + y) }
 
 // TO-DO:
-//  - Let
+//  - Make types into classes (more flexibility)
+//  - Make tokens into classes (for getting error line & column numbers)
 //	- If
 //  - Make soft scopes return to hard scopes.
 //	- While
 //  - Split "=>0" properly (no spaces screws it up)
 //  - Y'know, actual language stuff.
-//  - Non-inferred function return types
+//  - Handle empty parenthesis
 //	- Return without the return keyword
+
+// Done:
+//  - Non-inferred function return types
+//  - Let
