@@ -4,7 +4,9 @@ import {
 	TreeNode,
 	FunctionNode,
 	StatementNode,
-
+	VarNode,
+	LetNode,
+	OperatorNode,
 	NumberLiteralNode
 } from "../parse.ts"
 
@@ -30,9 +32,15 @@ export class Lang extends LangBase {
 			return node.name + " " + this.take(node.arg)
 		} else if (node instanceof NumberLiteralNode) {
 			return node.value
+		} else if (node instanceof LetNode) {
+			return "let " + node.name + ": " + toType(node.type) + " = " + this.take(node.value)
+		} else if (node instanceof OperatorNode) {
+			return "(" + this.take(node.left!) + " " + node.name + " " + this.take(node.right!) + ")"
+		} else if (node instanceof VarNode) {
+			return node.name
 		}
 
-		console.log("Didn't match:", node)
+		console.log("Language doesn't specify:", node)
 		return "..."
 	}
 }
