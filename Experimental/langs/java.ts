@@ -31,11 +31,11 @@ export class Lang extends LangBase {
 				+ this.indent(this.takeArr(node.children))
 				+ "\n}"
 		} else if (node instanceof StatementNode) {
-			return node.name + " " + this.take(node.arg)
+			return node.name + " " + this.take(node.arg) + ";"
 		} else if (node instanceof NumberLiteralNode) {
 			return node.value
 		} else if (node instanceof LetNode) {
-			return "let " + node.name + ": " + toType(node.type) + " = " + this.take(node.value)
+			return "let " + node.name + ": " + toType(node.type) + " = " + this.take(node.value) + ";"
 		} else if (node instanceof OperatorNode) {
 			return "(" + this.take(node.left!) + " " + node.name + " " + this.take(node.right!) + ")"
 		} else if (node instanceof VarNode) {
