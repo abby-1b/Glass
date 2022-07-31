@@ -45,7 +45,7 @@ export class StatementNode extends TreeNode {
 		st.name = tokens.shift()!
 
 		const arg = treeify(getFullClause(tokens))[0]
-		if (arg.length > 1) console.log(arg), error(Err.TREE, "Tree-ifying getClause returned more than one node.")
+		if (arg.length > 1) console.log(arg), error(Err.TREE, "Tree-ifying getFullClause returned more than one node.")
 		st.arg = arg[0]
 		st.type = st.arg.type
 		return st
@@ -102,10 +102,11 @@ export class ControlNode extends TreeNode {
 	}
 }
 
+// For fetching a variable
 export class VarNode extends TreeNode {
 	name!: string
 
-	static lastVar: Variable // TODO: Use in `make`
+	static lastVar: Variable
 	static match(tokens: string[]): boolean {
 		VarNode.lastVar = getVar(tokens[0])!
 		return VarNode.lastVar !== undefined
@@ -118,6 +119,32 @@ export class VarNode extends TreeNode {
 	}
 }
 
+// For making a variable
+export class LetNode extends TreeNode {
+	name!: string
+	value!: TreeNode
+
+	static match(tokens: string[]): boolean { return tokens[0] == "let" }
+	static make(tokens: string[]): LetNode {
+		const ln = new LetNode()
+		tokens.shift()
+		ln.name = tokens.shift()!
+		ln.type.push(...getType(tokens))
+		tokens.shift()
+
+		const val = treeify(getFullClause(tokens))[0]
+		if (val.length > 1) console.log(val), error(Err.TREE, "Tree-ifying getFullClause returned more than one node.")
+		ln.value = val[0]
+
+		if (ln.type.length == 0) ln.type = ln.value.type
+		else if (!equalTypes(ln.type, ln.value.type)) {
+			error(Err.TYPE, "Variable type not right!")
+		}
+
+		return ln
+	}
+}
+
 export class NumberLiteralNode extends TreeNode {
 	value!: string
 
@@ -127,8 +154,16 @@ export class NumberLiteralNode extends TreeNode {
 	}
 	static make(tokens: string[]): NumberLiteralNode {
 		const vr = new NumberLiteralNode()
-		vr.value = tokens.shift()!
-		vr.type = [vr.value.includes(".") ? "f32" : "i32"]
+		let tk = tokens.shift()!
+		if		(tk.endsWith("i32")) { tk = tk.substring(0, tk.length - 3); vr.type = ["i32"] }
+		else if (tk.endsWith("i64")) { tk = tk.substring(0, tk.length - 3); vr.type = ["i64"] }
+		else if (tk.endsWith("f32")) { tk = tk.substring(0, tk.length - 3); vr.type = ["f32"] }
+		else if (tk.endsWith("f64")) { tk = tk.substring(0, tk.length - 3); vr.type = ["f64"] }
+		else if (tk.endsWith("f")) { tk = tk.substring(0, tk.length - 1); vr.type = ["f32"] }
+		else if (tk.endsWith("i")) { tk = tk.substring(0, tk.length - 1); vr.type = ["i32"] }
+		else if (tk.includes(".")) vr.type = ["f32"]
+		else vr.type = ["i32"]
+		vr.value = tk
 		return vr
 	}
 }
@@ -140,6 +175,7 @@ const nodes: (typeof TreeNode)[] = [
 	StatementNode,
 	OperatorNode,
 	VarNode,
+	LetNode,
 	NumberLiteralNode,
 	ParenNode
 ]
@@ -286,7 +322,6 @@ function treeify(tokens: string[], hardScope = false, vars: Variable[] = []): [T
 			if (nodes[n].match(tokens)) {
 				retNodes.push(nodes[n].make(tokens))
 				found = true
-				console.log(tokens)
 				break
 			}
 		}
@@ -314,9 +349,13 @@ export function parse(code: string): TreeNode[] {
 	const tokens = tokenize(code)
 	// console.log(tokens)
 	const tree = treeify(tokens) // Modifies `tokens`! rember
-	console.log(tree[0][1])
+	// console.log(tree[0])
 	return tree[0]
 }
+
+// parse(`
+// let a = 10 + 5
+// `)
 
 // console.log(tokenize("let a:()=>{}=>0"))
 
@@ -325,7 +364,9 @@ export function parse(code: string): TreeNode[] {
 // `) // fn add(x: i32, y: f32) { return 2 * (x + y) }
 
 // TO-DO:
+//  - Let
 //	- If
+//  - Make soft scopes return to hard scopes.
 //	- While
 //  - Split "=>0" properly (no spaces screws it up)
 //  - Y'know, actual language stuff.
