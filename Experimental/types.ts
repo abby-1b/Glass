@@ -1,7 +1,7 @@
 export type Type = string[]
 
 const opImportanceOrder = ["str", "f64", "f32", "i64", "i32"]
-const boolOperators = ["&&", "||", "==", "!="]
+const boolOperators = ["&&", "||", "==", "!=", "<", ">", "<=", ">="]
 export function operationReturns(operator: string, left: Type, right: Type): Type {
 	if (boolOperators.includes(operator)) return ["boo"]
 	if (left.length > 1 || right.length > 1) console.log("Weird types here:", left, right)
