@@ -10,8 +10,13 @@ export class Variable { name: string; type: Type; constructor(name: string, type
 export class TreeNode {
 	type: Type = [] // This is currently here to mitigate type issues. Do NOT remove.
 	returns = false
+
+	canSet = false
+
 	static match(_tokens: string[]): boolean { return false }
 	static make(_tokens: string[]): TreeNode { return new TreeNode() }
+
+	toString() { return this.constructor.name }
 }
 export class BlockNode extends TreeNode { children: TreeNode[] = [] }
 export class FunctionNode extends BlockNode {
@@ -59,7 +64,9 @@ export class OperatorNode extends TreeNode {
 	left?: TreeNode
 	right?: TreeNode
 
-	static matchingTokens = ["+", "-", "*", "/", "%", "&", "&&", "|", "||", "^", "==", "!="]
+	processed = false
+
+	static matchingTokens = ["+", "-", "*", "/", "%", "&", "&&", "|", "||", "^", "==", "!=", "<", ">", "<=", ">="]
 	static match(tokens: string[]): boolean {
 		return OperatorNode.matchingTokens.includes(tokens[0])
 	}
@@ -70,15 +77,19 @@ export class OperatorNode extends TreeNode {
 	}
 
 	static getNewType(operator: string, left: TreeNode, right: TreeNode): Type {
+		// console.log(operator, left, right)
 		return operationReturns(operator, left.type, right.type)
 	}
 
 	take(nodes: TreeNode[], pos: number) {
+		if (this.processed) console.log("Already processed! That's weird!")
 		this.left = nodes[pos - 1]
 		this.right = nodes[pos + 1]
 		this.type.push(...OperatorNode.getNewType(this.name, this.left, this.right))
 		nodes.splice(pos - 1, 1)
 		nodes.splice(pos, 1)
+
+		this.processed = true
 	}
 }
 
@@ -88,6 +99,7 @@ export class ParenNode extends TreeNode {
 	static make(tokens: string[]): TreeNode {
 		const t = treeify(getClause(tokens, true))[0]
 		if (t.length == 1) return t[0]
+		else console.log("Weird parenthesis:", t)
 		const pr = new ParenNode()
 		pr.children.push(...t)
 		return pr
@@ -133,9 +145,38 @@ export class ConditionNode extends TreeNode {
 // 	}
 // }
 
+// For setting a variable
+export class SetNode extends TreeNode {
+	setting!: TreeNode
+	value!: TreeNode
+
+	processed = false
+
+	static match(tokens: string[]): boolean {
+		return tokens[0] == "="
+	}
+	static make(tokens: string[]): SetNode {
+		const sn = new SetNode()
+		tokens.shift()
+		const val = treeify(getFullClause(tokens))
+		if (val[0].length > 1) console.log(val[0]), error(Err.TREE, "Tree-ifying getFullClause returned more than one node.")
+		sn.value = val[0][0]
+		return sn
+	}
+
+	take(nodes: TreeNode[], pos: number) {
+		this.setting = nodes.splice(pos - 1, 1)[0]
+		if (!this.setting.canSet) error(Err.PERMISSON, `Can't set ${this.setting.toString()}`)
+		// console.log(this.setting.type, this.value.type)
+		this.processed = true
+	}
+}
+
 // For fetching a variable
 export class VarNode extends TreeNode {
 	name!: string
+
+	canSet = true
 
 	static lastVar: Variable
 	static match(tokens: string[]): boolean {
@@ -150,7 +191,7 @@ export class VarNode extends TreeNode {
 	}
 }
 
-// For making a variable
+// For declaring a variable
 export class LetNode extends TreeNode {
 	name!: string
 	value!: TreeNode
@@ -169,8 +210,10 @@ export class LetNode extends TreeNode {
 
 		if (ln.type.length == 0) ln.type = ln.value.type
 		else if (!equalTypes(ln.type, ln.value.type)) {
-			error(Err.TYPE, "Variable type not right!")
+			error(Err.TYPE, `Variable expected ${ln.type}, got ${ln.value.type}`)
 		}
+
+		scopeVars[scopeVars.length - 1].vars.push(new Variable(ln.name, ln.type))
 
 		return ln
 	}
@@ -220,11 +263,12 @@ const nodes: (typeof TreeNode)[] = [
 	ConditionNode,
 	StatementNode,
 	OperatorNode,
-	VarNode,
 	LetNode,
 	NumberLiteralNode,
 	StringLiteralNode,
-	ParenNode
+	ParenNode,
+	SetNode,
+	VarNode,
 ]
 
 enum Err {
@@ -232,7 +276,8 @@ enum Err {
 	CLAUSE = "CLAUSE FETCHING",
 	TREE = "TREE PARSING",
 
-	TYPE = "TYPE"
+	TYPE = "TYPE",
+	PERMISSON = "PERMISSION",
 }
 
 function error(num: Err, msg?: string) {
@@ -244,7 +289,7 @@ function error(num: Err, msg?: string) {
 }
 
 function tokenize(code: string): string[] {
-	const noRepeat = `()_+*{}[]\\%?,:;\n`
+	const noRepeat = `()_+-*{}/<>[]\\%?,:;\n`
 		, whitespace = " \t"
 		, tokens: string[] = []
 	let lett = ""
@@ -271,6 +316,7 @@ function splitComma(tokens: string[]): string[][] {
 		if (tokens[t] == ',') ret.push([])
 		else ret[ret.length - 1].push(tokens[t])
 	}
+	if (ret[0].length == 0) return []
 	return ret
 }
 
@@ -280,18 +326,20 @@ function getType(tokens: string[]): string[] {
 	return getOpenClause(tokens)
 }
 
+/** Gets a clause followed by an = or { sign. Used mostly for types. */
 function getOpenClause(tokens: string[]): string[] {
 	const ret: string[] = []
 	let n = 0
 	while (tokens.length > 0) {
 		if (n == 0 && ["=", "{"].includes(tokens[0])) break
 		if ("({[".includes(tokens[0])) n++
-		else if ("]})".includes(tokens[0])) n++
+		else if ("]})".includes(tokens[0])) n--
 		ret.push(tokens.shift()!)
 	}
 	return ret
 }
 
+/** Gets a clause followed by a comma or newline. Used mostly for getting blocks. */
 function getClause(tokens: string[], removeStartEnd = true): string[] {
 	if (tokens.length == 0) return []
 	while (tokens[0] == '\n') tokens.shift()
@@ -321,6 +369,7 @@ function getClause(tokens: string[], removeStartEnd = true): string[] {
 	return ret
 }
 
+/** Gets a clause terminated by newline (making sure there are no operators after said newline) */
 function getFullClause(tokens: string[]): string[] {
 	if (tokens.length == 0) return []
 	while (tokens[0] == '\n') tokens.shift()
@@ -359,37 +408,37 @@ function getVar(name: string): Variable | undefined {
 function treeify(tokens: string[], hardScope = false, vars: Variable[] = []): [TreeNode[], Type] {
 	const retNodes: TreeNode[] = []
 	scopePos++
-	scopeVars.push({ vars, hard: hardScope })
+	scopeVars.push({ vars: [...vars], hard: hardScope })
 
 	// First pass: Turn everything into nodes
 	const returnType: string[] = []
 	while (tokens.length > 0) {
+		if (tokens[0] == '\n') { tokens.shift(); continue }
 		let found = false
 		for (let n = 0; n < nodes.length; n++) {
 			if (nodes[n].match(tokens)) {
+				// console.log("FOUND:", tokens, nodes[n].name)
 				retNodes.push(nodes[n].make(tokens))
 				found = true
 				break
 			}
 		}
-		if (!found) {
-			if (tokens[0] == '\n') { tokens.shift(); continue }
+		if (!found)
 			console.log("Token `" + tokens.shift()! + "` not recognized.")
-		}
-		if (retNodes[retNodes.length - 1].returns) {
+		if (retNodes.length > 0 && retNodes[retNodes.length - 1].returns)
 			returnType.push(...retNodes[retNodes.length - 1].type)
-		}
-		// if (retNodes[retNodes.length - 1] instanceof StatementNode) {
-		// 	returnType.push(...(retNodes[retNodes.length - 1] as StatementNode).type)
-		// }
 	}
 
-	// Second pass: group operation nodes
-	for (let n = 0; n < retNodes.length; n++) if (retNodes[n] instanceof OperatorNode && "*/%".includes((retNodes[n] as OperatorNode).name)) (retNodes[n] as OperatorNode).take(retNodes, n--)
-	for (let n = 0; n < retNodes.length; n++) if (retNodes[n] instanceof OperatorNode && "+-" .includes((retNodes[n] as OperatorNode).name)) (retNodes[n] as OperatorNode).take(retNodes, n--)
-	for (let n = 0; n < retNodes.length; n++) if (retNodes[n] instanceof OperatorNode && "&|" .includes((retNodes[n] as OperatorNode).name)) (retNodes[n] as OperatorNode).take(retNodes, n--)
-	for (let n = 0; n < retNodes.length; n++) if (retNodes[n] instanceof OperatorNode && ["==","!="].includes((retNodes[n] as OperatorNode).name)) (retNodes[n] as OperatorNode).take(retNodes, n--)
-	for (let n = 0; n < retNodes.length; n++) if (retNodes[n] instanceof OperatorNode && ["&&","||"].includes((retNodes[n] as OperatorNode).name)) (retNodes[n] as OperatorNode).take(retNodes, n--)
+	// Second pass: group Set nodes
+	for (let n = 0; n < retNodes.length; n++) if (retNodes[n] instanceof SetNode && (!(retNodes[n] as SetNode).processed)) (retNodes[n] as SetNode).take(retNodes, n--)
+
+	// Third pass(es): group operation nodes
+	for (let n = 0; n < retNodes.length; n++) if (retNodes[n] instanceof OperatorNode && (!(retNodes[n] as OperatorNode).processed) && "*/%".includes((retNodes[n] as OperatorNode).name)) (retNodes[n] as OperatorNode).take(retNodes, n--)
+	for (let n = 0; n < retNodes.length; n++) if (retNodes[n] instanceof OperatorNode && (!(retNodes[n] as OperatorNode).processed) && "+-" .includes((retNodes[n] as OperatorNode).name)) (retNodes[n] as OperatorNode).take(retNodes, n--)
+	for (let n = 0; n < retNodes.length; n++) if (retNodes[n] instanceof OperatorNode && (!(retNodes[n] as OperatorNode).processed) && "&|" .includes((retNodes[n] as OperatorNode).name)) (retNodes[n] as OperatorNode).take(retNodes, n--)
+	for (let n = 0; n < retNodes.length; n++) if (retNodes[n] instanceof OperatorNode && (!(retNodes[n] as OperatorNode).processed) && [">","<",">=","<="].includes((retNodes[n] as OperatorNode).name)) (retNodes[n] as OperatorNode).take(retNodes, n--)
+	for (let n = 0; n < retNodes.length; n++) if (retNodes[n] instanceof OperatorNode && (!(retNodes[n] as OperatorNode).processed) && ["==","!="].includes((retNodes[n] as OperatorNode).name)) (retNodes[n] as OperatorNode).take(retNodes, n--)
+	for (let n = 0; n < retNodes.length; n++) if (retNodes[n] instanceof OperatorNode && (!(retNodes[n] as OperatorNode).processed) && ["&&","||"].includes((retNodes[n] as OperatorNode).name)) (retNodes[n] as OperatorNode).take(retNodes, n--)
 
 	scopePos--
 	scopeVars.pop()
@@ -415,16 +464,17 @@ export function parse(code: string): TreeNode[] {
 // `) // fn add(x: i32, y: f32) { return 2 * (x + y) }
 
 // TO-DO:
-//  - Make types into classes (more flexibility)
 //  - Make tokens into classes (for getting error line & column numbers)
-//	- If
-//  - Make soft scopes return to hard scopes.
-//	- While
-//  - Split "=>0" properly (no spaces screws it up)
-//  - Y'know, actual language stuff.
+//  - Call functions!
+//  - Make types into classes (more flexibility)
+//  - Increment/Decrement (single-side operators)
 //  - Handle empty parenthesis
 //	- Return without the return keyword
+//  - Split "=>0" properly (no spaces screws it up)
 
 // Done:
+//  - Make soft scopes return to hard scopes.
+//	- While
+//	- If
 //  - Non-inferred function return types
 //  - Let
