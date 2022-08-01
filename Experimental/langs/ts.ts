@@ -6,8 +6,10 @@ import {
 	StatementNode,
 	VarNode,
 	LetNode,
+	SetNode,
 	OperatorNode,
 	NumberLiteralNode,
+	StringLiteralNode,
 	ConditionNode
 } from "../parse.ts"
 
@@ -33,7 +35,7 @@ export class Lang extends LangBase {
 				+ "\n}"
 		} else if (node instanceof StatementNode) {
 			return node.name + " " + this.take(node.arg)
-		} else if (node instanceof NumberLiteralNode) {
+		} else if (node instanceof NumberLiteralNode || node instanceof StringLiteralNode) {
 			return node.value
 		} else if (node instanceof LetNode) {
 			return "let " + node.name + ": " + toType(node.type) + " = " + this.take(node.value)
@@ -41,6 +43,8 @@ export class Lang extends LangBase {
 			return "(" + this.take(node.left!) + " " + node.name + " " + this.take(node.right!) + ")"
 		} else if (node instanceof VarNode) {
 			return node.name
+		} else if (node instanceof SetNode) {
+			return this.take(node.setting) + " = " + this.take(node.value)
 		} else if (node instanceof ConditionNode) {
 			return node.name + " (" + this.take(node.condition) + ") {\n"
 				+ this.indent(this.takeArr(node.children))
