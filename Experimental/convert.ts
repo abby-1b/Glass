@@ -4,13 +4,20 @@ import { LangBase } from "./langs/langs.ts"
 // import * as js from "./langs/js.ts"
 // import * as js from "./langs/js.ts"
 
-const language = "js"
+const language = "ts"
 const languageConverter = ((await import("./langs/" + language + ".ts")) as {Lang: typeof LangBase}).Lang
 
 const code = `
-fn main(a: f32, b: f32): str {
-	return "str" == 0
+fn main() {
+	let aa = 4
+	let bb = 0 
+	while aa > 0 {
+		bb = bb + aa
+		aa = aa - 1
+	}
+	return bb
 }
+
 `
 
 // fn main(arg0: i32, arg1: f32) { return 0 }
