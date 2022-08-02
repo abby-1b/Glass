@@ -3,32 +3,34 @@
  * This can then be compiled to a target language.
  */
 
+import { Token, TokenRange, expandRange } from "./tokens.ts"
 import { Type, operationReturns, equalTypes } from "./types.ts"
 
-export class Variable { name: string; type: Type; constructor(name: string, type: string[] = []) { this.name = name, this.type = type } }
+export class Variable { name: string; type: Type; constructor(name: string, type: Type = []) { this.name = name, this.type = type } }
 
 export class TreeNode {
 	type: Type = [] // This is currently here to mitigate type issues. Do NOT remove.
 	returns = false
 
 	canSet = false
+	range: TokenRange = { start: Infinity, end: -Infinity }
 
-	static match(_tokens: string[]): boolean { return false }
-	static make(_tokens: string[]): TreeNode { return new TreeNode() }
+	static match(_tokens: Token[]): boolean { return false }
+	static make(_tokens: Token[]): TreeNode { return new TreeNode() }
 
-	toString() { return this.constructor.name }
+	toString() { return this.constructor.name + "[" + this.range.start + ", " + this.range.end + "]" }
 }
 export class BlockNode extends TreeNode { children: TreeNode[] = [] }
 export class FunctionNode extends BlockNode {
-	name = "fnName"
+	name!: string
 	args: Variable[] = []
 
-	static match(tokens: string[]): boolean { return tokens[0] == "fn" }
-	static make(tokens: string[]): FunctionNode {
+	static match(tokens: Token[]): boolean { return tokens[0].val == "fn" }
+	static make(tokens: Token[]): FunctionNode {
 		const fn = new FunctionNode()
 		tokens.shift()
-		fn.name = tokens.shift()!
-		fn.args.push(...splitComma(getClause(tokens)!).map(a => new Variable(a[0], [a[2]])))
+		fn.name = tokens.shift()!.val
+		fn.args.push(...splitComma(expandRange(fn.range, ...getClause(tokens)!)).map(a => new Variable(a[0].val, [a[2].val])))
 		fn.type.push(...getType(tokens))
 		const tn = treeify(getClause(tokens), true, fn.args)
 		fn.children = tn[0]
@@ -45,10 +47,10 @@ export class StatementNode extends TreeNode {
 	arg!: TreeNode
 
 	static matchingTokens = ["return", "break", "continue", "nop"]
-	static match(tokens: string[]): boolean { return StatementNode.matchingTokens.includes(tokens[0]) }
-	static make(tokens: string[]): StatementNode {
+	static match(tokens: Token[]): boolean { return StatementNode.matchingTokens.includes(tokens[0].val) }
+	static make(tokens: Token[]): StatementNode {
 		const st = new StatementNode()
-		st.name = tokens.shift()!
+		st.name = tokens.shift()!.val
 
 		const arg = treeify(getFullClause(tokens))[0]
 		if (arg.length > 1) console.log(arg), error(Err.TREE, "Tree-ifying getFullClause returned more than one node.")
@@ -67,12 +69,10 @@ export class OperatorNode extends TreeNode {
 	processed = false
 
 	static matchingTokens = ["+", "-", "*", "/", "%", "&", "&&", "|", "||", "^", "==", "!=", "<", ">", "<=", ">="]
-	static match(tokens: string[]): boolean {
-		return OperatorNode.matchingTokens.includes(tokens[0])
-	}
-	static make(tokens: string[]): OperatorNode {
+	static match(tokens: Token[]): boolean { return OperatorNode.matchingTokens.includes(tokens[0].val) }
+	static make(tokens: Token[]): OperatorNode {
 		const op = new OperatorNode()
-		op.name = tokens.shift()!
+		op.name = tokens.shift()!.val
 		return op
 	}
 
@@ -95,8 +95,8 @@ export class OperatorNode extends TreeNode {
 
 export class ParenNode extends TreeNode {
 	children: TreeNode[] = []
-	static match(tokens: string[]): boolean { return tokens[0] == "(" }
-	static make(tokens: string[]): TreeNode {
+	static match(tokens: Token[]): boolean { return tokens[0].val == "(" }
+	static make(tokens: Token[]): TreeNode {
 		const t = treeify(getClause(tokens, true))[0]
 		if (t.length == 1) return t[0]
 		else console.log("Weird parenthesis:", t)
@@ -112,10 +112,10 @@ export class ConditionNode extends TreeNode {
 	children: TreeNode[] = []
 
 	static matchingTokens = ["if", "while"]
-	static match(tokens: string[]): boolean { return this.matchingTokens.includes(tokens[0]) }
-	static make(tokens: string[]): ConditionNode {
+	static match(tokens: Token[]): boolean { return this.matchingTokens.includes(tokens[0].val) }
+	static make(tokens: Token[]): ConditionNode {
 		const cn = new ConditionNode()
-		cn.name = tokens.shift()!
+		cn.name = tokens.shift()!.val
 		const cond = treeify(getOpenClause(tokens))
 		if (cond[0].length > 1) console.log(cond[0]), error(Err.TREE, "Tree-ifying getFullClause returned more than one node.")
 		cn.condition = cond[0][0]
@@ -133,11 +133,11 @@ export class ConditionNode extends TreeNode {
 // 	name!: string
 
 // 	static lastVar: Variable
-// 	static match(tokens: string[]): boolean {
+// 	static match(tokens: Token[]): boolean {
 // 		VarNode.lastVar = getVar(tokens[0])!
 // 		return VarNode.lastVar !== undefined
 // 	}
-// 	static make(tokens: string[]): VarNode {
+// 	static make(tokens: Token[]): VarNode {
 // 		const vr = new VarNode()
 // 		vr.name = tokens.shift()!
 // 		vr.type = this.lastVar.type
@@ -152,10 +152,8 @@ export class SetNode extends TreeNode {
 
 	processed = false
 
-	static match(tokens: string[]): boolean {
-		return tokens[0] == "="
-	}
-	static make(tokens: string[]): SetNode {
+	static match(tokens: Token[]): boolean { return tokens[0].val == "=" }
+	static make(tokens: Token[]): SetNode {
 		const sn = new SetNode()
 		tokens.shift()
 		const val = treeify(getFullClause(tokens))
@@ -179,13 +177,13 @@ export class VarNode extends TreeNode {
 	canSet = true
 
 	static lastVar: Variable
-	static match(tokens: string[]): boolean {
-		VarNode.lastVar = getVar(tokens[0])!
+	static match(tokens: Token[]): boolean {
+		VarNode.lastVar = getVar(tokens[0].val)!
 		return VarNode.lastVar !== undefined
 	}
-	static make(tokens: string[]): VarNode {
+	static make(tokens: Token[]): VarNode {
 		const vr = new VarNode()
-		vr.name = tokens.shift()!
+		vr.name = tokens.shift()!.val
 		vr.type = this.lastVar.type
 		return vr
 	}
@@ -196,11 +194,11 @@ export class LetNode extends TreeNode {
 	name!: string
 	value!: TreeNode
 
-	static match(tokens: string[]): boolean { return tokens[0] == "let" }
-	static make(tokens: string[]): LetNode {
+	static match(tokens: Token[]): boolean { return tokens[0].val == "let" }
+	static make(tokens: Token[]): LetNode {
 		const ln = new LetNode()
 		tokens.shift()
-		ln.name = tokens.shift()!
+		ln.name = tokens.shift()!.val
 		ln.type.push(...getType(tokens))
 		tokens.shift()
 
@@ -222,13 +220,14 @@ export class LetNode extends TreeNode {
 export class NumberLiteralNode extends TreeNode {
 	value!: string
 
-	static match(tokens: string[]): boolean {
-		return "0123456789".includes(tokens[0][0])
-			|| (tokens[0].length > 1 && tokens[0][0] == "." && "0123456789".includes(tokens[0][1]))
+	static match(tokens: Token[]): boolean {
+		return "0123456789".includes(tokens[0].val[0])
+			|| (tokens[0].val.length > 1 && tokens[0].val[0] == "." && "0123456789".includes(tokens[0].val[1]))
 	}
-	static make(tokens: string[]): NumberLiteralNode {
+	static make(tokens: Token[]): NumberLiteralNode {
 		const vr = new NumberLiteralNode()
-		let tk = tokens.shift()!
+		expandRange(vr.range, tokens[0])
+		let tk = tokens.shift()!.val
 		if		(tk.endsWith("i32")) { tk = tk.substring(0, tk.length - 3); vr.type = ["i32"] }
 		else if (tk.endsWith("i64")) { tk = tk.substring(0, tk.length - 3); vr.type = ["i64"] }
 		else if (tk.endsWith("f32")) { tk = tk.substring(0, tk.length - 3); vr.type = ["f32"] }
@@ -245,12 +244,12 @@ export class NumberLiteralNode extends TreeNode {
 export class StringLiteralNode extends TreeNode {
 	value!: string
 
-	static match(tokens: string[]): boolean {
-		return tokens[0][0] == "\""
+	static match(tokens: Token[]): boolean {
+		return tokens[0].val[0] == "\""
 	}
-	static make(tokens: string[]): StringLiteralNode {
+	static make(tokens: Token[]): StringLiteralNode {
 		const vr = new StringLiteralNode()
-		vr.value = tokens.shift()!
+		vr.value = tokens.shift()!.val
 		vr.type = ["str"]
 		return vr
 	}
@@ -288,80 +287,79 @@ function error(num: Err, msg?: string) {
 	Deno.exit(1)
 }
 
-function tokenize(code: string): string[] {
+function tokenize(code: string): Token[] {
 	const noRepeat = `()_+-*{}/<>[]\\%?,:;\n`
 		, whitespace = " \t"
-		, tokens: string[] = []
+		, tokens: Token[] = []
 	let lett = ""
 	code += "\n"
 	for (let a = 0; a < code.length; a++) {
-		if (code[a] == '"') {
+		if (code[a] == "#" || (code[a] == "/" && code[a + 1] == "/")) {
+			while (code[++a] != "\n");
+		} else if (code[a] == '"') {
 			while (code[++a] != '"') {
 				if (a >= code.length) error(Err.TOKEN, "Couldn't find matching quote!")
 				if (code[a] == '\\' && code[a + 1] == '"') lett += '\\', a++
 				lett += code[a]
 			}
-			tokens.push('"' + lett + '"'), lett = ""
+			tokens.push({val: '"' + lett + '"', start: a - lett.length - 1, end: a}), lett = ""
 		} else if (noRepeat.includes(code[a]) || whitespace.includes(code[a])) {
-			if (lett != "") tokens.push(lett), lett = ""
-			if (!whitespace.includes(code[a])) tokens.push(code[a])
+			if (lett != "") tokens.push({val: lett, start: a - lett.length, end: a}), lett = ""
+			if (!whitespace.includes(code[a])) tokens.push({val: code[a], start: a, end: a})
 		} else lett += code[a]
 	}
 	return tokens
 }
 
-function splitComma(tokens: string[]): string[][] {
-	const ret: string[][] = [[]]
+function splitComma(tokens: Token[]): Token[][] {
+	const ret: Token[][] = [[]]
 	for (let t = 0; t < tokens.length; t++) {
-		if (tokens[t] == ',') ret.push([])
+		if (tokens[t].val == ',') ret.push([])
 		else ret[ret.length - 1].push(tokens[t])
 	}
 	if (ret[0].length == 0) return []
 	return ret
 }
 
-function getType(tokens: string[]): string[] {
-	if (tokens[0] != ":") return []
+function getType(tokens: Token[]): Type {
+	if (tokens[0].val != ":") return []
 	tokens.shift()
-	return getOpenClause(tokens)
+	return getOpenClause(tokens).map(e => e.val) // Hot-fix, not really good.
 }
 
 /** Gets a clause followed by an = or { sign. Used mostly for types. */
-function getOpenClause(tokens: string[]): string[] {
-	const ret: string[] = []
+function getOpenClause(tokens: Token[]): Token[] {
+	const ret: Token[] = []
 	let n = 0
 	while (tokens.length > 0) {
-		if (n == 0 && ["=", "{"].includes(tokens[0])) break
-		if ("({[".includes(tokens[0])) n++
-		else if ("]})".includes(tokens[0])) n--
+		if (n == 0 && ["=", "{"].includes(tokens[0].val)) break
+		if ("({[".includes(tokens[0].val)) n++
+		else if ("]})".includes(tokens[0].val)) n--
 		ret.push(tokens.shift()!)
 	}
 	return ret
 }
 
 /** Gets a clause followed by a comma or newline. Used mostly for getting blocks. */
-function getClause(tokens: string[], removeStartEnd = true): string[] {
+function getClause(tokens: Token[], removeStartEnd = true): Token[] {
 	if (tokens.length == 0) return []
-	while (tokens[0] == '\n') tokens.shift()
-	const ret: string[] = []
-	if ("({[".includes(tokens[0])) {
-		const startToken = tokens[0]
-			, capToken = ")}]"["({[".indexOf(tokens[0])]
-		let n = 1
+	while (tokens[0].val == '\n') tokens.shift()
+	const ret: Token[] = []
+	let n = 1
+	if ("({[".includes(tokens[0].val)) {
 		while (n > 0) {
 			if (tokens.length == 0) error(Err.CLAUSE, "Couldn't find clause end!")
 			ret.push(tokens.shift()!)
-			if (tokens[0] == startToken) n++
-			else if (tokens[0] == capToken) n--
+			if ("({[".includes(tokens[0].val)) n++
+			else if (tokens.length > 0 && "]})".includes(tokens[0].val)) n--
 		}
 		ret.push(tokens.shift()!)
 		if (removeStartEnd) ret.shift(), ret.pop()
 	} else {
-		let n = 1
 		while (n > 0) {
-			if ("({[".includes(tokens[0])) n++
-			else if ("]})".includes(tokens[0])) n--
-			else if (",\n".includes(tokens[0]) && n == 1) n--
+			if ("({[".includes(tokens[0].val)) n++
+			else if ("]})".includes(tokens[0].val)) n--
+			else if (",\n".includes(tokens[0].val) && n == 1) n--
 			if (n == 0) continue
 			ret.push(tokens.shift()!)
 		}
@@ -370,27 +368,27 @@ function getClause(tokens: string[], removeStartEnd = true): string[] {
 }
 
 /** Gets a clause terminated by newline (making sure there are no operators after said newline) */
-function getFullClause(tokens: string[]): string[] {
+function getFullClause(tokens: Token[]): Token[] {
 	if (tokens.length == 0) return []
-	while (tokens[0] == '\n') tokens.shift()
-	const ret: string[] = []
+	while (tokens[0].val == '\n') tokens.shift()
+	const ret: Token[] = []
 	const first = tokens[0]
-	let isFullOne = "({[".includes(tokens[0])
+	let isFullOne = "({[".includes(tokens[0].val)
 	let n = 0
 	while (tokens.length > 0) {
 		if (isFullOne && n == 0 && tokens[0] != first) isFullOne = false
-		if ("({[".includes(tokens[0])) n++
-		if ("]}),".includes(tokens[0])) n--
+		if ("({[".includes(tokens[0].val)) n++
+		if ("]}),".includes(tokens[0].val)) n--
 		if (n < 0) break
 		ret.push(tokens.shift()!)
-		if (n == 0 && tokens[0] == "\n") {
-			while (tokens[0] == "\n") tokens.shift()
-			if (!"+-*/%|&^".includes((tokens[0] ?? " ")[0])) break
+		if (n == 0 && tokens.length > 0 && tokens[0].val == "\n") {
+			while (tokens.length > 0 && tokens[0].val == "\n") tokens.shift()
+			if (!"+-*/%|&^".includes((tokens[0] ?? {val: " "}).val[0])) break
 		}
 	}
 	if (isFullOne) ret.shift(), ret.pop()
-	while (ret[0] == "\n") ret.shift()
-	while (ret[ret.length - 1] == "\n") ret.pop()
+	while (ret[0].val == "\n") ret.shift()
+	while (ret[ret.length - 1].val == "\n") ret.pop()
 	return ret
 }
 
@@ -405,15 +403,15 @@ function getVar(name: string): Variable | undefined {
 	}
 }
 
-function treeify(tokens: string[], hardScope = false, vars: Variable[] = []): [TreeNode[], Type] {
+function treeify(tokens: Token[], hardScope = false, vars: Variable[] = []): [TreeNode[], Type] {
 	const retNodes: TreeNode[] = []
 	scopePos++
 	scopeVars.push({ vars: [...vars], hard: hardScope })
 
 	// First pass: Turn everything into nodes
-	const returnType: string[] = []
+	const returnType: Type = []
 	while (tokens.length > 0) {
-		if (tokens[0] == '\n') { tokens.shift(); continue }
+		if (tokens[0].val == '\n') { tokens.shift(); continue }
 		let found = false
 		for (let n = 0; n < nodes.length; n++) {
 			if (nodes[n].match(tokens)) {
@@ -464,7 +462,6 @@ export function parse(code: string): TreeNode[] {
 // `) // fn add(x: i32, y: f32) { return 2 * (x + y) }
 
 // TO-DO:
-//  - Make tokens into classes (for getting error line & column numbers)
 //  - Call functions!
 //  - Make types into classes (more flexibility)
 //  - Increment/Decrement (single-side operators)
@@ -473,6 +470,7 @@ export function parse(code: string): TreeNode[] {
 //  - Split "=>0" properly (no spaces screws it up)
 
 // Done:
+//  - Make tokens into classes (for getting error line & column numbers)
 //  - Make soft scopes return to hard scopes.
 //	- While
 //	- If
