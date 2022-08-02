@@ -4,12 +4,16 @@
  */
 
 import { Token, TokenRange, expandRange } from "./tokens.ts"
-import { Type, operationReturns, equalTypes } from "./types.ts"
+import { Type, operationReturns } from "./types.ts"
 
-export class Variable { name: string; type: Type; constructor(name: string, type: Type = []) { this.name = name, this.type = type } }
+export class Variable {
+	name: string
+	type = new Type()
+	constructor(name: string, type?: Type) { this.name = name, type ? this.type = type : 0 }
+}
 
 export class TreeNode {
-	type: Type = [] // This is currently here to mitigate type issues. Do NOT remove.
+	type: Type = new Type() // This is currently here to mitigate type issues. Do NOT remove.
 	returns = false
 
 	canSet = false
@@ -30,14 +34,14 @@ export class FunctionNode extends BlockNode {
 		const fn = new FunctionNode()
 		tokens.shift()
 		fn.name = tokens.shift()!.val
-		fn.args.push(...splitComma(expandRange(fn.range, ...getClause(tokens)!)).map(a => new Variable(a[0].val, [a[2].val])))
-		fn.type.push(...getType(tokens))
+		fn.args.push(...splitComma(expandRange(fn.range, ...getClause(tokens)!)).map(a => new Variable(a[0].val, new Type(a[2].val))))
+		fn.type.set(getType(tokens))
 		const tn = treeify(getClause(tokens), true, fn.args)
 		fn.children = tn[0]
 		const returnedTypes = tn[1]
-		if (fn.type.length == 0)
-			fn.type.push(...returnedTypes)
-		else if (!equalTypes(fn.type, returnedTypes))
+		if (!fn.type.isSet())
+			fn.type.set(returnedTypes)
+		else if (!fn.type.equals(returnedTypes))
 			console.log(fn.type, returnedTypes), error(Err.TYPE, `Function expected ${fn.type.toString()}, got ${returnedTypes}`)
 		return fn
 	}
@@ -85,7 +89,7 @@ export class OperatorNode extends TreeNode {
 		if (this.processed) console.log("Already processed! That's weird!")
 		this.left = nodes[pos - 1]
 		this.right = nodes[pos + 1]
-		this.type.push(...OperatorNode.getNewType(this.name, this.left, this.right))
+		this.type.set(OperatorNode.getNewType(this.name, this.left, this.right))
 		nodes.splice(pos - 1, 1)
 		nodes.splice(pos, 1)
 
@@ -122,7 +126,7 @@ export class ConditionNode extends TreeNode {
 
 		const bc = treeify(getClause(tokens), false)
 		cn.type = bc[1]
-		if (bc[1].length > 0) cn.returns = true
+		if (bc[1].isSet()) cn.returns = true
 		cn.children.push(...bc[0])
 		return cn
 	}
@@ -199,15 +203,15 @@ export class LetNode extends TreeNode {
 		const ln = new LetNode()
 		tokens.shift()
 		ln.name = tokens.shift()!.val
-		ln.type.push(...getType(tokens))
+		ln.type.set(getType(tokens))
 		tokens.shift()
 
 		const val = treeify(getFullClause(tokens))[0]
 		if (val.length > 1) console.log(val), error(Err.TREE, "Tree-ifying getFullClause returned more than one node.")
 		ln.value = val[0]
 
-		if (ln.type.length == 0) ln.type = ln.value.type
-		else if (!equalTypes(ln.type, ln.value.type)) {
+		if (!ln.type.isSet()) ln.type = ln.value.type
+		else if (!ln.type.equals(ln.value.type)) {
 			error(Err.TYPE, `Variable expected ${ln.type}, got ${ln.value.type}`)
 		}
 
@@ -228,14 +232,14 @@ export class NumberLiteralNode extends TreeNode {
 		const vr = new NumberLiteralNode()
 		expandRange(vr.range, tokens[0])
 		let tk = tokens.shift()!.val
-		if		(tk.endsWith("i32")) { tk = tk.substring(0, tk.length - 3); vr.type = ["i32"] }
-		else if (tk.endsWith("i64")) { tk = tk.substring(0, tk.length - 3); vr.type = ["i64"] }
-		else if (tk.endsWith("f32")) { tk = tk.substring(0, tk.length - 3); vr.type = ["f32"] }
-		else if (tk.endsWith("f64")) { tk = tk.substring(0, tk.length - 3); vr.type = ["f64"] }
-		else if (tk.endsWith("f")) { tk = tk.substring(0, tk.length - 1); vr.type = ["f32"] }
-		else if (tk.endsWith("i")) { tk = tk.substring(0, tk.length - 1); vr.type = ["i32"] }
-		else if (tk.includes(".")) vr.type = ["f32"]
-		else vr.type = ["i32"]
+		if		(tk.endsWith("i32")) { tk = tk.substring(0, tk.length - 3); vr.type.setStr("i32") }
+		else if (tk.endsWith("i64")) { tk = tk.substring(0, tk.length - 3); vr.type.setStr("i64") }
+		else if (tk.endsWith("f32")) { tk = tk.substring(0, tk.length - 3); vr.type.setStr("f32") }
+		else if (tk.endsWith("f64")) { tk = tk.substring(0, tk.length - 3); vr.type.setStr("f64") }
+		else if (tk.endsWith("f"))   { tk = tk.substring(0, tk.length - 1); vr.type.setStr("f32") }
+		else if (tk.endsWith("i"))   { tk = tk.substring(0, tk.length - 1); vr.type.setStr("i32") }
+		else if (tk.includes(".")) vr.type.setStr("f32")
+		else vr.type.setStr("i32")
 		vr.value = tk
 		return vr
 	}
@@ -250,7 +254,7 @@ export class StringLiteralNode extends TreeNode {
 	static make(tokens: Token[]): StringLiteralNode {
 		const vr = new StringLiteralNode()
 		vr.value = tokens.shift()!.val
-		vr.type = ["str"]
+		vr.type.setStr("str")
 		return vr
 	}
 }
@@ -322,9 +326,11 @@ function splitComma(tokens: Token[]): Token[][] {
 }
 
 function getType(tokens: Token[]): Type {
-	if (tokens[0].val != ":") return []
+	const nt = new Type()
+	if (tokens[0].val != ":") return nt
 	tokens.shift()
-	return getOpenClause(tokens).map(e => e.val) // Hot-fix, not really good.
+	nt.setStr(...getOpenClause(tokens).map(e => e.val)) // Hot-fix, not really good.
+	return nt
 }
 
 /** Gets a clause followed by an = or { sign. Used mostly for types. */
@@ -409,7 +415,7 @@ function treeify(tokens: Token[], hardScope = false, vars: Variable[] = []): [Tr
 	scopeVars.push({ vars: [...vars], hard: hardScope })
 
 	// First pass: Turn everything into nodes
-	const returnType: Type = []
+	const returnType: Type = new Type()
 	while (tokens.length > 0) {
 		if (tokens[0].val == '\n') { tokens.shift(); continue }
 		let found = false
@@ -424,7 +430,7 @@ function treeify(tokens: Token[], hardScope = false, vars: Variable[] = []): [Tr
 		if (!found)
 			console.log("Token `" + tokens.shift()! + "` not recognized.")
 		if (retNodes.length > 0 && retNodes[retNodes.length - 1].returns)
-			returnType.push(...retNodes[retNodes.length - 1].type)
+			returnType.merge(retNodes[retNodes.length - 1].type)
 	}
 
 	// Second pass: group Set nodes
@@ -462,14 +468,15 @@ export function parse(code: string): TreeNode[] {
 // `) // fn add(x: i32, y: f32) { return 2 * (x + y) }
 
 // TO-DO:
-//  - Call functions!
-//  - Make types into classes (more flexibility)
+//  - Call functions! (single-side operators)
 //  - Increment/Decrement (single-side operators)
 //  - Handle empty parenthesis
 //	- Return without the return keyword
 //  - Split "=>0" properly (no spaces screws it up)
 
 // Done:
+//  - Make types into classes (more flexibility)
+//  - Make comments work
 //  - Make tokens into classes (for getting error line & column numbers)
 //  - Make soft scopes return to hard scopes.
 //	- While

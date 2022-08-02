@@ -20,7 +20,7 @@ const langTypeMappings = {
 	"boo": "boolean"
 }
 function toType(type: Type) {
-	return type
+	return type.getTypes()
 		.map(t => typeMap(langTypeMappings, t))
 		.join(" | ")
 }
