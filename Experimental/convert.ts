@@ -8,17 +8,17 @@ const language = "ts"
 const languageConverter = ((await import("./langs/" + language + ".ts")) as {Lang: typeof LangBase}).Lang
 
 const code = `
-fn main() {
-	let aa = 4
-	let bb = 0 
-	while aa > 0 {
-		bb = bb + aa
-		aa = aa - 1
-	}
-	return bb
-}
-
+0 = 0
 `
+// fn main(a: i32, b: i32) {
+// 	let aa = 4
+// 	let bb = 0 
+// 	while aa > 0 {
+// 		bb = bb + aa
+// 		aa = aa - 1
+// 	}
+// 	return bb
+// }
 
 // fn main(arg0: i32, arg1: f32) { return 0 }
 // fn main2(arg0: i32, arg1: f32): f32 { return 0f }
