@@ -9,7 +9,7 @@ const languageConverter = ((await import("./langs/" + language + ".ts")) as {Lan
 
 const code = `
 // 0 = 0
-fn main(a: i32, b: i32) {
+fn main() {
 	let aa = 4
 	let bb = 0 
 	while aa > 0 {
@@ -18,6 +18,8 @@ fn main(a: i32, b: i32) {
 	}
 	return bb
 }
+
+main()
 `
 
 // fn main(arg0: i32, arg1: f32) { return 0 }

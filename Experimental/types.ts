@@ -2,8 +2,9 @@
 
 // str
 // str[]
-export class Type {
-	private _isArray = false
+export class PrimitiveType {
+	protected isSpreadArg = false
+	protected _isArray = false
 	protected types: Set<string> = new Set<string>()
 
 	constructor(...types: string[]) { types.forEach(t => this.types.add(t)) }
@@ -14,13 +15,13 @@ export class Type {
 	}
 	isArray(): boolean { return this._isArray }
 
-	set(type: Type): void { this.types = new Set(type.types) }
+	set(type: PrimitiveType): void { this.types = new Set(type.types) }
 	setStr(...str: string[]) { this.types = new Set(str) }
 	isSet(): boolean { return this.types.size != 0 }
 
-	merge(type: Type) { type.types.forEach(t => this.types.add(t)) }
+	merge(type: PrimitiveType) { type.types.forEach(t => this.types.add(t)) }
 
-	getOperatorReturn(type: Type): Type {
+	getOperatorReturn(type: PrimitiveType): PrimitiveType {
 		if (this.types.size > 1) console.log("WEIRD TYPE A")
 		if (type.types.size > 1) console.log("WEIRD TYPE B")
 		const [l] = this.types
@@ -32,7 +33,7 @@ export class Type {
 		else return type
 	}
 
-	equals(type: Type): boolean {
+	equals(type: PrimitiveType): boolean {
 		if (this.types.size !== type.types.size) return false
 		return [...this.types].every((x) => type.types.has(x))
 	}
@@ -42,16 +43,19 @@ export class Type {
 	}
 }
 
+export class FunctionType extends PrimitiveType {
+	args: PrimitiveType[] = []
+}
+
 const opImportanceOrder = ["str", "f64", "f32", "i64", "i32"]
 const boolOperators = ["&&", "||", "==", "!=", "<", ">", "<=", ">="]
-export function operationReturns(operator: string, left: Type, right: Type): Type {
-	if (boolOperators.includes(operator)) return new Type("boo")
+export function operationReturns(operator: string, left: PrimitiveType, right: PrimitiveType): PrimitiveType {
+	if (boolOperators.includes(operator)) return new PrimitiveType("boo")
 	return left.getOperatorReturn(right)
 }
 
 export function typeMap(typeDict: {[key: string]: string}, type: string): string {
-	if (type in typeDict)
-		return typeDict[type]
-	else
-		return type
+	return type in typeDict
+		? typeDict[type]
+		: type
 }

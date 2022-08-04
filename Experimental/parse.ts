@@ -4,16 +4,16 @@
  */
 
 import { Token, TokenRange, expandRange } from "./tokens.ts"
-import { Type, operationReturns } from "./types.ts"
+import { PrimitiveType, operationReturns } from "./types.ts"
 
 export class Variable {
 	name: string
-	type = new Type()
-	constructor(name: string, type?: Type) { this.name = name, type ? this.type = type : 0 }
+	type = new PrimitiveType()
+	constructor(name: string, type?: PrimitiveType) { this.name = name, type ? this.type = type : 0 }
 }
 
 export class TreeNode {
-	type: Type = new Type() // This is currently here to mitigate type issues. Do NOT remove.
+	type: PrimitiveType = new PrimitiveType() // This is currently here to mitigate type issues. Do NOT remove.
 	returns = false
 
 	canSet = false
@@ -34,7 +34,7 @@ export class FunctionNode extends BlockNode {
 		const fn = new FunctionNode()
 		tokens.shift()
 		fn.name = tokens.shift()!.val
-		fn.args.push(...splitComma(expandRange(fn.range, ...getClause(tokens)!)).map(a => new Variable(a[0].val, new Type(a[2].val))))
+		fn.args.push(...splitComma(expandRange(fn.range, ...getClause(tokens)!)).map(a => new Variable(a[0].val, new PrimitiveType(a[2].val))))
 		fn.type.set(getType(tokens))
 		const tn = treeify(getClause(tokens), true, fn.args)
 		fn.children = tn[0]
@@ -80,7 +80,7 @@ export class OperatorNode extends TreeNode {
 		return op
 	}
 
-	static getNewType(operator: string, left: TreeNode, right: TreeNode): Type {
+	static getNewType(operator: string, left: TreeNode, right: TreeNode): PrimitiveType {
 		// console.log(operator, left, right)
 		return operationReturns(operator, left.type, right.type)
 	}
@@ -259,7 +259,7 @@ export class StringLiteralNode extends TreeNode {
 	}
 }
 
-const nodes: (typeof TreeNode)[] = [
+const nodes: typeof TreeNode[] = [
 	TreeNode,
 	BlockNode,
 	FunctionNode,
@@ -325,8 +325,8 @@ function splitComma(tokens: Token[]): Token[][] {
 	return ret
 }
 
-function getType(tokens: Token[]): Type {
-	const nt = new Type()
+function getType(tokens: Token[]): PrimitiveType {
+	const nt = new PrimitiveType()
 	if (tokens[0].val != ":") return nt
 	tokens.shift()
 	nt.setStr(...getOpenClause(tokens).map(e => e.val)) // Hot-fix, not really good.
@@ -409,13 +409,13 @@ function getVar(name: string): Variable | undefined {
 	}
 }
 
-function treeify(tokens: Token[], hardScope = false, vars: Variable[] = []): [TreeNode[], Type] {
+function treeify(tokens: Token[], hardScope = false, vars: Variable[] = []): [TreeNode[], PrimitiveType] {
 	const retNodes: TreeNode[] = []
 	scopePos++
 	scopeVars.push({ vars: [...vars], hard: hardScope })
 
 	// First pass: Turn everything into nodes
-	const returnType: Type = new Type()
+	const returnType: PrimitiveType = new PrimitiveType()
 	while (tokens.length > 0) {
 		if (tokens[0].val == '\n') { tokens.shift(); continue }
 		let found = false
