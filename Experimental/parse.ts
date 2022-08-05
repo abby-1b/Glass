@@ -23,7 +23,10 @@ export class TreeNode {
 	static match(_tokens: Token[]): boolean { return false }
 	static make(_tokens: Token[]): TreeNode { return new TreeNode() }
 
+	hasProperty(node: TreeNode): boolean { return true }
 	toString() { return this.constructor.name + "[" + this.range.start + ", " + this.range.end + "]" }
+
+	rightCompatibleWith(node: TreeNode): boolean { return true }
 }
 export class BlockNode extends TreeNode { children: TreeNode[] = [] }
 export class FunctionNode extends BlockNode {
@@ -75,7 +78,7 @@ export class OperatorNode extends TreeNode {
 
 	processed = false
 
-	static matchingTokens = ["+", "-", "*", "/", "%", "&", "&&", "|", "||", "^", "==", "!=", "<", ">", "<=", ">="]
+	static matchingTokens = [".", "+", "-", "*", "/", "%", "&", "&&", "|", "||", "^", "==", "!=", "<", ">", "<=", ">="]
 	static match(tokens: Token[]): boolean { return OperatorNode.matchingTokens.includes(tokens[0].val) }
 	static make(tokens: Token[]): OperatorNode {
 		const op = new OperatorNode()
@@ -92,6 +95,7 @@ export class OperatorNode extends TreeNode {
 		if (this.processed) console.log("Already processed! That's weird!")
 		this.left = nodes[pos - 1]
 		this.right = nodes[pos + 1]
+		if (this.name == "." && !this.left.hasProperty(this.right)) error(Err.TYPE, `${this.left} had no property ${this.right}`)
 		this.type.set(OperatorNode.getNewType(this.name, this.left, this.right))
 		nodes.splice(pos - 1, 1)
 		nodes.splice(pos, 1)
@@ -103,11 +107,21 @@ export class OperatorNode extends TreeNode {
 export class ParenNode extends TreeNode {
 	children: TreeNode[] = []
 	static match(tokens: Token[]): boolean { return tokens[0].val == "(" }
-	static make(tokens: Token[]): TreeNode {
+	static make(tokens: Token[]): ParenNode {
 		const t = treeify(getClause(tokens, true))[0]
 		const pr = new ParenNode()
 		pr.children.push(...t)
 		return pr
+	}
+}
+
+export class IncDecNode extends TreeNode {
+	name!: string
+	static match(tokens: Token[]): boolean { return tokens[0].val == "++" || tokens[0].val == "--" }
+	static make(tokens: Token[]): IncDecNode {
+		const idn = new IncDecNode()
+		idn.name = tokens.shift()!.val
+		return idn
 	}
 }
 
@@ -227,6 +241,8 @@ export class NumberLiteralNode extends TreeNode {
 		vr.value = tk
 		return vr
 	}
+
+	rightCompatibleWith(node: TreeNode) { return false }
 }
 
 export class StringLiteralNode extends TreeNode {
@@ -241,17 +257,19 @@ export class StringLiteralNode extends TreeNode {
 		vr.type.setStr("str")
 		return vr
 	}
+
+	rightCompatibleWith(node: TreeNode) { return !(node instanceof IncDecNode) }
 }
 
-export class CallNode extends TreeNode {
-	callVar: VarNode
-	callParen: ParenNode
+export class RightOperatorNode extends TreeNode {
+	left: TreeNode
+	operator: TreeNode
 
-	constructor(callVar: VarNode, callParen: ParenNode) {
+	constructor(left: TreeNode, operator: TreeNode) {
 		super()
-		if (!(callVar.type instanceof FunctionType)) error(Err.TYPE, `${callVar.type.toString()} is not callable!`)
-		this.callVar = callVar
-		this.callParen = callParen
+		this.left = left
+		this.operator = operator
+		if (!this.left.rightCompatibleWith(this.operator)) error(Err.TYPE, `Can't call operator ${this.operator} on ${this.left}`)
 	}
 }
 
@@ -268,6 +286,7 @@ const nodes: typeof TreeNode[] = [
 	ParenNode,
 	SetNode,
 	VarNode,
+	IncDecNode,
 ]
 
 enum Err {
@@ -288,7 +307,8 @@ function error(num: Err, msg?: string) {
 }
 
 function tokenize(code: string): Token[] {
-	const noRepeat = `()_+-*{}/<>[]\\%?,:;\n`
+	const noRepeat = `()_*{}/<>[]\\%?,.:;\n`
+		, selfRepeat = "-+&|="
 		, whitespace = " \t"
 		, tokens: Token[] = []
 	let lett = ""
@@ -303,11 +323,14 @@ function tokenize(code: string): Token[] {
 				lett += code[a]
 			}
 			tokens.push({val: '"' + lett + '"', start: a - lett.length - 1, end: a}), lett = ""
+		} else if (selfRepeat.includes(code[a]) && lett[0] != code[a]) {
+			if (lett.length > 0) tokens.push({val: lett, start: a - lett.length, end: a}); lett = code[a]
 		} else if (noRepeat.includes(code[a]) || whitespace.includes(code[a])) {
 			if (lett != "") tokens.push({val: lett, start: a - lett.length, end: a}), lett = ""
 			if (!whitespace.includes(code[a])) tokens.push({val: code[a], start: a, end: a})
 		} else lett += code[a]
 	}
+	// console.log(tokens)
 	return tokens
 }
 
@@ -427,7 +450,7 @@ function treeify(
 			}
 		}
 		if (!found)
-			console.log("Token `" + tokens.shift()! + "` not recognized.")
+			console.log("Token `" + tokens.shift()!.val + "` not recognized.")
 		if (retNodes.length > 0 && retNodes[retNodes.length - 1] instanceof OperatorNode) hasOperator = true
 		if (retNodes.length > 0 && retNodes[retNodes.length - 1].returns) {
 			if (returnType.isSet() && !retNodes[retNodes.length - 1].type.equals(returnType))
@@ -437,8 +460,12 @@ function treeify(
 		}
 	}
 
-	// Second pass: group right operators
-	for (let n = 0; n < retNodes.length; n++) if (retNodes[n] instanceof ParenNode && !(retNodes[n - 1] instanceof OperatorNode)) retNodes[n - 1] = new CallNode(retNodes[n - 1] as VarNode, retNodes[n] as ParenNode), retNodes.splice(n--, 1)
+	// Second pass: group dots and right operators
+	for (let n = 0; n < retNodes.length; n++) if (retNodes[n] instanceof OperatorNode && (!(retNodes[n] as OperatorNode).processed) && ".".includes((retNodes[n] as OperatorNode).name)) (retNodes[n] as OperatorNode).take(retNodes, n--)
+	for (let n = 0; n < retNodes.length; n++)
+		if ((retNodes[n] instanceof ParenNode || retNodes[n] instanceof IncDecNode)
+			&& !(retNodes[n - 1] instanceof OperatorNode && (retNodes[n - 1] as OperatorNode).left === undefined))
+			retNodes[n - 1] = new RightOperatorNode(retNodes[n - 1] as VarNode, retNodes[n] as ParenNode), retNodes.splice(n--, 1)
 
 	// Thids pass: group Set nodes
 	for (let n = 0; n < retNodes.length; n++) if (retNodes[n] instanceof SetNode && (!(retNodes[n] as SetNode).processed)) (retNodes[n] as SetNode).take(retNodes, n--)
@@ -460,9 +487,8 @@ function treeify(
 
 export function parse(code: string): TreeNode[] {
 	const tokens = tokenize(code)
-	// console.log(tokens)
 	const tree = treeify(tokens) // Modifies `tokens`! rember
-	// console.log(tree[0])
+	console.log(tree[0])
 	return tree[0]
 }
 
