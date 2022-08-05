@@ -4,9 +4,10 @@
  */
 
 import { Token, TokenRange, expandRange } from "./tokens.ts"
-import { PrimitiveType, operationReturns } from "./types.ts"
+import { PrimitiveType, FunctionType, operationReturns } from "./types.ts"
 
 export class Variable {
+	mutable = true
 	name: string
 	type = new PrimitiveType()
 	constructor(name: string, type?: PrimitiveType) { this.name = name, type ? this.type = type : 0 }
@@ -42,7 +43,9 @@ export class FunctionNode extends BlockNode {
 		if (!fn.type.isSet())
 			fn.type.set(returnedTypes)
 		else if (!fn.type.equals(returnedTypes))
-			console.log(fn.type, returnedTypes), error(Err.TYPE, `Function expected ${fn.type.toString()}, got ${returnedTypes}`)
+			console.log(fn.type, returnedTypes), error(Err.TYPE, `Function expected to return ${fn.type.toString(true)}, got ${returnedTypes.toString(true)}`)
+
+		scopeVars[scopeVars.length - 1].vars.push(new Variable(fn.name, new FunctionType(fn)))
 		return fn
 	}
 }
@@ -102,8 +105,6 @@ export class ParenNode extends TreeNode {
 	static match(tokens: Token[]): boolean { return tokens[0].val == "(" }
 	static make(tokens: Token[]): TreeNode {
 		const t = treeify(getClause(tokens, true))[0]
-		if (t.length == 1) return t[0]
-		else console.log("Weird parenthesis:", t)
 		const pr = new ParenNode()
 		pr.children.push(...t)
 		return pr
@@ -131,23 +132,6 @@ export class ConditionNode extends TreeNode {
 		return cn
 	}
 }
-
-// For calling a function
-// export class CallNode extends TreeNode {
-// 	name!: string
-
-// 	static lastVar: Variable
-// 	static match(tokens: Token[]): boolean {
-// 		VarNode.lastVar = getVar(tokens[0])!
-// 		return VarNode.lastVar !== undefined
-// 	}
-// 	static make(tokens: Token[]): VarNode {
-// 		const vr = new VarNode()
-// 		vr.name = tokens.shift()!
-// 		vr.type = this.lastVar.type
-// 		return vr
-// 	}
-// }
 
 // For setting a variable
 export class SetNode extends TreeNode {
@@ -259,6 +243,18 @@ export class StringLiteralNode extends TreeNode {
 	}
 }
 
+export class CallNode extends TreeNode {
+	callVar: VarNode
+	callParen: ParenNode
+
+	constructor(callVar: VarNode, callParen: ParenNode) {
+		super()
+		if (!(callVar.type instanceof FunctionType)) error(Err.TYPE, `${callVar.type.toString()} is not callable!`)
+		this.callVar = callVar
+		this.callParen = callParen
+	}
+}
+
 const nodes: typeof TreeNode[] = [
 	TreeNode,
 	BlockNode,
@@ -285,9 +281,9 @@ enum Err {
 
 function error(num: Err, msg?: string) {
 	if (msg === undefined)
-		console.error(num, "ERROR")
+		console.error("\u001b[31m" + num, "ERROR\u001b[0m")
 	else
-		console.error(num, "ERROR:", msg)
+		console.error("\u001b[31m" + num, "ERROR:\u001b[0m", msg)
 	Deno.exit(1)
 }
 
@@ -329,7 +325,7 @@ function getType(tokens: Token[]): PrimitiveType {
 	const nt = new PrimitiveType()
 	if (tokens[0].val != ":") return nt
 	tokens.shift()
-	nt.setStr(...getOpenClause(tokens).map(e => e.val)) // Hot-fix, not really good.
+	nt.setStr(getOpenClause(tokens)[0].val) // Hot-fix, not really good.
 	return nt
 }
 
@@ -409,40 +405,53 @@ function getVar(name: string): Variable | undefined {
 	}
 }
 
-function treeify(tokens: Token[], hardScope = false, vars: Variable[] = []): [TreeNode[], PrimitiveType] {
+function treeify(
+	tokens: Token[],
+	hardScope = false,
+	vars: Variable[] = [],
+	returnType = new PrimitiveType()
+): [TreeNode[], PrimitiveType] {
 	const retNodes: TreeNode[] = []
 	scopePos++
 	scopeVars.push({ vars: [...vars], hard: hardScope })
 
 	// First pass: Turn everything into nodes
-	const returnType: PrimitiveType = new PrimitiveType()
+	let hasOperator = false
 	while (tokens.length > 0) {
 		if (tokens[0].val == '\n') { tokens.shift(); continue }
 		let found = false
 		for (let n = 0; n < nodes.length; n++) {
 			if (nodes[n].match(tokens)) {
-				// console.log("FOUND:", tokens, nodes[n].name)
-				retNodes.push(nodes[n].make(tokens))
-				found = true
+				retNodes.push(nodes[n].make(tokens)), found = true
 				break
 			}
 		}
 		if (!found)
 			console.log("Token `" + tokens.shift()! + "` not recognized.")
-		if (retNodes.length > 0 && retNodes[retNodes.length - 1].returns)
-			returnType.merge(retNodes[retNodes.length - 1].type)
+		if (retNodes.length > 0 && retNodes[retNodes.length - 1] instanceof OperatorNode) hasOperator = true
+		if (retNodes.length > 0 && retNodes[retNodes.length - 1].returns) {
+			if (returnType.isSet() && !retNodes[retNodes.length - 1].type.equals(returnType))
+				error(Err.TYPE, `Found different return types: ${retNodes[retNodes.length - 1].type.toString(true)} and ${returnType.toString(true)}`)
+			else
+				returnType.set(retNodes[retNodes.length - 1].type)
+		}
 	}
 
-	// Second pass: group Set nodes
+	// Second pass: group right operators
+	for (let n = 0; n < retNodes.length; n++) if (retNodes[n] instanceof ParenNode && !(retNodes[n - 1] instanceof OperatorNode)) retNodes[n - 1] = new CallNode(retNodes[n - 1] as VarNode, retNodes[n] as ParenNode), retNodes.splice(n--, 1)
+
+	// Thids pass: group Set nodes
 	for (let n = 0; n < retNodes.length; n++) if (retNodes[n] instanceof SetNode && (!(retNodes[n] as SetNode).processed)) (retNodes[n] as SetNode).take(retNodes, n--)
 
-	// Third pass(es): group operation nodes
-	for (let n = 0; n < retNodes.length; n++) if (retNodes[n] instanceof OperatorNode && (!(retNodes[n] as OperatorNode).processed) && "*/%".includes((retNodes[n] as OperatorNode).name)) (retNodes[n] as OperatorNode).take(retNodes, n--)
-	for (let n = 0; n < retNodes.length; n++) if (retNodes[n] instanceof OperatorNode && (!(retNodes[n] as OperatorNode).processed) && "+-" .includes((retNodes[n] as OperatorNode).name)) (retNodes[n] as OperatorNode).take(retNodes, n--)
-	for (let n = 0; n < retNodes.length; n++) if (retNodes[n] instanceof OperatorNode && (!(retNodes[n] as OperatorNode).processed) && "&|" .includes((retNodes[n] as OperatorNode).name)) (retNodes[n] as OperatorNode).take(retNodes, n--)
-	for (let n = 0; n < retNodes.length; n++) if (retNodes[n] instanceof OperatorNode && (!(retNodes[n] as OperatorNode).processed) && [">","<",">=","<="].includes((retNodes[n] as OperatorNode).name)) (retNodes[n] as OperatorNode).take(retNodes, n--)
-	for (let n = 0; n < retNodes.length; n++) if (retNodes[n] instanceof OperatorNode && (!(retNodes[n] as OperatorNode).processed) && ["==","!="].includes((retNodes[n] as OperatorNode).name)) (retNodes[n] as OperatorNode).take(retNodes, n--)
-	for (let n = 0; n < retNodes.length; n++) if (retNodes[n] instanceof OperatorNode && (!(retNodes[n] as OperatorNode).processed) && ["&&","||"].includes((retNodes[n] as OperatorNode).name)) (retNodes[n] as OperatorNode).take(retNodes, n--)
+	// fourth pass(es): group operation nodes
+	if (hasOperator) {
+		for (let n = 0; n < retNodes.length; n++) if (retNodes[n] instanceof OperatorNode && (!(retNodes[n] as OperatorNode).processed) && "*/%".includes((retNodes[n] as OperatorNode).name)) (retNodes[n] as OperatorNode).take(retNodes, n--)
+		for (let n = 0; n < retNodes.length; n++) if (retNodes[n] instanceof OperatorNode && (!(retNodes[n] as OperatorNode).processed) && "+-" .includes((retNodes[n] as OperatorNode).name)) (retNodes[n] as OperatorNode).take(retNodes, n--)
+		for (let n = 0; n < retNodes.length; n++) if (retNodes[n] instanceof OperatorNode && (!(retNodes[n] as OperatorNode).processed) && "&|" .includes((retNodes[n] as OperatorNode).name)) (retNodes[n] as OperatorNode).take(retNodes, n--)
+		for (let n = 0; n < retNodes.length; n++) if (retNodes[n] instanceof OperatorNode && (!(retNodes[n] as OperatorNode).processed) && [">","<",">=","<="].includes((retNodes[n] as OperatorNode).name)) (retNodes[n] as OperatorNode).take(retNodes, n--)
+		for (let n = 0; n < retNodes.length; n++) if (retNodes[n] instanceof OperatorNode && (!(retNodes[n] as OperatorNode).processed) && ["==","!="].includes((retNodes[n] as OperatorNode).name)) (retNodes[n] as OperatorNode).take(retNodes, n--)
+		for (let n = 0; n < retNodes.length; n++) if (retNodes[n] instanceof OperatorNode && (!(retNodes[n] as OperatorNode).processed) && ["&&","||"].includes((retNodes[n] as OperatorNode).name)) (retNodes[n] as OperatorNode).take(retNodes, n--)
+	}
 
 	scopePos--
 	scopeVars.pop()
