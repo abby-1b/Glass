@@ -11,7 +11,7 @@ export class Lang extends Base.Lang {
 		"i64": "long",
 		"f32": "float",
 		"f64": "double",
-		"str": "String"
+		"str": "std::string"
 	}
 
 	static operations: {[key: string]: (a: TreeNode, b: TreeNode) => string} = {

@@ -1,6 +1,7 @@
 import * as Base from "./langs.ts"
 import {
 	FunctionNode,
+	LetNode
 } from "../parse.ts"
 
 export class Lang extends Base.Lang {
@@ -11,10 +12,11 @@ export class Lang extends Base.Lang {
 		"boo": "boolean"
 	}
 
+	static takeLetNode(node: LetNode) { return "let " + node.name + " = " + this.take(node.value) }
 	static takeFunctionNode(node: FunctionNode) {
-		const args = node.args.map(v => v.name + ": " + this.convertType(v.type))
+		const args = node.args.map(v => v.name)
 		return "function " + node.name
-			+ "(" + args.join(", ") + "): " + this.convertType(node.type) + " {\n"
+			+ "(" + args.join(", ") + ") {\n"
 			+ this.indent(this.takeArr(node.children))
 			+ "\n}"
 	}
