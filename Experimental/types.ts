@@ -60,3 +60,11 @@ export function typeMap(typeDict: {[key: string]: string}, type: string): string
 		? typeDict[type]
 		: type
 }
+
+export function isValidName(name: string): boolean {
+	if (name.length == 0) return false
+	if ("0123456789.+-*/(){}[]\\/".includes(name[0])) return false
+	for (let i = 1; i < name.length; i++)
+		if (".+-*/(){}[]\\/".includes(name[i])) return false
+	return true
+}

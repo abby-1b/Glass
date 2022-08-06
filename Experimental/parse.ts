@@ -4,7 +4,7 @@
  */
 
 import { Token, TokenRange, expandRange } from "./tokens.ts"
-import { PrimitiveType, FunctionType, operationReturns } from "./types.ts"
+import { PrimitiveType, FunctionType, operationReturns, isValidName } from "./types.ts"
 
 export class Variable {
 	mutable = true
@@ -189,6 +189,11 @@ export class VarNode extends TreeNode {
 		vr.type = this.lastVar.type
 		return vr
 	}
+
+	rightCompatibleWith(node: TreeNode): boolean {
+		if (node instanceof IncDecNode && this.type instanceof FunctionType) return false
+		return true
+	}
 }
 
 // For declaring a variable
@@ -273,6 +278,17 @@ export class RightOperatorNode extends TreeNode {
 	}
 }
 
+export class TokenLiteralNode extends TreeNode {
+	tokenVal!: string
+	static match(tokens: Token[]) { return isValidName(tokens[0].val) }
+	static make(tokens: Token[]): TokenLiteralNode {
+		console.log("Matched token:", tokens[0].val)
+		const tln = new TokenLiteralNode()
+		tln.tokenVal = tokens.shift()!.val
+		return tln
+	}
+}
+
 const nodes: typeof TreeNode[] = [
 	TreeNode,
 	BlockNode,
@@ -287,6 +303,8 @@ const nodes: typeof TreeNode[] = [
 	SetNode,
 	VarNode,
 	IncDecNode,
+
+	TokenLiteralNode
 ]
 
 enum Err {
@@ -450,7 +468,7 @@ function treeify(
 			}
 		}
 		if (!found)
-			console.log("Token `" + tokens.shift()!.val + "` not recognized.")
+			error(Err.TREE, "Token `" + tokens.shift()!.val + "` not recognized.")
 		if (retNodes.length > 0 && retNodes[retNodes.length - 1] instanceof OperatorNode) hasOperator = true
 		if (retNodes.length > 0 && retNodes[retNodes.length - 1].returns) {
 			if (returnType.isSet() && !retNodes[retNodes.length - 1].type.equals(returnType))
@@ -488,7 +506,7 @@ function treeify(
 export function parse(code: string): TreeNode[] {
 	const tokens = tokenize(code)
 	const tree = treeify(tokens) // Modifies `tokens`! rember
-	console.log(tree[0])
+	// console.log(tree[0])
 	return tree[0]
 }
 

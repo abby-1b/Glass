@@ -8,20 +8,15 @@ const language = "js"
 const languageConverter = ((await import("./langs/" + language + ".ts")) as {Lang: typeof Lang}).Lang
 
 const code = `
-// 0 = 0
-// fn main(a: i32, b: i32) {
-// 	let aa = a
-// 	let bb = b
-// 	while aa > 0 {
-// 		bb = bb + aa
-// 		aa = aa - 1
-// 	}
-// 	return "" + bb
-// }
-// main.main()
-
-let main = 0
-main--
+fn main(a: i32, b: i32) {
+	let aa = a
+	let bb = b
+	while aa > 0 {
+		bb = bb + aa
+		aa = aa - 1
+	}
+	return "" + bb
+}
 main()
 `
 
