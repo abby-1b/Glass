@@ -10,7 +10,8 @@ export class Lang extends Base.Lang {
 		"str": "string",
 		"boo": "boolean"
 	}
-
+	
+	static lineEnding() { return ";\n" }
 	static takeFunctionNode(node: FunctionNode) {
 		const args = node.args.map(v => v.name + ": " + this.convertType(v.type))
 		return "function " + node.name

@@ -17,7 +17,7 @@ fn main(a: i32, b: i32) {
 	}
 	return "" + bb
 }
-main()
+let a: i32 = main()
 `
 
 const nodes = parse(code)

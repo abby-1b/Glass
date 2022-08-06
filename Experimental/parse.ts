@@ -108,8 +108,9 @@ export class ParenNode extends TreeNode {
 	children: TreeNode[] = []
 	static match(tokens: Token[]): boolean { return tokens[0].val == "(" }
 	static make(tokens: Token[]): ParenNode {
-		const t = treeify(getClause(tokens, true))[0]
 		const pr = new ParenNode()
+		const cls = getClause(tokens, true)
+		const t = treeify(expandRange(pr.range, ...cls))[0]
 		pr.children.push(...t)
 		return pr
 	}
@@ -185,6 +186,7 @@ export class VarNode extends TreeNode {
 	}
 	static make(tokens: Token[]): VarNode {
 		const vr = new VarNode()
+		expandRange(vr.range, tokens[0])
 		vr.name = tokens.shift()!.val
 		vr.type = this.lastVar.type
 		return vr
@@ -215,7 +217,7 @@ export class LetNode extends TreeNode {
 
 		if (!ln.type.isSet()) ln.type = ln.value.type
 		else if (!ln.type.equals(ln.value.type)) {
-			error(Err.TYPE, `Variable expected ${ln.type}, got ${ln.value.type}`)
+			error(Err.TYPE, `Variable expected ${ln.type}, got ${ln.value.type}`, ln.value)
 		}
 
 		scopeVars[scopeVars.length - 1].vars.push(new Variable(ln.name, ln.type))
@@ -316,11 +318,13 @@ enum Err {
 	PERMISSON = "PERMISSION",
 }
 
-function error(num: Err, msg?: string) {
+function error(num: Err, msg?: string, node?: TreeNode) {
 	if (msg === undefined)
 		console.error("\u001b[31m" + num, "ERROR\u001b[0m")
 	else
 		console.error("\u001b[31m" + num, "ERROR:\u001b[0m", msg)
+	if (node !== undefined)
+		console.log(node)
 	Deno.exit(1)
 }
 

@@ -12,6 +12,7 @@ export class Lang extends Base.Lang {
 		"boo": "boolean"
 	}
 
+	static lineEnding() { return ";\n" }
 	static takeLetNode(node: LetNode) { return "let " + node.name + " = " + this.take(node.value) }
 	static takeFunctionNode(node: FunctionNode) {
 		const args = node.args.map(v => v.name)
