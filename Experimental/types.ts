@@ -63,8 +63,15 @@ export function typeMap(typeDict: {[key: string]: string}, type: string): string
 
 export function isValidName(name: string): boolean {
 	if (name.length == 0) return false
-	if ("0123456789.+-*/(){}[]\\/".includes(name[0])) return false
+	if ("0123456789.+-*/(){}[]\\/,".includes(name[0])) return false
 	for (let i = 1; i < name.length; i++)
 		if (".+-*/(){}[]\\/".includes(name[i])) return false
+	return true
+}
+
+export function matchTypeArr(a: PrimitiveType[], b: PrimitiveType[]): boolean {
+	if (a.length != b.length) return false
+	for (let t = 0; t < a.length; t++)
+		if (!a[t].equals(b[t])) return false
 	return true
 }
