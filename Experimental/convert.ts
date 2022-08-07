@@ -8,7 +8,7 @@ const language = "ts"
 const languageConverter = ((await import("./langs/" + language + ".ts")) as {Lang: typeof Lang}).Lang
 
 const code = `
-fn main(a: i32, b: i32) {
+fn main(a: i32, b: i32): str {
 	return a + b
 	// let aa = a
 	// let bb = b
@@ -19,8 +19,8 @@ fn main(a: i32, b: i32) {
 	// return "" + bb
 }
 
-let a = main(10, 20)
-console.log(a.prop)
+let a: str[] = main(10, 20)
+// console.log(a.prop)
 `
 
 const nodes = parse(code)
