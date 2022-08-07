@@ -24,7 +24,7 @@ export class Lang {
 	static convertType(type: PrimitiveType) { return typeMap(this.typeMappings, type.toString()) }
 
 	static takeArr(nodes: TreeNode[], expr = false): string {
-		return nodes.map(n => this.take(n) + (expr ? "" : this.lineEnding())).join("")
+		return nodes.map(n => this.take(n) + (expr ? "" : this.lineEnding())).join(expr ? ", " : "")
 	}
 
 	static indent(str: string) { return str.split("\n").map(e => "\t" + e).join("\n") }
