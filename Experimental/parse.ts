@@ -3,7 +3,7 @@
  * This can then be compiled to a target language.
  */
 
-import { Token, TokenRange, expandRange } from "./tokens.ts"
+import { Token, TokenRange, expandRange, expandRangeNodes } from "./tokens.ts"
 import { PrimitiveType, FunctionType, operationReturns, isValidName, matchTypeArr } from "./types.ts"
 
 export class Variable {
@@ -24,7 +24,17 @@ export class TreeNode {
 	static make(_tokens: Token[]): TreeNode { return new TreeNode() }
 
 	hasProperty(_node: TreeNode): boolean { return false }
-	toString() { return this.constructor.name + "[" + this.range.start + ", " + this.range.end + "]" }
+	toString(full = false): string {
+		if (full) {
+			let start = this.range.start
+			let end = this.range.end
+			while (files[this.range.fileId!][start] != "\n") start--
+			while (files[this.range.fileId!][end] != "\n" && end < files[this.range.fileId!].length) end++
+			return files[this.range.fileId!].slice(++start, end)
+				+ "\n" + (" ".repeat(this.range.start - start)) + "\u001b[31m" + "^".repeat(this.range.end - this.range.start) + "\u001b[0m"
+		}
+		return this.constructor.name + "[" + this.range.start + ", " + this.range.end + "]#" + this.range.fileId
+	}
 
 	rightCompatibleWith(_node: TreeNode): boolean { return true }
 }
@@ -62,8 +72,8 @@ export class StatementNode extends TreeNode {
 		const st = new StatementNode()
 		st.name = tokens.shift()!.val
 
-		const arg = treeify(getFullClause(tokens))[0]
-		if (arg.length > 1) console.log(arg), error(Err.TREE, "Tree-ifying getFullClause returned more than one node.")
+		const arg = treeify(expandRange(st.range, ...getFullClause(tokens)))[0]
+		if (arg.length > 1) console.log(arg), error(Err.TREE, "Tree-ifying getFullClause returned more than one node.", st)
 		st.arg = arg[0]
 		st.type = st.arg.type
 
@@ -95,7 +105,7 @@ export class OperatorNode extends TreeNode {
 		if (this.processed) console.log("Already processed! That's weird!")
 		this.left = nodes[pos - 1]
 		this.right = nodes[pos + 1]
-		if (this.name == "." && !this.left.hasProperty(this.right)) error(Err.TYPE, `${this.left} has no property ${this.right}`)
+		if (this.name == "." && !this.left.hasProperty(this.right)) error(Err.TYPE, `${this.left} has no property ${this.right}`, this.right)
 		this.type.set(OperatorNode.getNewType(this.name, this.left, this.right))
 		nodes.splice(pos - 1, 1)
 		nodes.splice(pos, 1)
@@ -110,9 +120,8 @@ export class ParenNode extends TreeNode {
 	static make(tokens: Token[]): ParenNode {
 		const pr = new ParenNode()
 		const cls = getClause(tokens, true)
-		// const t = treeify(expandRange(pr.range, ...cls))[0].filter((n, i) => (i % 2) == 0)
 		const t = splitComma(expandRange(pr.range, ...cls))
-		// const b = t.map(a => treeify(a)[0][0])
+		pr.range.start--, pr.range.end++
 		pr.children.push(...t.map(a => treeify(a)[0][0]))
 		return pr
 	}
@@ -138,8 +147,8 @@ export class ConditionNode extends TreeNode {
 	static make(tokens: Token[]): ConditionNode {
 		const cn = new ConditionNode()
 		cn.name = tokens.shift()!.val
-		const cond = treeify(getOpenClause(tokens))
-		if (cond[0].length > 1) console.log(cond[0]), error(Err.TREE, "Tree-ifying getFullClause returned more than one node.")
+		const cond = treeify(expandRange(cn.range, ...getOpenClause(tokens)))
+		if (cond[0].length > 1) console.log(cond[0]), error(Err.TREE, "Tree-ifying getFullClause returned more than one node.", cn)
 		cn.condition = cond[0][0]
 
 		const bc = treeify(getClause(tokens), false)
@@ -161,15 +170,15 @@ export class SetNode extends TreeNode {
 	static make(tokens: Token[]): SetNode {
 		const sn = new SetNode()
 		tokens.shift()
-		const val = treeify(getFullClause(tokens))
-		if (val[0].length > 1) console.log(val[0]), error(Err.TREE, "Tree-ifying getFullClause returned more than one node.")
+		const val = treeify(expandRange(sn.range, ...getFullClause(tokens)))
+		if (val[0].length > 1) console.log(val[0]), error(Err.TREE, "Tree-ifying getFullClause returned more than one node.", sn)
 		sn.value = val[0][0]
 		return sn
 	}
 
 	take(nodes: TreeNode[], pos: number) {
 		this.setting = nodes.splice(pos - 1, 1)[0]
-		if (!this.setting.canSet) error(Err.PERMISSON, `Can't set ${this.setting.toString()}`)
+		if (!this.setting.canSet) error(Err.PERMISSON, `Can't set ${this.setting.toString()}`, this.setting)
 		// console.log(this.setting.type, this.value.type)
 		this.processed = true
 	}
@@ -197,7 +206,7 @@ export class VarNode extends TreeNode {
 	rightCompatibleWith(node: TreeNode): boolean {
 		if (node instanceof IncDecNode && this.type instanceof FunctionType) return false
 		if (node instanceof ParenNode && this.type instanceof FunctionType && !matchTypeArr(this.type.args, node.children.map(n => n.type)))
-			error(Err.TYPE, `Function expected (${this.type.args.map(t => t.toString(true)).join(", ")}) and got (${node.children.map(n => n.type.toString(true)).join(", ")})`)
+			error(Err.TYPE, `Function expected (${this.type.args.map(t => t.toString(true)).join(", ")}) and got (${node.children.map(n => n.type.toString(true)).join(", ")})`, node)
 		return true
 	}
 }
@@ -213,15 +222,16 @@ export class LetNode extends TreeNode {
 		tokens.shift()
 		ln.name = tokens.shift()!.val
 		ln.type.set(getType(tokens))
+		console.log("Setting:", ln.type)
 		tokens.shift()
 
-		const val = treeify(getFullClause(tokens))[0]
-		if (val.length > 1) console.log(val), error(Err.TREE, "Tree-ifying getFullClause returned more than one node.")
+		const val = treeify(expandRange(ln.range, ...getFullClause(tokens)))[0]
+		if (val.length > 1) console.log(val), error(Err.TREE, "Tree-ifying getFullClause returned more than one node.", ln)
 		ln.value = val[0]
 
 		if (!ln.type.isSet()) ln.type = ln.value.type
 		else if (!ln.type.equals(ln.value.type)) {
-			error(Err.TYPE, `Variable expected ${ln.type}, got ${ln.value.type}`, ln.value)
+			error(Err.TYPE, `Variable expected ${ln.type.toString(true)}, got ${ln.value.type.toString(true)}`, ln.value)
 		}
 
 		scopeVars[scopeVars.length - 1].vars.push(new Variable(ln.name, ln.type))
@@ -280,10 +290,35 @@ export class RightOperatorNode extends TreeNode {
 		super()
 		this.left = left
 		this.operator = operator
+		expandRangeNodes(this.range, left)
+		expandRangeNodes(this.range, operator)
+
 		if (!this.left.rightCompatibleWith(this.operator)) error(Err.TYPE, `Can't call operator ${this.operator} on ${this.left}`)
 		if (this.left instanceof VarNode && this.left.type instanceof FunctionType && this.operator instanceof ParenNode) {
 			this.type = this.left.type
 		}
+	}
+}
+
+export class ClassNode extends TreeNode {
+	name!: string
+	static match(tokens: Token[]): boolean { return tokens[0].val == "cls" }
+	static make(tokens: Token[]): ClassNode {
+		const cn = new ClassNode()
+		expandRange(cn.range, tokens.shift()!)
+		cn.name = tokens.shift()!.val
+		return cn
+	}
+}
+
+export class ModifierNode extends TreeNode {
+	name!: string
+
+	static match(tokens: Token[]): boolean { return ["ex", "st", "pb"].includes(tokens[0].val) }
+	static make(tokens: Token[]): ClassNode {
+		const mn = new ClassNode()
+		mn.name = expandRange(mn.range, tokens.shift()!)[0].val
+		return mn
 	}
 }
 
@@ -293,8 +328,7 @@ export class TokenLiteralNode extends TreeNode {
 	static make(tokens: Token[]): TokenLiteralNode {
 		console.log("Literal matched token:", tokens[0].val)
 		const tln = new TokenLiteralNode()
-		// tln.
-		tln.tokenVal = tokens.shift()!.val
+		tln.tokenVal = expandRange(tln.range, tokens.shift()!)[0].val
 		return tln
 	}
 
@@ -315,6 +349,8 @@ const nodes: typeof TreeNode[] = [
 	SetNode,
 	VarNode,
 	IncDecNode,
+	ClassNode,
+	ModifierNode,
 
 	TokenLiteralNode
 ]
@@ -334,11 +370,14 @@ function error(num: Err, msg?: string, node?: TreeNode) {
 	else
 		console.error("\u001b[31m" + num, "ERROR:\u001b[0m", msg)
 	if (node !== undefined)
-		console.log(node)
+		console.log(node.toString(true))
 	Deno.exit(1)
 }
 
+const files: string[] = []
 function tokenize(code: string): Token[] {
+	const fileId = files.length
+	files.push(code)
 	const noRepeat = `()_*{}/<>[]\\%?,.:;\n`
 		, selfRepeat = "-+&|="
 		, whitespace = " \t"
@@ -354,12 +393,12 @@ function tokenize(code: string): Token[] {
 				if (code[a] == '\\' && code[a + 1] == '"') lett += '\\', a++
 				lett += code[a]
 			}
-			tokens.push({val: '"' + lett + '"', start: a - lett.length - 1, end: a}), lett = ""
+			tokens.push({val: '"' + lett + '"', start: a - lett.length - 1, end: a, fileId}), lett = ""
 		} else if (selfRepeat.includes(code[a]) && lett[0] != code[a]) {
-			if (lett.length > 0) tokens.push({val: lett, start: a - lett.length, end: a}); lett = code[a]
+			if (lett.length > 0) tokens.push({val: lett, start: a - lett.length, end: a, fileId}); lett = code[a]
 		} else if (noRepeat.includes(code[a]) || whitespace.includes(code[a])) {
-			if (lett != "") tokens.push({val: lett, start: a - lett.length, end: a}), lett = ""
-			if (!whitespace.includes(code[a])) tokens.push({val: code[a], start: a, end: a})
+			if (lett != "") tokens.push({val: lett, start: a - lett.length, end: a, fileId}), lett = ""
+			if (!whitespace.includes(code[a])) tokens.push({val: code[a], start: a, end: a, fileId})
 		} else lett += code[a]
 	}
 	// console.log(tokens)
@@ -380,7 +419,10 @@ function getType(tokens: Token[]): PrimitiveType {
 	const nt = new PrimitiveType()
 	if (tokens[0].val != ":") return nt
 	tokens.shift()
-	nt.setStr(getOpenClause(tokens)[0].val) // Hot-fix, not really good.
+	const openClause = getOpenClause(tokens)
+	console.log(openClause)
+	nt.setStr(openClause[0].val) // Hot-fix, not really good.
+	if (openClause.length > 1 && openClause[1].val == "[") nt.array()
 	return nt
 }
 
@@ -524,17 +566,10 @@ export function parse(code: string): TreeNode[] {
 	return tree[0]
 }
 
-// parse(`
-// let a = 10 + 5
-// `)
-
-// console.log(tokenize("let a:()=>{}=>0"))
-
-// parse(`
-// fn add(x: i32, y: f32) { return 2 * (x + y) }
-// `) // fn add(x: i32, y: f32) { return 2 * (x + y) }
-
 // TO-DO:
+//  - Arrays
+//  - Classes
+//  - Class access
 //	- Return without the return keyword
 //  - Split "=>0" properly (no spaces screws it up)
 
