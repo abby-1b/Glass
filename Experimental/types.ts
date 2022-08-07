@@ -2,6 +2,7 @@
 
 // str
 // str[]
+
 export class PrimitiveType {
 	protected _isArray = false
 	protected type = ""
@@ -34,7 +35,7 @@ export class PrimitiveType {
 	}
 
 	toString(format = false) {
-		return (format ? "\u001b[33m" : "") + this.type + (format ? "\u001b[0m" : "")
+		return (format ? "\u001b[33m" : "") + this.type + (this._isArray ? "[]" : "") + (format ? "\u001b[0m" : "")
 	}
 }
 
