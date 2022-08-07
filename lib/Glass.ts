@@ -42,24 +42,7 @@ class GlassInstance {
 	constructor() {
 		/** no-build */
 		if (false) {
-			console.log(`This was made with the Glass game engine!
-############################
-##                        ##
-##    ##    ##            ##
-##  ##    ##              ##
-##      ##                ##
-##    ##                  ##
-##  ##                    ##
-##                        ##
-##                        ##
-##                        ##
-##                        ##
-##                        ##
-##                        ##
-############################
-
-https://github.com/CodeIGuess/Glass
-`)
+			console.log('This was made with the Glass game engine!\n##############\n#@@@@@@@@@@@@#\n#@@#@@#@@@@@@#\n#@#@@#@@@@@@@#\n#@@@#@@@@@@@@#\n#@@#@@@@@@@@@#\n#@#@@@@@@@@@@#\n#@@@@@@@@@@@@#\n#@@@@@@@@@@@@#\n#@@@@@@@@@@@@#\n#@@@@@@@@@@@@#\n#@@@@@@@@@@@@#\n#@@@@@@@@@@@@#\n##############\nhttps://github.com/CodeIGuess/Glass'.replace(/#|@/g,t=>t=='#'?'##':"  "))
 		/** no-build */}
 	}
 
@@ -419,7 +402,7 @@ function buildSP(gl: WebGL2RenderingContext, vert: string, frag: string): WebGLP
 		if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) console.log("Error compiling shader:\n" + gl.getShaderInfoLog(s))
 		return s
 	}
-	const program = gl.createProgram() as WebGLProgram
+	const program = gl.createProgram()!
 	gl.attachShader(program, buildSS(vert, gl.VERTEX_SHADER))
 	gl.attachShader(program, buildSS(frag, gl.FRAGMENT_SHADER))
 	gl.linkProgram(program)
