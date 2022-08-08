@@ -1,27 +1,50 @@
+import { Token } from "./tokens.ts"
 // export type Type = string[]
 
 // str
 // str[]
 
-export class PrimitiveType {
-	protected _isArray = false
-	protected type = ""
+export class Type {
+	equals(type: Type): boolean { return this.constructor.name == type.constructor.name }
 
-	constructor(type: string = "") { this.type = type }
+	static from(tokens: Token[]): Type {
+		if (tokens[tokens.length - 1].val == "]"
+			&& tokens[tokens.length - 2].val == "[") {
+			tokens.pop(), tokens.pop()
+			return new ArrayType(Type.from(tokens))
+		}
+		if (tokens.length == 1)
+			return new PrimitiveType(tokens[0].val)
+		console.log("Got empty type:", tokens)
+		return new Type()
+	}
 
-	array(): this {
-		this._isArray = true
+	isSet(): boolean { return false }
+
+	toString(format = false): string { return format ? "\u001b[33m[empty type]\u001b[0m" : "[empty type]" }
+
+	getOperatorReturn(type: Type): Type {
+		// console.log("Empty types don't return!!!", this, type)
 		return this
 	}
-	isArray(): boolean { return this._isArray }
+}
 
-	set(type: PrimitiveType): void { this.type = type.type }
+export class PrimitiveType extends Type {
+	protected type = ""
+
+	constructor(type: string = "") {
+		super()
+		this.type = type
+	}
+
+	isSet(): boolean { return true }
+
 	setStr(str: string) { this.type = str }
-	isSet(): boolean { return this.type != "" }
 
 	// merge(type: PrimitiveType) { type.types.forEach(t => this.types.add(t)) }
 
-	getOperatorReturn(type: PrimitiveType): PrimitiveType {
+	getOperatorReturn(type: Type): Type {
+		if (!(type instanceof PrimitiveType)) return new Type()
 		if (this.type == type.type) return this
 		const li = opImportanceOrder.indexOf(this.type)
 		const ri = opImportanceOrder.indexOf(type.type)
@@ -29,29 +52,51 @@ export class PrimitiveType {
 		else return type
 	}
 
-	equals(type: PrimitiveType): boolean {
-		return this.type == type.type
-			&& this._isArray == type._isArray
+	equals(type: Type): boolean {
+		return (type instanceof PrimitiveType)
+			&& this.type == type.type
 	}
 
 	toString(format = false) {
-		return (format ? "\u001b[33m" : "") + this.type + (this._isArray ? "[]" : "") + (format ? "\u001b[0m" : "")
+		return (format ? "\u001b[33m" : "") + this.type + (format ? "\u001b[0m" : "")
 	}
 }
 
-export class FunctionType extends PrimitiveType {
-	args: PrimitiveType[] = []
+export class FunctionType extends Type {
+	returns: Type
+	args: Type[] = []
 
-	constructor(fn: {type: PrimitiveType, args: {type: PrimitiveType}[]}) {
-		super(fn.type.toString())
-		if (fn.type.isArray()) this.array()
+	constructor(fn: {type: Type, args: {type: Type}[]}) {
+		super()
+		this.returns = fn.type
 		this.args = fn.args.map(a => a.type)
+	}
+
+	isSet(): boolean { return true }
+}
+
+export class ArrayType extends Type {
+	innerType: Type
+	constructor(from: Type) {
+		super()
+		this.innerType = from
+	}
+
+	isSet(): boolean { return true }
+
+	toString(format = false) {
+		return this.innerType.toString(format) + (format ? "\u001b[33m" : "") + "[]" + (format ? "\u001b[0m" : "")
+	}
+
+	equals(type: Type) {
+		if (!super.equals(type)) return false
+		return this.innerType.equals((type as ArrayType).innerType)
 	}
 }
 
 const opImportanceOrder = ["str", "f64", "f32", "i64", "i32"]
 const boolOperators = ["&&", "||", "==", "!=", "<", ">", "<=", ">="]
-export function operationReturns(operator: string, left: PrimitiveType, right: PrimitiveType): PrimitiveType {
+export function operationReturns(operator: string, left: Type, right: Type): Type {
 	if (boolOperators.includes(operator)) return new PrimitiveType("boo")
 	return left.getOperatorReturn(right)
 }
@@ -70,7 +115,7 @@ export function isValidName(name: string): boolean {
 	return true
 }
 
-export function matchTypeArr(a: PrimitiveType[], b: PrimitiveType[]): boolean {
+export function matchTypeArr(a: Type[], b: Type[]): boolean {
 	if (a.length != b.length) return false
 	for (let t = 0; t < a.length; t++)
 		if (!a[t].equals(b[t])) return false

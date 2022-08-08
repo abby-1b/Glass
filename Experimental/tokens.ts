@@ -1,4 +1,3 @@
-
 export interface TokenRange {
 	start: number
 	end: number
@@ -9,6 +8,7 @@ export interface Token extends TokenRange {
 }
 
 export function expandRange(range: TokenRange, ...tokens: Token[]): Token[] {
+	if (tokens.length == 0) return tokens
 	for (let t = 0; t < tokens.length; t++) {
 		if (tokens[t].start < range.start) range.start = tokens[t].start
 		if (tokens[t].end > range.end) range.end = tokens[t].end
@@ -22,7 +22,7 @@ export function expandRangeNodes(range: TokenRange, ...nodes: {range: TokenRange
 		if (nodes[t].range.start < range.start) range.start = nodes[t].range.start
 		if (nodes[t].range.end > range.end) range.end = nodes[t].range.end
 	}
-	range.fileId = nodes[0].range.fileId
+	if (range.fileId === undefined) range.fileId = nodes[0].range.fileId
 	return nodes
 }
 
