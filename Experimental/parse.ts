@@ -4,17 +4,21 @@
  */
 
 import { Token, TokenRange, expandRange, expandRangeNodes } from "./tokens.ts"
-import { PrimitiveType, FunctionType, operationReturns, isValidName, matchTypeArr } from "./types.ts"
+import { Type, PrimitiveType, FunctionType, ArrayType, operationReturns, isValidName, matchTypeArr } from "./types.ts"
 
 export class Variable {
 	mutable = true
 	name: string
-	type = new PrimitiveType()
-	constructor(name: string, type?: PrimitiveType) { this.name = name, type ? this.type = type : 0 }
+	type: Type
+	constructor(name: string, type?: Type) {
+		this.name = name
+		if (type) this.type = type
+		else this.type = new Type()
+	}
 }
 
 export class TreeNode {
-	type: PrimitiveType = new PrimitiveType() // This is currently here to mitigate type issues. Do NOT remove.
+	type: Type = new Type() // This is currently here to mitigate type issues. Do NOT remove.
 	returns = false
 
 	canSet = false
@@ -48,13 +52,14 @@ export class FunctionNode extends BlockNode {
 		const fn = new FunctionNode()
 		tokens.shift()
 		fn.name = tokens.shift()!.val
-		fn.args.push(...splitComma(expandRange(fn.range, ...getClause(tokens)!)).map(a => new Variable(a[0].val, new PrimitiveType(a[2].val))))
-		fn.type.set(getType(tokens))
+		fn.args.push(...splitComma(expandRange(fn.range, ...getClause(tokens)!))
+			.map(a => new Variable(a.shift()!.val, getType(a))))
+		fn.type = getType(tokens)
 		const tn = treeify(getClause(tokens), true, fn.args)
 		fn.children = tn[0]
 		const returnedTypes = tn[1]
 		if (!fn.type.isSet())
-			fn.type.set(returnedTypes)
+			fn.type = returnedTypes
 		else if (!fn.type.equals(returnedTypes))
 			console.log(fn.type, returnedTypes), error(Err.TYPE, `Function expected to return ${fn.type.toString(true)}, got ${returnedTypes.toString(true)}`)
 
@@ -96,7 +101,7 @@ export class OperatorNode extends TreeNode {
 		return op
 	}
 
-	static getNewType(operator: string, left: TreeNode, right: TreeNode): PrimitiveType {
+	static getNewType(operator: string, left: TreeNode, right: TreeNode): Type {
 		// console.log(operator, left, right)
 		return operationReturns(operator, left.type, right.type)
 	}
@@ -106,7 +111,7 @@ export class OperatorNode extends TreeNode {
 		this.left = nodes[pos - 1]
 		this.right = nodes[pos + 1]
 		if (this.name == "." && !this.left.hasProperty(this.right)) error(Err.TYPE, `${this.left} has no property ${this.right}`, this.right)
-		this.type.set(OperatorNode.getNewType(this.name, this.left, this.right))
+		this.type = OperatorNode.getNewType(this.name, this.left, this.right)
 		nodes.splice(pos - 1, 1)
 		nodes.splice(pos, 1)
 
@@ -124,6 +129,23 @@ export class ParenNode extends TreeNode {
 		pr.range.start--, pr.range.end++
 		pr.children.push(...t.map(a => treeify(a)[0][0]))
 		return pr
+	}
+}
+
+export class ArrayNode extends TreeNode {
+	children: TreeNode[] = []
+	static match(tokens: Token[]): boolean { return tokens[0].val == "[" }
+	static make(tokens: Token[]): ArrayNode {
+		const an = new ArrayNode()
+		const cls = getClause(tokens, true)
+		const t = splitComma(expandRange(an.range, ...cls))
+		an.range.start--, an.range.end++
+		an.children.push(...t.map(a => treeify(a)[0][0]))
+		for (let t = 1; t < an.children.length; t++) {
+			if (!an.children[t].type.equals(an.children[0].type)) error(Err.TYPE, `Array expected ${an.children[0].type.toString(true)} and got ${an.children[t].type.toString(true)}`, an.children[t])
+		}
+		an.type = new ArrayType(an.children[0].type)
+		return an
 	}
 }
 
@@ -221,8 +243,7 @@ export class LetNode extends TreeNode {
 		const ln = new LetNode()
 		tokens.shift()
 		ln.name = tokens.shift()!.val
-		ln.type.set(getType(tokens))
-		console.log("Setting:", ln.type)
+		ln.type = getType(tokens)
 		tokens.shift()
 
 		const val = treeify(expandRange(ln.range, ...getFullClause(tokens)))[0]
@@ -251,14 +272,14 @@ export class NumberLiteralNode extends TreeNode {
 		const vr = new NumberLiteralNode()
 		expandRange(vr.range, tokens[0])
 		let tk = tokens.shift()!.val
-		if		(tk.endsWith("i32")) { tk = tk.substring(0, tk.length - 3); vr.type.setStr("i32") }
-		else if (tk.endsWith("i64")) { tk = tk.substring(0, tk.length - 3); vr.type.setStr("i64") }
-		else if (tk.endsWith("f32")) { tk = tk.substring(0, tk.length - 3); vr.type.setStr("f32") }
-		else if (tk.endsWith("f64")) { tk = tk.substring(0, tk.length - 3); vr.type.setStr("f64") }
-		else if (tk.endsWith("f"))   { tk = tk.substring(0, tk.length - 1); vr.type.setStr("f32") }
-		else if (tk.endsWith("i"))   { tk = tk.substring(0, tk.length - 1); vr.type.setStr("i32") }
-		else if (tk.includes(".")) vr.type.setStr("f32")
-		else vr.type.setStr("i32")
+		if		(tk.endsWith("i32")) { tk = tk.substring(0, tk.length - 3); vr.type = new PrimitiveType("i32") }
+		else if (tk.endsWith("i64")) { tk = tk.substring(0, tk.length - 3); vr.type = new PrimitiveType("i64") }
+		else if (tk.endsWith("f32")) { tk = tk.substring(0, tk.length - 3); vr.type = new PrimitiveType("f32") }
+		else if (tk.endsWith("f64")) { tk = tk.substring(0, tk.length - 3); vr.type = new PrimitiveType("f64") }
+		else if (tk.endsWith("f"))   { tk = tk.substring(0, tk.length - 1); vr.type = new PrimitiveType("f32") }
+		else if (tk.endsWith("i"))   { tk = tk.substring(0, tk.length - 1); vr.type = new PrimitiveType("i32") }
+		else if (tk.includes(".")) vr.type = new PrimitiveType("f32")
+		else vr.type = new PrimitiveType("i32")
 		vr.value = tk
 		return vr
 	}
@@ -274,8 +295,8 @@ export class StringLiteralNode extends TreeNode {
 	}
 	static make(tokens: Token[]): StringLiteralNode {
 		const vr = new StringLiteralNode()
-		vr.value = tokens.shift()!.val
-		vr.type.setStr("str")
+		vr.value = expandRange(vr.range, tokens.shift()!)[0].val
+		vr.type = new PrimitiveType("str")
 		return vr
 	}
 
@@ -295,18 +316,23 @@ export class RightOperatorNode extends TreeNode {
 
 		if (!this.left.rightCompatibleWith(this.operator)) error(Err.TYPE, `Can't call operator ${this.operator} on ${this.left}`)
 		if (this.left instanceof VarNode && this.left.type instanceof FunctionType && this.operator instanceof ParenNode) {
-			this.type = this.left.type
+			this.type = this.left.type.returns
+		} else if (this.left.type instanceof ArrayType && this.operator instanceof ArrayNode) {
+			this.type = this.left.type.innerType
 		}
 	}
 }
 
 export class ClassNode extends TreeNode {
 	name!: string
+	body: TreeNode[] = []
+
 	static match(tokens: Token[]): boolean { return tokens[0].val == "cls" }
 	static make(tokens: Token[]): ClassNode {
 		const cn = new ClassNode()
 		expandRange(cn.range, tokens.shift()!)
 		cn.name = tokens.shift()!.val
+		cn.body.push(...treeify(getClause(tokens))[0])
 		return cn
 	}
 }
@@ -315,8 +341,8 @@ export class ModifierNode extends TreeNode {
 	name!: string
 
 	static match(tokens: Token[]): boolean { return ["ex", "st", "pb"].includes(tokens[0].val) }
-	static make(tokens: Token[]): ClassNode {
-		const mn = new ClassNode()
+	static make(tokens: Token[]): ModifierNode {
+		const mn = new ModifierNode()
 		mn.name = expandRange(mn.range, tokens.shift()!)[0].val
 		return mn
 	}
@@ -326,7 +352,7 @@ export class TokenLiteralNode extends TreeNode {
 	tokenVal!: string
 	static match(tokens: Token[]) { return isValidName(tokens[0].val) }
 	static make(tokens: Token[]): TokenLiteralNode {
-		console.log("Literal matched token:", tokens[0].val)
+		// console.log("Literal matched token:", tokens[0].val)
 		const tln = new TokenLiteralNode()
 		tln.tokenVal = expandRange(tln.range, tokens.shift()!)[0].val
 		return tln
@@ -346,6 +372,7 @@ const nodes: typeof TreeNode[] = [
 	NumberLiteralNode,
 	StringLiteralNode,
 	ParenNode,
+	ArrayNode,
 	SetNode,
 	VarNode,
 	IncDecNode,
@@ -375,12 +402,16 @@ function error(num: Err, msg?: string, node?: TreeNode) {
 }
 
 const files: string[] = []
-function tokenize(code: string): Token[] {
+function tokenize(inCode: string): Token[] {
+	let code = ""
+	for (let i = 0; i < inCode.length; i++)
+		if (inCode[i] == '\t') code += "  "
+		else code += inCode[i]
 	const fileId = files.length
 	files.push(code)
 	const noRepeat = `()_*{}/<>[]\\%?,.:;\n`
 		, selfRepeat = "-+&|="
-		, whitespace = " \t"
+		, whitespace = " "
 		, tokens: Token[] = []
 	let lett = ""
 	code += "\n"
@@ -415,15 +446,10 @@ function splitComma(tokens: Token[]): Token[][] {
 	return ret
 }
 
-function getType(tokens: Token[]): PrimitiveType {
-	const nt = new PrimitiveType()
-	if (tokens[0].val != ":") return nt
+function getType(tokens: Token[]): Type {
+	if (tokens[0].val != ":") return new Type()
 	tokens.shift()
-	const openClause = getOpenClause(tokens)
-	console.log(openClause)
-	nt.setStr(openClause[0].val) // Hot-fix, not really good.
-	if (openClause.length > 1 && openClause[1].val == "[") nt.array()
-	return nt
+	return Type.from(getOpenClause(tokens))
 }
 
 /** Gets a clause followed by an = or { sign. Used mostly for types. */
@@ -472,7 +498,7 @@ function getFullClause(tokens: Token[]): Token[] {
 	while (tokens[0].val == '\n') tokens.shift()
 	const ret: Token[] = []
 	const first = tokens[0]
-	let isFullOne = "({[".includes(tokens[0].val)
+	let isFullOne = "(".includes(tokens[0].val)
 	let n = 0
 	while (tokens.length > 0) {
 		if (isFullOne && n == 0 && tokens[0].val != first.val) isFullOne = false
@@ -506,8 +532,8 @@ function treeify(
 	tokens: Token[],
 	hardScope = false,
 	vars: Variable[] = [],
-	returnType = new PrimitiveType()
-): [TreeNode[], PrimitiveType] {
+	returnType = new Type()
+): [TreeNode[], Type] {
 	const retNodes: TreeNode[] = []
 	scopePos++
 	scopeVars.push({ vars: [...vars], hard: hardScope })
@@ -530,7 +556,7 @@ function treeify(
 			if (returnType.isSet() && !retNodes[retNodes.length - 1].type.equals(returnType))
 				error(Err.TYPE, `Found different return types: ${retNodes[retNodes.length - 1].type.toString(true)} and ${returnType.toString(true)}`)
 			else
-				returnType.set(retNodes[retNodes.length - 1].type)
+				returnType = retNodes[retNodes.length - 1].type
 		}
 	}
 
@@ -539,7 +565,11 @@ function treeify(
 	for (let n = 0; n < retNodes.length; n++)
 		if ((retNodes[n] instanceof ParenNode || retNodes[n] instanceof IncDecNode)
 			&& !(retNodes[n - 1] instanceof OperatorNode && (retNodes[n - 1] as OperatorNode).left === undefined))
-			retNodes[n - 1] = new RightOperatorNode(retNodes[n - 1] as VarNode, retNodes[n] as ParenNode), retNodes.splice(n--, 1)
+			retNodes[n - 1] = new RightOperatorNode(retNodes[n - 1], retNodes[n]), retNodes.splice(n--, 1)
+
+	for (let n = 0; n < retNodes.length; n++)
+		if (retNodes[n] instanceof ArrayNode && n > 0 && retNodes[n - 1].type instanceof ArrayType)
+			retNodes[n - 1] = new RightOperatorNode(retNodes[n - 1], retNodes[n]), retNodes.splice(n--, 1)
 
 	// Thids pass: group Set nodes
 	for (let n = 0; n < retNodes.length; n++) if (retNodes[n] instanceof SetNode && (!(retNodes[n] as SetNode).processed)) (retNodes[n] as SetNode).take(retNodes, n--)
@@ -567,13 +597,14 @@ export function parse(code: string): TreeNode[] {
 }
 
 // TO-DO:
-//  - Arrays
 //  - Classes
 //  - Class access
 //	- Return without the return keyword
+//  - Modules
 //  - Split "=>0" properly (no spaces screws it up)
 
 // Done:
+//  - Arrays
 //  - Handle empty parenthesis
 //  - Call functions! (single-side operators)
 //  - Increment/Decrement (single-side operators)

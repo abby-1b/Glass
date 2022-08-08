@@ -1,6 +1,7 @@
 import * as Base from "./langs.ts"
 import {
 	FunctionNode,
+	ClassNode,
 } from "../parse.ts"
 
 export class Lang extends Base.Lang {
@@ -17,6 +18,12 @@ export class Lang extends Base.Lang {
 		return "function " + node.name
 			+ "(" + args.join(", ") + "): " + this.convertType(node.type) + " {\n"
 			+ this.indent(this.takeArr(node.children))
+			+ "\n}"
+	}
+
+	static takeClassNode(node: ClassNode) {
+		return "class " + node.name + " {\n"
+			+ this.indent(this.takeArr(node.body))
 			+ "\n}"
 	}
 }

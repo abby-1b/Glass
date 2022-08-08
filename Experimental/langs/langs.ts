@@ -1,4 +1,4 @@
-import { PrimitiveType, typeMap } from "../types.ts"
+import { Type, ArrayType, typeMap } from "../types.ts"
 import {
 	TreeNode,
 	FunctionNode,
@@ -11,8 +11,10 @@ import {
 	StringLiteralNode,
 	ConditionNode,
 	ParenNode,
+	ArrayNode,
 	RightOperatorNode,
 	IncDecNode,
+	ClassNode,
 	TokenLiteralNode,
 } from "../parse.ts"
 
@@ -21,7 +23,12 @@ export class Lang {
 	static operations: {[key: string]: (a: TreeNode, b: TreeNode) => string} = {}
 
 	static lineEnding() { return "\n" }
-	static convertType(type: PrimitiveType) { return typeMap(this.typeMappings, type.toString()) }
+	static arrayType(type: string) { return type + "[]" }
+	static convertType(type: Type): string {
+		if (type instanceof ArrayType)
+			return this.arrayType(typeMap(this.typeMappings, this.convertType(type.innerType)))
+		return typeMap(this.typeMappings, type.toString())
+	}
 
 	static takeArr(nodes: TreeNode[], expr = false): string {
 		return nodes.map(n => this.take(n) + (expr ? "" : this.lineEnding())).join(expr ? ", " : "")
@@ -36,6 +43,7 @@ export class Lang {
 		if (node instanceof RightOperatorNode) return this.takeRightOperatorNode(node)
 		if (node instanceof SetNode) return this.takeSetNode(node)
 		if (node instanceof ParenNode) return this.takeParenNode(node)
+		if (node instanceof ArrayNode) return this.takeArrayNode(node)
 		if (node instanceof VarNode) return this.takeVarNode(node)
 		if (node instanceof StringLiteralNode) return this.takeStringLiteralNode(node)
 		if (node instanceof NumberLiteralNode) return this.takeNumberLiteralNode(node)
@@ -43,6 +51,7 @@ export class Lang {
 		if (node instanceof LetNode) return this.takeLetNode(node)
 		if (node instanceof IncDecNode) return this.takeIncDecNode(node)
 		if (node instanceof TokenLiteralNode) return this.takeTokenLiteralNode(node)
+		if (node instanceof ClassNode) return this.takeClassNode(node)
 
 		console.log("Node not found:", node)
 		return "[...]"
@@ -67,6 +76,7 @@ export class Lang {
 	}
 	static takeRightOperatorNode(node: RightOperatorNode) { return "(" + this.take(node.left) + this.take(node.operator) + ")" }
 	static takeParenNode(node: ParenNode) { return "(" + this.takeArr(node.children, true) + ")" }
+	static takeArrayNode(node: ArrayNode) { return "[" + this.takeArr(node.children, true) + "]" }
 	static takeNumberLiteralNode(node: NumberLiteralNode) { return node.value }
 	static takeStringLiteralNode(node: StringLiteralNode) { return node.value }
 	static takeSetNode(node: SetNode) { return this.take(node.setting) + " = " + this.take(node.value) }
@@ -79,4 +89,10 @@ export class Lang {
 	static takeStatementNode(node: StatementNode) { return node.name + " " + this.take(node.arg) }
 	static takeVarNode(node: VarNode) { return node.name }
 	static takeIncDecNode(node: IncDecNode) { return node.name }
+
+	static takeClassNode(node: ClassNode) {
+		return "cls " + node.name + " {\n"
+			+ this.indent(this.takeArr(node.body))
+			+ "\n}"
+	}
 }
