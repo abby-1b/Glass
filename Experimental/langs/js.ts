@@ -1,4 +1,6 @@
 import * as Base from "./langs.ts"
+import * as STD from "../std.ts"
+
 import {
 	FunctionNode,
 	ClassNode,
@@ -10,7 +12,8 @@ export class Lang extends Base.Lang {
 		"i32": "number",
 		"f32": "number",
 		"str": "string",
-		"boo": "boolean"
+		"boo": "boolean",
+		"nul": "void"
 	}
 
 	static lineEnding() { return ";\n" }
@@ -27,5 +30,14 @@ export class Lang extends Base.Lang {
 		return "class " + node.name + " {\n"
 			+ this.indent(this.takeArr(node.body))
 			+ "\n}"
+	}
+}
+
+export class StandardLibrary extends STD.StandardLibrary {
+	static functions: {[key: string]: [(...args: string[]) => string, string]} = {
+		"print__str": [(str: string) => `console.log${str}`, "nul"],
+		"print__i32": [(str: string) => `console.log${str}`, "nul"],
+		"print__f32": [(str: string) => `console.log${str}`, "nul"],
+		"print__i32[]": [(str: string) => `console.log${str}`, "nul"],
 	}
 }
