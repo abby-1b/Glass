@@ -3,8 +3,15 @@
  * This can then be compiled to a target language.
  */
 
-import { Token, TokenRange, expandRange, expandRangeNodes } from "./tokens.ts"
-import { Type, PrimitiveType, FunctionType, ArrayType, operationReturns, isValidName, matchTypeArr } from "./types.ts"
+import { Token, expandRange, expandRangeNodes } from "./tokens.ts"
+import { Type, PrimitiveType, FunctionType, ArrayType, operationReturns, isValidName } from "./types.ts"
+import { Err, error } from "./error.ts"
+import { TreeNode, BlockNode } from "./node.ts"
+import { files } from "./files.ts"
+import { StandardLibrary } from "./std.ts"
+
+// deno-lint-ignore prefer-const
+export let std: [typeof StandardLibrary] = [StandardLibrary]
 
 export class Variable {
 	mutable = true
@@ -17,32 +24,6 @@ export class Variable {
 	}
 }
 
-export class TreeNode {
-	type: Type = new Type() // This is currently here to mitigate type issues. Do NOT remove.
-	returns = false
-
-	canSet = false
-	range: TokenRange = { start: Infinity, end: -Infinity }
-
-	static match(_tokens: Token[]): boolean { return false }
-	static make(_tokens: Token[]): TreeNode { return new TreeNode() }
-
-	hasProperty(_node: TreeNode): boolean { return false }
-	toString(full = false): string {
-		if (full) {
-			let start = this.range.start
-			let end = this.range.end
-			while (files[this.range.fileId!][start] != "\n") start--
-			while (files[this.range.fileId!][end] != "\n" && end < files[this.range.fileId!].length) end++
-			return files[this.range.fileId!].slice(++start, end)
-				+ "\n" + (" ".repeat(this.range.start - start)) + "\u001b[31m" + "^".repeat(this.range.end - this.range.start) + "\u001b[0m"
-		}
-		return this.constructor.name + "[" + this.range.start + ", " + this.range.end + "]#" + this.range.fileId
-	}
-
-	rightCompatibleWith(_node: TreeNode): boolean { return true }
-}
-export class BlockNode extends TreeNode { children: TreeNode[] = [] }
 export class FunctionNode extends BlockNode {
 	name!: string
 	args: Variable[] = []
@@ -63,7 +44,20 @@ export class FunctionNode extends BlockNode {
 		else if (!fn.type.equals(returnedTypes))
 			console.log(fn.type, returnedTypes), error(Err.TYPE, `Function expected to return ${fn.type.toString(true)}, got ${returnedTypes.toString(true)}`)
 
-		scopeVars[scopeVars.length - 1].vars.push(new Variable(fn.name, new FunctionType(fn)))
+		if (varExists(fn.name)) {
+			const v = getVar(fn.name)!
+			if (v.type instanceof FunctionType) {
+				v.type.args.push(fn.args.map(a => a.type))
+				v.type.returns.push(fn.type)
+			} else {
+				error(Err.NAME, `Name "${fn.name}" already exists.`, fn)
+			}
+		} else {
+			scopeVars[scopeVars.length - 1].vars.push(new Variable(fn.name, new FunctionType(fn)))
+		}
+
+		fn.name += "__" + fn.args.map(v => v.type.toString()).join("_")
+
 		return fn
 	}
 }
@@ -148,6 +142,15 @@ export class ArrayNode extends TreeNode {
 		return an
 	}
 }
+export class IndexNode extends TreeNode {
+	index!: TreeNode
+	static from(arrNode: ArrayNode) {
+		const xn = new IndexNode()
+		if (arrNode.children.length > 1) error(Err.INDEX, `Tried indexing with more than one element!`, arrNode)
+		xn.index = arrNode.children[0]
+		return xn
+	}
+}
 
 export class IncDecNode extends TreeNode {
 	name!: string
@@ -227,8 +230,8 @@ export class VarNode extends TreeNode {
 
 	rightCompatibleWith(node: TreeNode): boolean {
 		if (node instanceof IncDecNode && this.type instanceof FunctionType) return false
-		if (node instanceof ParenNode && this.type instanceof FunctionType && !matchTypeArr(this.type.args, node.children.map(n => n.type)))
-			error(Err.TYPE, `Function expected (${this.type.args.map(t => t.toString(true)).join(", ")}) and got (${node.children.map(n => n.type.toString(true)).join(", ")})`, node)
+		if (node instanceof ParenNode && this.type instanceof FunctionType && !this.type.matchTypeArr(node.children.map(n => n.type)))
+			error(Err.TYPE, `Function got (${node.children.map(n => n.type.toString(true)).join(", ")}) and expected ${this.type.getArgumentString(true)}`, node)
 		return true
 	}
 }
@@ -307,6 +310,8 @@ export class RightOperatorNode extends TreeNode {
 	left: TreeNode
 	operator: TreeNode
 
+	stdProcess?: (...args: string[]) => string
+
 	constructor(left: TreeNode, operator: TreeNode) {
 		super()
 		this.left = left
@@ -315,9 +320,25 @@ export class RightOperatorNode extends TreeNode {
 		expandRangeNodes(this.range, operator)
 
 		if (!this.left.rightCompatibleWith(this.operator)) error(Err.TYPE, `Can't call operator ${this.operator} on ${this.left}`)
-		if (this.left instanceof VarNode && this.left.type instanceof FunctionType && this.operator instanceof ParenNode) {
-			this.type = this.left.type.returns
+		if (this.operator instanceof ParenNode) {
+			if (this.left instanceof VarNode && this.left.type instanceof FunctionType) {
+				// Call node!
+				this.type = this.left.type.getReturnType(this.operator.children.map(c => c.type))
+				// console.log("Call returns:", this.type, this.left.type, this.operator.children.map(c => c.type))
+				this.left.name += "__" + this.operator.children.map(c => c.type.toString()).join("_")
+			} else if (this.left instanceof TokenLiteralNode) {
+				const name = this.left.tokenVal
+				const types = this.operator.children.map(c => c.type.toString())
+				this.left.tokenVal += "__" + types.join("_")
+				if (!std[0].hasFn(this.left.tokenVal))
+					error(Err.NAME, `Function ${name}(${types.join(", ")}) doesn't exist!`)
+				else {
+					this.stdProcess = std[0].functions[this.left.tokenVal][0]
+					this.type = new PrimitiveType(std[0].functions[this.left.tokenVal][1])
+				}
+			}
 		} else if (this.left.type instanceof ArrayType && this.operator instanceof ArrayNode) {
+			this.operator = IndexNode.from(this.operator)
 			this.type = this.left.type.innerType
 		}
 	}
@@ -382,26 +403,6 @@ const nodes: typeof TreeNode[] = [
 	TokenLiteralNode
 ]
 
-enum Err {
-	TOKEN = "TOKENIZATION",
-	CLAUSE = "CLAUSE FETCHING",
-	TREE = "TREE PARSING",
-
-	TYPE = "TYPE",
-	PERMISSON = "PERMISSION",
-}
-
-function error(num: Err, msg?: string, node?: TreeNode) {
-	if (msg === undefined)
-		console.error("\u001b[31m" + num, "ERROR\u001b[0m")
-	else
-		console.error("\u001b[31m" + num, "ERROR:\u001b[0m", msg)
-	if (node !== undefined)
-		console.log(node.toString(true))
-	Deno.exit(1)
-}
-
-const files: string[] = []
 function tokenize(inCode: string): Token[] {
 	let code = ""
 	for (let i = 0; i < inCode.length; i++)
@@ -527,6 +528,14 @@ function getVar(name: string): Variable | undefined {
 		if (scopeVars[s].hard) break
 	}
 }
+function varExists(name: string): boolean {
+	for (let s = scopeVars.length - 1; s >= 0; s--) {
+		for (let v = scopeVars[s].vars.length - 1; v >= 0; v--)
+			if (scopeVars[s].vars[v].name == name) return true
+		if (scopeVars[s].hard) break
+	}
+	return false
+}
 
 function treeify(
 	tokens: Token[],
@@ -596,14 +605,23 @@ export function parse(code: string): TreeNode[] {
 	return tree[0]
 }
 
+// console.log(tokenize("\nlet ok = 0 // (10, arr(20))\n"))
+
 // TO-DO:
 //  - Classes
+//  - Disallow underscores in class names (which helps us do function overloading)
 //  - Class access
+//  - Implement standard library
+//  - Fix setting variables to functions
+//  - Constant variables
+//  - Macros
 //	- Return without the return keyword
 //  - Modules
 //  - Split "=>0" properly (no spaces screws it up)
 
 // Done:
+//  - Each function name ends with `__` and then a list of its arguments types separated by underscodes (eg: main(a: i32, b: i32) == main__i32_i32). This allows function overloading in languages that don't support it!
+//  - When a function is called, we prepend these rules to its name before compiling ^
 //  - Arrays
 //  - Handle empty parenthesis
 //  - Call functions! (single-side operators)

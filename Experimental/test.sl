@@ -1,8 +1,8 @@
 // Sl stands for "simple language"
 
-fn arr(a: i32, b: i32) {
-	return [a, b]
+fn main() {
+	let arr = [0f, 1f, 2f]
+	print(arr[0])
+	print(arr[1])
+	print(arr[2])
 }
-
-let ok = arr(10, 20)
-console.log(ok)

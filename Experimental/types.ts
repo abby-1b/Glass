@@ -1,4 +1,5 @@
 import { Token } from "./tokens.ts"
+import { Err, error } from "./error.ts"
 // export type Type = string[]
 
 // str
@@ -21,10 +22,10 @@ export class Type {
 
 	isSet(): boolean { return false }
 
-	toString(format = false): string { return format ? "\u001b[33m[empty type]\u001b[0m" : "[empty type]" }
+	toString(format = false): string { return format ? "\u001b[33mnul\u001b[0m" : "nul" }
 
 	getOperatorReturn(type: Type): Type {
-		// console.log("Empty types don't return!!!", this, type)
+		console.log("Empty types don't return!!!", this, type)
 		return this
 	}
 }
@@ -63,16 +64,42 @@ export class PrimitiveType extends Type {
 }
 
 export class FunctionType extends Type {
-	returns: Type
-	args: Type[] = []
+	returns: Type[] = []
+	args: Type[][] = []
 
 	constructor(fn: {type: Type, args: {type: Type}[]}) {
 		super()
-		this.returns = fn.type
-		this.args = fn.args.map(a => a.type)
+		this.returns.push(fn.type)
+		this.args.push(fn.args.map(a => a.type))
+	}
+
+	matchTypeArr(arr: Type[]): boolean {
+		for (let a = 0; a < this.args.length; a++)
+			if (matchTypeArr(this.args[a], arr)) return true
+		return false
+	}
+
+	getArgumentString(_format = false): string { // TODO: implement format
+		return "(" + this.args.map(s => "(" + s.map(a => a.toString()).join(", ") + ")").join(", ") + ")"
+	}
+
+	getReturnString(_format = false) { // TODO: implement format
+		return "(" + this.returns.map(t => t.toString()).join(", ") + ")"
+	}
+
+	getReturnType(types: Type[]): Type {
+		for (let a = 0; a < this.args.length; a++)
+			if (matchTypeArr(this.args[a], types)) return this.returns[a]
+		
+		error(Err.TYPE, `Function has no call signature (${types.map(t => t.toString()).join(", ")})!`)
+		Deno.exit(0)
 	}
 
 	isSet(): boolean { return true }
+
+	toString(_format = false) { // TODO: implement format
+		return this.getArgumentString() + " => " + this.getReturnString()
+	}
 }
 
 export class ArrayType extends Type {
