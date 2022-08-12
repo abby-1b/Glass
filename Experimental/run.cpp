@@ -1,10 +1,10 @@
 #include <iostream>
 #include <vector>
+#include <string>
 void main__() {
-	std::vector<float> arr = std::vector<float>{0, 1, 2};
-	(std::cout << ((arr[0])) << "\n");
-	(std::cout << ((arr[1])) << "\n");
-	(std::cout << ((arr[2])) << "\n");
+	std::vector<int> arr = std::vector<int>{0, 1, 2};
+	(arr.add(10));
+	(std::cout << ((arr[3])) << "\n");
 	
 };
 

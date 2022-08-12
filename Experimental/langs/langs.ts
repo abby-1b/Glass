@@ -1,5 +1,5 @@
 import { Type, ArrayType, typeMap } from "../types.ts"
-import { TreeNode } from "../node.ts"
+import { TreeNode, TokenLiteralNode } from "../node.ts"
 import {
 	FunctionNode,
 	StatementNode,
@@ -16,7 +16,6 @@ import {
 	RightOperatorNode,
 	IncDecNode,
 	ClassNode,
-	TokenLiteralNode,
 } from "../parse.ts"
 
 export class Lang {

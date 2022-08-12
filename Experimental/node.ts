@@ -1,10 +1,11 @@
 
-import { Token, TokenRange } from "./tokens.ts"
-import { Type } from "./types.ts"
+import { Token, TokenRange, expandRange } from "./tokens.ts"
+import { Type, isValidName } from "./types.ts"
 import { files } from "./files.ts"
+import { StandardLibrary } from "./std.ts"
 
 export class TreeNode {
-	type: Type = new Type() // This is currently here to mitigate type issues. Do NOT remove.
+	type: Type = new Type()
 	returns = false
 
 	canSet = false
@@ -13,7 +14,14 @@ export class TreeNode {
 	static match(_tokens: Token[]): boolean { return false }
 	static make(_tokens: Token[]): TreeNode { return new TreeNode() }
 
-	hasProperty(_node: TreeNode): boolean { return false }
+	// hasProperty(node: TreeNode, std: typeof StandardLibrary): boolean {
+	// 	if (node instanceof TokenLiteralNode) {
+	// 		const n = this.type.toString() + "__" + node.tokenVal
+	// 		console.log("Checking property:", n)
+	// 	}
+	// 	return false
+	// }
+
 	toString(full = false): string {
 		if (full) {
 			let start = this.range.start
@@ -29,3 +37,16 @@ export class TreeNode {
 	rightCompatibleWith(_node: TreeNode): boolean { return true }
 }
 export class BlockNode extends TreeNode { children: TreeNode[] = [] }
+
+export class TokenLiteralNode extends TreeNode {
+	tokenVal!: string
+	static match(tokens: Token[]) { return isValidName(tokens[0].val) }
+	static make(tokens: Token[]): TokenLiteralNode {
+		// console.log("Literal matched token:", tokens[0].val)
+		const tln = new TokenLiteralNode()
+		tln.tokenVal = expandRange(tln.range, tokens.shift()!)[0].val
+		return tln
+	}
+
+	// hasProperty(_node: TreeNode): boolean { return true }
+}

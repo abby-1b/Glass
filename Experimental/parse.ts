@@ -4,9 +4,9 @@
  */
 
 import { Token, expandRange, expandRangeNodes } from "./tokens.ts"
-import { Type, PrimitiveType, FunctionType, ArrayType, operationReturns, isValidName } from "./types.ts"
+import { Type, PrimitiveType, FunctionType, ArrayType, operationReturns } from "./types.ts"
 import { Err, error } from "./error.ts"
-import { TreeNode, BlockNode } from "./node.ts"
+import { TreeNode, BlockNode, TokenLiteralNode } from "./node.ts"
 import { files } from "./files.ts"
 import { StandardLibrary } from "./std.ts"
 
@@ -104,7 +104,7 @@ export class OperatorNode extends TreeNode {
 		if (this.processed) console.log("Already processed! That's weird!")
 		this.left = nodes[pos - 1]
 		this.right = nodes[pos + 1]
-		if (this.name == "." && !this.left.hasProperty(this.right)) error(Err.TYPE, `${this.left} has no property ${this.right}`, this.right)
+		// if (this.name == "." && !this.left.hasProperty(this.right, std[0])) error(Err.TYPE, `${this.left} has no property ${this.right}`, this.right)
 		this.type = OperatorNode.getNewType(this.name, this.left, this.right)
 		nodes.splice(pos - 1, 1)
 		nodes.splice(pos, 1)
@@ -367,19 +367,6 @@ export class ModifierNode extends TreeNode {
 		mn.name = expandRange(mn.range, tokens.shift()!)[0].val
 		return mn
 	}
-}
-
-export class TokenLiteralNode extends TreeNode {
-	tokenVal!: string
-	static match(tokens: Token[]) { return isValidName(tokens[0].val) }
-	static make(tokens: Token[]): TokenLiteralNode {
-		// console.log("Literal matched token:", tokens[0].val)
-		const tln = new TokenLiteralNode()
-		tln.tokenVal = expandRange(tln.range, tokens.shift()!)[0].val
-		return tln
-	}
-
-	hasProperty(_node: TreeNode): boolean { return true }
 }
 
 const nodes: typeof TreeNode[] = [

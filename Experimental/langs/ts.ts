@@ -34,5 +34,8 @@ export class StandardLibrary extends STD.StandardLibrary {
 	static functions: {[key: string]: [(...args: string[]) => string, string]} = {
 		"print__str": [(str: string) => `console.log${str}`, "nul"],
 		"print__i32": [(str: string) => `console.log${str}`, "nul"],
+		"print__i32[]": [(str: string) => `console.log${str}`, "nul"],
+		"print__f32": [(str: string) => `console.log${str}`, "nul"],
+		"print__f32[]": [(str: string) => `console.log${str}`, "nul"],
 	}
 }

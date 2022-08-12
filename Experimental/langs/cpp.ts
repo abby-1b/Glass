@@ -34,8 +34,7 @@ export class Lang extends Base.Lang {
 	}
 
 	static postProcess(code: string) {
-		code = "#include <vector>\n" + code
-		code = "#include <iostream>\n" + code
+		code = "#include <vector>\n#include <string>\n" + code
 		if (code.includes("void main__("))
 			code = code + "\nint main() { main__(); return 0; }"
 		return code
@@ -43,9 +42,22 @@ export class Lang extends Base.Lang {
 }
 
 export class StandardLibrary extends STD.StandardLibrary {
+	static buildHead(): string {
+		return (this.io ? "#include <iostream>\n" : "")
+	}
+
+	static io = 0
+	static arr = 0
+
 	static functions: {[key: string]: [(...args: string[]) => string, string]} = {
-		// "print__str": [(str: string) => `print${str}`, "nul"],
-		"print__i32": [(str: string) => `std::cout << ${str} << "\\n"`, "nul"],
-		"print__f32": [(str: string) => `std::cout << ${str} << "\\n"`, "nul"],
+		"print__i32": [(str: string) => { this.io++; return `std::cout << ${str} << "\\n"` }, "nul"],
+		"print__f32": [(str: string) => { this.io++; return `std::cout << ${str} << "\\n"` }, "nul"],
+		"print__str": [(str: string) => { this.io++; return `std::cout << ${str} << "\\n"` }, "nul"],
+	}
+
+	static typeFunctions: {[key: string]: {[key: string]: [(...args: string[]) => string, string]}} = {
+		"i32[]__add": { "i32": [(arr: string, arg: string) => `${arr}.push_back(${arg})`, "nul"] },
+		"f32[]__add": { "f32": [(arr: string, arg: string) => `${arr}.push_back(${arg})`, "nul"] },
+		"str__trim": { "": [(str: string) => `${str}.trim()`, "str"] },
 	}
 }

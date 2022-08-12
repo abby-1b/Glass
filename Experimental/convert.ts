@@ -5,7 +5,7 @@ import { StandardLibrary } from "./std.ts"
 // import * as js from "./langs/js.ts"
 // import * as js from "./langs/js.ts"
 
-let language = "cpp"
+const language = "cpp" as string
 const languageModule = ((await import("./langs/" + language + ".ts")) as {Lang: typeof Lang, StandardLibrary?: typeof StandardLibrary})
 const languageConverter = languageModule.Lang
 if (languageModule.StandardLibrary) std[0] = languageModule.StandardLibrary
@@ -17,7 +17,8 @@ const code = Deno.readTextFileSync("test.sl")
 const nodes = parse(code)
 
 // const s2 = performance.now()
-const out = languageConverter.takeMain(nodes)
+let out = languageConverter.takeMain(nodes)
+if (languageModule.StandardLibrary) out = languageModule.StandardLibrary.buildHead() + out
 
 // const f = performance.now()
 // console.log("Parse:", s2 - s1)
