@@ -4,7 +4,8 @@ import { TreeNode } from "../node.ts"
 import {
 	LetNode,
 	FunctionNode,
-	ArrayNode
+	ArrayNode,
+	TypeNode
 } from "../parse.ts"
 
 export class Lang extends Base.Lang {
@@ -30,6 +31,12 @@ export class Lang extends Base.Lang {
 		return this.convertType(node.type) + " " + node.name
 			+ "(" + node.args.map(v => this.convertType(v.type) + " " + v.name).join(", ") + ") {\n"
 			+ this.indent(this.takeArr(node.children))
+			+ "\n}"
+	}
+
+	static takeTypeNode(node: TypeNode) {
+		return "struct " + node.name + " {\n"
+			+ this.indent(node.declarations.map(d => `${this.convertType(d.type)} ${d.name};`).join("\n"))
 			+ "\n}"
 	}
 

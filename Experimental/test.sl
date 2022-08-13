@@ -1,8 +1,14 @@
 // Sl stands for "simple language"
 
 cls Test {
-	fn tst() {
+	let prop = 10
+	// fn new() {
+	// 	print("Made new instance!")
+	// }
+
+	fn tst(num: i32) {
 		print("Hey!")
+		print(num)
 	}
 }
 

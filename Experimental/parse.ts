@@ -4,7 +4,7 @@
  */
 
 import { Token, expandRange, expandRangeNodes } from "./tokens.ts"
-import { Type, PrimitiveType, FunctionType, ArrayType, operationReturns } from "./types.ts"
+import { Type, PrimitiveType, FunctionType, ArrayType, ClassType, operationReturns } from "./types.ts"
 import { Err, error } from "./error.ts"
 import { TreeNode, BlockNode, TokenLiteralNode } from "./node.ts"
 import { files } from "./files.ts"
@@ -344,6 +344,17 @@ export class RightOperatorNode extends TreeNode {
 	}
 }
 
+export class TypeNode extends TreeNode {
+	name!: string
+	declarations: Variable[] = []
+
+	static match(tokens: Token[]): boolean { return tokens[0].val == "type" }
+	static make(): TypeNode {
+		error(Err.TREE, "TypeNode `make` not written yet!")
+		return new TypeNode()
+	}
+}
+
 export class ClassNode extends TreeNode {
 	name!: string
 	body: TreeNode[] = []
@@ -355,6 +366,42 @@ export class ClassNode extends TreeNode {
 		cn.name = tokens.shift()!.val
 		cn.body.push(...treeify(getClause(tokens))[0])
 		return cn
+	}
+
+	compile(): TreeNode[] {
+		const ret: TreeNode[] = []
+		let hasNew = false
+		const tNode = new TypeNode()
+		const cType = new ClassType(this.name)
+		for (let n = 0; n < this.body.length; n++) {
+			if (!(this.body[n] instanceof FunctionNode || this.body[n] instanceof LetNode))
+				error(Err.TYPE, `Found non-declaration in class!`, this.body[n])
+
+			if (this.body[n] instanceof FunctionNode) {
+				let makeNew = false
+				if ((this.body[n] as FunctionNode).name.startsWith("new__")) makeNew = hasNew = true
+				;(this.body[n] as FunctionNode).name = (makeNew ? "_" : "") + this.name + "__" + (this.body[n] as FunctionNode).name
+				if (!makeNew) (this.body[n] as FunctionNode).args.unshift(new Variable("_this", cType))
+			} else if (this.body[n] instanceof LetNode) {
+				tNode.declarations.push(new Variable((this.body[n] as LetNode).name, (this.body[n] as LetNode).type))
+				;(this.body[n] as LetNode).name = this.name + "__" + (this.body[n] as LetNode).name
+			}
+			ret.push(this.body[n])
+		}
+		if (!hasNew) {
+			const nfn = new FunctionNode()
+			nfn.name = "_" + this.name + "__new__"
+			nfn.type = cType
+			// nfn.children.push(Fun)
+			ret.unshift(nfn)
+		}
+		tNode.name = this.name
+		ret.unshift(tNode)
+
+		// console.log("Compiling class:", this.body)
+		// console.log("HasNew:", hasNew)
+		// return this.body.map()
+		return ret
 	}
 }
 
@@ -562,13 +609,20 @@ function treeify(
 		if ((retNodes[n] instanceof ParenNode || retNodes[n] instanceof IncDecNode)
 			&& !(retNodes[n - 1] instanceof OperatorNode && (retNodes[n - 1] as OperatorNode).left === undefined))
 			retNodes[n - 1] = new RightOperatorNode(retNodes[n - 1], retNodes[n]), retNodes.splice(n--, 1)
-
 	for (let n = 0; n < retNodes.length; n++)
 		if (retNodes[n] instanceof ArrayNode && n > 0 && retNodes[n - 1].type instanceof ArrayType)
 			retNodes[n - 1] = new RightOperatorNode(retNodes[n - 1], retNodes[n]), retNodes.splice(n--, 1)
 
-	// Thids pass: group Set nodes
-	for (let n = 0; n < retNodes.length; n++) if (retNodes[n] instanceof SetNode && (!(retNodes[n] as SetNode).processed)) (retNodes[n] as SetNode).take(retNodes, n--)
+	// Thids pass: group Set nodes + compile classes
+	for (let n = 0; n < retNodes.length; n++)
+		if (retNodes[n] instanceof SetNode && (!(retNodes[n] as SetNode).processed)) (retNodes[n] as SetNode).take(retNodes, n--)
+	
+	for (let n = 0; n < retNodes.length; n++) {
+		if (!(retNodes[n] instanceof ClassNode)) continue
+		const clsNodes = (retNodes[n] as ClassNode).compile()
+		retNodes.splice(n, 1, ...clsNodes)
+		n += clsNodes.length - 1
+	}
 
 	// fourth pass(es): group operation nodes
 	if (hasOperator) {
@@ -599,6 +653,7 @@ export function parse(code: string): TreeNode[] {
 //  - Disallow underscores in class names (which helps us do function overloading)
 //  - Class access
 //  - Implement standard library
+//  - Deal with empty arrays
 //  - Fix setting variables to functions
 //  - Constant variables
 //  - Macros

@@ -15,6 +15,7 @@ import {
 	IndexNode,
 	RightOperatorNode,
 	IncDecNode,
+	TypeNode,
 	ClassNode,
 } from "../parse.ts"
 
@@ -56,6 +57,7 @@ export class Lang {
 		if (node instanceof LetNode) return this.takeLetNode(node)
 		if (node instanceof IncDecNode) return this.takeIncDecNode(node)
 		if (node instanceof TokenLiteralNode) return this.takeTokenLiteralNode(node)
+		if (node instanceof TypeNode) return this.takeTypeNode(node)
 		if (node instanceof ClassNode) return this.takeClassNode(node)
 
 		console.log("Node not found:", node)
@@ -104,6 +106,12 @@ export class Lang {
 	static takeClassNode(node: ClassNode) {
 		return "cls " + node.name + " {\n"
 			+ this.indent(this.takeArr(node.body))
+			+ "\n}"
+	}
+	
+	static takeTypeNode(node: TypeNode) {
+		return "type " + node.name + " {\n"
+			+ this.indent(node.declarations.map(d => `${d.name}: ${this.convertType(d.type)}`).join(",\n"))
 			+ "\n}"
 	}
 

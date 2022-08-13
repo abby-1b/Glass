@@ -122,6 +122,18 @@ export class ArrayType extends Type {
 	}
 }
 
+export class ClassType extends Type {
+	name: string
+	constructor(name: string) {
+		super()
+		this.name = name
+	}
+
+	toString(_format = false) { // TODO: implement formatting
+		return this.name
+	}
+}
+
 const opImportanceOrder = ["str", "f64", "f32", "i64", "i32"]
 const boolOperators = ["&&", "||", "==", "!=", "<", ">", "<=", ">="]
 export function operationReturns(operator: string, left: Type, right: Type): Type {
