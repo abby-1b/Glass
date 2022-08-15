@@ -30,6 +30,8 @@ export class Lang {
 			return this.arrayType(typeMap(this.typeMappings, this.convertType(type.innerType)))
 		return typeMap(this.typeMappings, type.toString())
 	}
+
+	static transformTree(nodes: TreeNode[]) { return nodes }
 	
 	static indent(str: string) { return str.split("\n").map(e => "\t" + e).join("\n") }
 
@@ -38,7 +40,7 @@ export class Lang {
 	}
 
 	static takeArr(nodes: TreeNode[], expr = false): string {
-		return nodes.map(n => this.take(n) + (expr ? "" : this.lineEnding())).join(expr ? ", " : "")
+		return this.transformTree(nodes).map(n => this.take(n) + (expr ? "" : this.lineEnding())).join(expr ? ", " : "")
 	}
 
 	static take(node: TreeNode): string {
@@ -105,7 +107,7 @@ export class Lang {
 
 	static takeClassNode(node: ClassNode) {
 		return "cls " + node.name + " {\n"
-			+ this.indent(this.takeArr(node.body))
+			+ this.indent(this.takeArr(node.public) + this.takeArr(node.private))
 			+ "\n}"
 	}
 	

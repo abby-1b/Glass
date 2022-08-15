@@ -5,7 +5,8 @@ import {
 	LetNode,
 	FunctionNode,
 	ArrayNode,
-	TypeNode
+	TypeNode,
+	ClassNode,
 } from "../parse.ts"
 
 export class Lang extends Base.Lang {
@@ -37,6 +38,11 @@ export class Lang extends Base.Lang {
 	static takeTypeNode(node: TypeNode) {
 		return "struct " + node.name + " {\n"
 			+ this.indent(node.declarations.map(d => `${this.convertType(d.type)} ${d.name};`).join("\n"))
+			+ "\n}"
+	}
+	static takeClassNode(node: ClassNode) {
+		return "class " + node.name + " {\n"
+			+ this.indent(this.takeArr(node.public) + this.takeArr(node.private))
 			+ "\n}"
 	}
 
