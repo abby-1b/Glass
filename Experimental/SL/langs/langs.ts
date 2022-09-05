@@ -1,4 +1,4 @@
-import { Type, ArrayType, typeMap } from "../types.ts"
+import { Type, PrimitiveType, ArrayType, typeMap } from "../types.ts"
 import { TreeNode, TokenLiteralNode } from "../node.ts"
 import {
 	FunctionNode,
@@ -9,6 +9,7 @@ import {
 	OperatorNode,
 	NumberLiteralNode,
 	StringLiteralNode,
+	ForNode,
 	ConditionNode,
 	ParenNode,
 	ArrayNode,
@@ -55,6 +56,7 @@ export class Lang {
 		if (node instanceof VarNode) return this.takeVarNode(node)
 		if (node instanceof StringLiteralNode) return this.takeStringLiteralNode(node)
 		if (node instanceof NumberLiteralNode) return this.takeNumberLiteralNode(node)
+		if (node instanceof ForNode) return this.takeForNode(node)
 		if (node instanceof ConditionNode) return this.takeConditionNode(node)
 		if (node instanceof LetNode) return this.takeLetNode(node)
 		if (node instanceof IncDecNode) return this.takeIncDecNode(node)
@@ -70,6 +72,18 @@ export class Lang {
 	
 	static takeLetNode(node: LetNode) { return "let " + node.name + ": " + this.convertType(node.type) + " = " + this.take(node.value) }
 	static takeOperatorNode(node: OperatorNode) {
+		if (node.name == "in") {
+			const ln = new LetNode()
+			ln.name = (node.left as TokenLiteralNode).tokenVal
+			ln.value = (node.right as OperatorNode).left!
+			ln.type = new PrimitiveType("i32")
+			const cn = new OperatorNode()
+			cn.name = "<"
+			cn.left = new VarNode()
+			;(cn.left as VarNode).name = ln.name
+			cn.right = (node.right as OperatorNode).right!
+			return [ln, cn].map(n => this.take(n)).join("; ") + "; " + ln.name + "++"
+		}
 		const str = node.left!.type.toString() + node.name + node.right!.type.toString()
 		const sp = node.name == "." ? "" : " "
 		const paren = node.name != "."
@@ -77,6 +91,11 @@ export class Lang {
 			return (paren ? "(" : "")
 				+ this.operations[str](node.left!, node.right!) + (paren ? ")" : "")
 		return (paren ? "(" : "") + this.take(node.left!) + sp + node.name + sp + this.take(node.right!) + (paren ? ")" : "")
+	}
+	static takeForNode(node: ForNode) {
+		return "for (" + this.take(node.condition) + ") {\n"
+			+ this.indent(this.takeArr(node.children))
+			+ "\n}"
 	}
 	static takeConditionNode(node: ConditionNode) {
 		return node.name + " (" + this.take(node.condition) + ") {\n"
@@ -92,7 +111,7 @@ export class Lang {
 	static takeParenNode(node: ParenNode) { return "(" + this.takeArr(node.children, true) + ")" }
 	static takeIndexNode(node: IndexNode) { return "[" + this.take(node.index) + "]" }
 	static takeArrayNode(node: ArrayNode) { return "[" + this.takeArr(node.children, true) + "]" }
-	static takeNumberLiteralNode(node: NumberLiteralNode) { return node.value }
+	static takeNumberLiteralNode(node: NumberLiteralNode) { return node.value + (node.type.equals(new PrimitiveType("f32")) ? ".0" : "") }
 	static takeStringLiteralNode(node: StringLiteralNode) { return node.value }
 	static takeSetNode(node: SetNode) { return this.take(node.setting) + " = " + this.take(node.value) }
 	static takeFunctionNode(node: FunctionNode) {

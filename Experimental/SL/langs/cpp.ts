@@ -57,15 +57,21 @@ export class Lang extends Base.Lang {
 export class StandardLibrary extends STD.StandardLibrary {
 	static buildHead(): string {
 		return (this.io ? "#include <iostream>\n" : "")
+			+ (this.math ? "#include <math.h>\n" : "")
+			+ (this.stdLib ? "#include <stdlib.h>\n" : "")
 	}
 
 	static io = 0
 	static arr = 0
+	static math = 0
+	static stdLib = 0
 
 	static functions: {[key: string]: [(...args: string[]) => string, string]} = {
 		"print__i32": [(str: string) => { this.io++; return `std::cout << ${str} << "\\n"` }, "nul"],
 		"print__f32": [(str: string) => { this.io++; return `std::cout << ${str} << "\\n"` }, "nul"],
 		"print__str": [(str: string) => { this.io++; return `std::cout << ${str} << "\\n"` }, "nul"],
+		"rand__": [() => { this.stdLib++; return `static_cast<float>(rand()) / static_cast<float>(RAND_MAX)` }, "f32"],
+		"pow__f32_f32": [(str: string) => { this.math++; return `pow${str}` }, "f32"],
 	}
 
 	static typeFunctions: {[key: string]: {[key: string]: [(...args: string[]) => string, string]}} = {
