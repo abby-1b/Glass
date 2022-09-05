@@ -23,11 +23,17 @@ export class Type {
 	isSet(): boolean { return false }
 
 	toString(format = false): string { return format ? "\u001b[33mnul\u001b[0m" : "nul" }
+	toFnNameArg(): string { return this.toString() }
 
 	getOperatorReturn(type: Type): Type {
-		// console.log((new Error()).stack)
+		console.log((new Error()).stack)
 		console.log("Empty types don't return!!!", this, type)
 		return this
+	}
+
+	hasProperty(_property: string) { // TODO: use this
+		console.error("Tried getting property of empty type!!!")
+		return false
 	}
 }
 
@@ -115,10 +121,15 @@ export class ArrayType extends Type {
 	toString(format = false) {
 		return this.innerType.toString(format) + (format ? "\u001b[33m" : "") + "[]" + (format ? "\u001b[0m" : "")
 	}
+	toFnNameArg(): string { return this.innerType.toFnNameArg() + "$" }
 
 	equals(type: Type) {
 		if (!super.equals(type)) return false
 		return this.innerType.equals((type as ArrayType).innerType)
+	}
+
+	hasProperty(property: string) {
+		return property == "push" || property == "pop"
 	}
 }
 
