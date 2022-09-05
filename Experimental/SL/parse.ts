@@ -45,7 +45,7 @@ export class FunctionNode extends DeclarationNode {
 		if (!fn.type.isSet())
 			fn.type = returnedTypes
 		else if (!fn.type.equals(returnedTypes))
-			console.log(fn.type, returnedTypes), error(Err.TYPE, `Function expected to return ${fn.type.toString(true)}, got ${returnedTypes.toString(true)}`)
+			console.log("Error extras:", fn.type, returnedTypes), error(Err.TYPE, `Function expected to return ${fn.type.toString(true)}, got ${returnedTypes.toString(true)}`, fn)
 
 		if (varExists(fn.name)) {
 			const v = getVar(fn.name)!
@@ -59,7 +59,7 @@ export class FunctionNode extends DeclarationNode {
 			scopeVars[scopeVars.length - 1].vars.push(new Variable(fn.name, new FunctionType(fn)))
 		}
 
-		fn.name += "__" + fn.args.map(v => v.type.toString()).join("_")
+		fn.name += "__" + fn.args.map(v => v.type.toFnNameArg()).join("_")
 
 		return fn
 	}
@@ -88,9 +88,10 @@ export class OperatorNode extends TreeNode {
 	left?: TreeNode
 	right?: TreeNode
 
+	isLoopThrough = false // Defines wether or not a new variable should be declared.
 	processed = false
 
-	static matchingTokens = [".", "+", "-", "*", "/", "%", "&", "&&", "|", "||", "^", "==", "!=", "<", ">", "<=", ">="]
+	static matchingTokens = [".", "+", "-", "*", "/", "%", "&", "&&", "|", "||", "^", "==", "!=", "<", ">", "<=", ">=", "..", "in"]
 	static match(tokens: Token[]): boolean { return OperatorNode.matchingTokens.includes(tokens[0].val) }
 	static make(tokens: Token[]): OperatorNode {
 		const op = new OperatorNode()
@@ -99,7 +100,7 @@ export class OperatorNode extends TreeNode {
 	}
 
 	static getNewType(operator: string, left: TreeNode, right: TreeNode): Type {
-		// console.log(operator, left, right)
+		console.log(operator, left, right)
 		return operationReturns(operator, left.type, right.type)
 	}
 
@@ -107,8 +108,17 @@ export class OperatorNode extends TreeNode {
 		if (this.processed) console.log("Already processed! That's weird!")
 		this.left = nodes[pos - 1]
 		this.right = nodes[pos + 1]
-		// if (this.name == "." && !this.left.hasProperty(this.right, std[0])) error(Err.TYPE, `${this.left} has no property ${this.right}`, this.right)
-		this.type = OperatorNode.getNewType(this.name, this.left, this.right)
+		if (this.name == ".") {
+			if (!(this.right instanceof TokenLiteralNode))
+				error(Err.TREE, `Trying to index a property with a variable node! (Kinda weird)`, this.right)
+			if (!this.left.type.hasProperty((this.right as TokenLiteralNode).tokenVal))
+				error(Err.TYPE, `${this.left} has no property ${this.right}`, this.right)
+			;(this.right as TokenLiteralNode).isSTDAccessor = !(this.left.type instanceof ClassType)
+		}
+		if (this.name == "in" && this.left instanceof TokenLiteralNode)// console.log("YES!")
+			this.isLoopThrough = true
+		else
+			this.type = OperatorNode.getNewType(this.name, this.left, this.right)
 		nodes.splice(pos - 1, 1)
 		nodes.splice(pos, 1)
 
@@ -125,6 +135,8 @@ export class ParenNode extends TreeNode {
 		const t = splitComma(expandRange(pr.range, ...cls))
 		pr.range.start--, pr.range.end++
 		pr.children.push(...t.map(a => treeify(a)[0][0]))
+		if (pr.children.length == 1)
+			pr.type = pr.children[0].type
 		return pr
 	}
 }
@@ -149,6 +161,7 @@ export class IndexNode extends TreeNode {
 	index!: TreeNode
 	static from(arrNode: ArrayNode) {
 		const xn = new IndexNode()
+		xn.canSet = true
 		if (arrNode.children.length > 1) error(Err.INDEX, `Tried indexing with more than one element!`, arrNode)
 		xn.index = arrNode.children[0]
 		return xn
@@ -175,6 +188,7 @@ export class ConditionNode extends TreeNode {
 	static make(tokens: Token[]): ConditionNode {
 		const cn = new ConditionNode()
 		cn.name = tokens.shift()!.val
+
 		const cond = treeify(expandRange(cn.range, ...getOpenClause(tokens)))
 		if (cond[0].length > 1) console.log(cond[0]), error(Err.TREE, "Tree-ifying getFullClause returned more than one node.", cn)
 		cn.condition = cond[0][0]
@@ -184,6 +198,29 @@ export class ConditionNode extends TreeNode {
 		if (bc[1].isSet()) cn.returns = true
 		cn.children.push(...bc[0])
 		return cn
+	}
+}
+
+export class ForNode extends TreeNode { // for x in 0..10 { ... }
+	condition!: TreeNode
+	children: TreeNode[] = []
+
+	static match(tokens: Token[]): boolean { return tokens[0].val == "for" }
+	static make(tokens: Token[]): ForNode {
+		const fn = new ForNode()
+		tokens.shift()
+
+		console.log("This is part of the for loop! vvv")
+		const cond = treeify(expandRange(fn.range, ...getOpenClause(tokens)))
+		if (cond[0].length > 1) console.log(cond[0]), error(Err.TREE, "Tree-ifying getFullClause returned more than one node.", fn)
+		fn.condition = cond[0][0]
+		const iterVar = ((cond[0][0] as OperatorNode).left as TokenLiteralNode).tokenVal
+
+		const bc = treeify(getClause(tokens), false, [new Variable(iterVar, new PrimitiveType("i32"))])
+		fn.type = bc[1]
+		if (bc[1].isSet()) fn.returns = true
+		fn.children.push(...bc[0])
+		return fn
 	}
 }
 
@@ -207,7 +244,8 @@ export class SetNode extends TreeNode {
 	take(nodes: TreeNode[], pos: number) {
 		this.setting = nodes.splice(pos - 1, 1)[0]
 		if (!this.setting.canSet) error(Err.PERMISSON, `Can't set ${this.setting.toString()}`, this.setting)
-		// console.log(this.setting.type, this.value.type)
+		if (!this.setting.type.equals(this.value.type))
+			error(Err.TYPE, `Can't set ${this.setting.type.toString(true)} to ${this.value.type.toString(true)}`, this.value)
 		this.processed = true
 	}
 }
@@ -327,10 +365,10 @@ export class RightOperatorNode extends TreeNode {
 				// Call node!
 				this.type = this.left.type.getReturnType(this.operator.children.map(c => c.type))
 				// console.log("Call returns:", this.type, this.left.type, this.operator.children.map(c => c.type))
-				this.left.name += "__" + this.operator.children.map(c => c.type.toString()).join("_")
+				this.left.name += "__" + this.operator.children.map(c => c.type.toFnNameArg()).join("_")
 			} else if (this.left instanceof TokenLiteralNode) {
 				const name = this.left.tokenVal
-				const types = this.operator.children.map(c => c.type.toString())
+				const types = this.operator.children.map(c => c.type.toFnNameArg())
 				this.left.tokenVal += "__" + types.join("_")
 				if (!std[0].hasFn(this.left.tokenVal))
 					error(Err.NAME, `Function ${name}(${types.join(", ")}) doesn't exist!`)
@@ -339,9 +377,14 @@ export class RightOperatorNode extends TreeNode {
 					this.type = new PrimitiveType(std[0].functions[this.left.tokenVal][1])
 				}
 			}
-		} else if (this.left.type instanceof ArrayType && this.operator instanceof ArrayNode) {
+		} else if (this.operator instanceof ArrayNode) {
+			this.canSet = true
+			if (this.left.type instanceof ArrayType) {
+				if (!this.operator.children[0].type.equals(new PrimitiveType("i32")))
+					error(Err.TYPE, `Expected ${new PrimitiveType("i32").toString(true)}, got ${this.operator.children[0].type.toString(true)}`, this.operator.children[0])
+				this.type = this.left.type.innerType
+			}
 			this.operator = IndexNode.from(this.operator)
-			this.type = this.left.type.innerType
 		}
 	}
 }
@@ -429,6 +472,7 @@ const nodes: typeof TreeNode[] = [
 	BlockNode,
 	FunctionNode,
 	ConditionNode,
+	ForNode,
 	StatementNode,
 	OperatorNode,
 	LetNode,
@@ -452,8 +496,8 @@ function tokenize(inCode: string): Token[] {
 		else code += inCode[i]
 	const fileId = files.length
 	files.push(code)
-	const noRepeat = `()_*{}/<>[]\\%?,.:;\n`
-		, selfRepeat = "-+&|="
+	const noRepeat = `()_*{}/<>[]\\%?,:;\n`
+		, selfRepeat = "-+&|=."
 		, whitespace = " "
 		, tokens: Token[] = []
 	let lett = ""
@@ -467,9 +511,11 @@ function tokenize(inCode: string): Token[] {
 				if (code[a] == '\\' && code[a + 1] == '"') lett += '\\', a++
 				lett += code[a]
 			}
-			tokens.push({val: '"' + lett + '"', start: a - lett.length - 1, end: a, fileId}), lett = ""
+			tokens.push({val: '"' + lett + '"', start: a - lett.length - 1, end: a + 1, fileId}), lett = ""
 		} else if (selfRepeat.includes(code[a]) && lett[0] != code[a]) {
 			if (lett.length > 0) tokens.push({val: lett, start: a - lett.length, end: a, fileId}); lett = code[a]
+		} else if (selfRepeat.includes(lett[0]) && !selfRepeat.includes(code[a])) {
+			if (lett.length > 0) tokens.push({val: lett, start: a - lett.length, end: a, fileId}); lett = "\n \t".includes(code[a]) ? "" : code[a]
 		} else if (noRepeat.includes(code[a]) || whitespace.includes(code[a])) {
 			if (lett != "") tokens.push({val: lett, start: a - lett.length, end: a, fileId}), lett = ""
 			if (!whitespace.includes(code[a])) tokens.push({val: code[a], start: a, end: a, fileId})
@@ -481,8 +527,11 @@ function tokenize(inCode: string): Token[] {
 
 function splitComma(tokens: Token[]): Token[][] {
 	const ret: Token[][] = [[]]
+	let n = 0
 	for (let t = 0; t < tokens.length; t++) {
-		if (tokens[t].val == ',') ret.push([])
+		if ("([{".includes(tokens[t].val)) n++
+		if ("}])".includes(tokens[t].val)) n--
+		if (n == 0 && tokens[t].val == ',') ret.push([])
 		else ret[ret.length - 1].push(tokens[t])
 	}
 	if (ret[0].length == 0) return []
@@ -516,7 +565,7 @@ function getClause(tokens: Token[], removeStartEnd = true): Token[] {
 	let n = 1
 	if ("({[".includes(tokens[0].val)) {
 		while (n > 0) {
-			if (tokens.length == 0) error(Err.CLAUSE, "Couldn't find clause end!")
+			if (tokens.length < 2) error(Err.CLAUSE, "Couldn't find clause end!")
 			ret.push(tokens.shift()!)
 			if ("({[".includes(tokens[0].val)) n++
 			else if (tokens.length > 0 && "]})".includes(tokens[0].val)) n--
@@ -561,14 +610,17 @@ function getFullClause(tokens: Token[]): Token[] {
 }
 
 type Scope = { vars: Variable[], hard: boolean } // A soft scope means it can access variables from the scope before it.
-let scopePos = -1
 const scopeVars: Scope[] = []
 function getVar(name: string): Variable | undefined {
-	for (let s = scopeVars.length - 1; s >= 0; s--) {
+	// Search through all scopes except the topmost.
+	for (let s = scopeVars.length - 1; s >= 1; s--) {
 		for (let v = scopeVars[s].vars.length - 1; v >= 0; v--)
 			if (scopeVars[s].vars[v].name == name) return scopeVars[s].vars[v]
 		if (scopeVars[s].hard) break
 	}
+	// Search through the topmost (or global) scope.
+	for (let v = scopeVars[0].vars.length - 1; v >= 0; v--)
+		if (scopeVars[0].vars[v].name == name) return scopeVars[0].vars[v]
 }
 function varExists(name: string): boolean {
 	for (let s = scopeVars.length - 1; s >= 0; s--) {
@@ -586,7 +638,6 @@ function treeify(
 	returnType = new Type()
 ): [TreeNode[], Type] {
 	const retNodes: TreeNode[] = []
-	scopePos++
 	scopeVars.push({ vars: [...vars], hard: hardScope })
 
 	// First pass: Turn everything into nodes
@@ -627,21 +678,22 @@ function treeify(
 
 	// fourth pass(es): group operation nodes
 	if (hasOperator) {
+		for (let n = 0; n < retNodes.length; n++) if (retNodes[n] instanceof OperatorNode && (!(retNodes[n] as OperatorNode).processed) && [".."].includes((retNodes[n] as OperatorNode).name)) (retNodes[n] as OperatorNode).take(retNodes, n--)
 		for (let n = 0; n < retNodes.length; n++) if (retNodes[n] instanceof OperatorNode && (!(retNodes[n] as OperatorNode).processed) && "*/%".includes((retNodes[n] as OperatorNode).name)) (retNodes[n] as OperatorNode).take(retNodes, n--)
 		for (let n = 0; n < retNodes.length; n++) if (retNodes[n] instanceof OperatorNode && (!(retNodes[n] as OperatorNode).processed) && "+-" .includes((retNodes[n] as OperatorNode).name)) (retNodes[n] as OperatorNode).take(retNodes, n--)
+		for (let n = 0; n < retNodes.length; n++) if (retNodes[n] instanceof OperatorNode && (!(retNodes[n] as OperatorNode).processed) && ["in"].includes((retNodes[n] as OperatorNode).name)) (retNodes[n] as OperatorNode).take(retNodes, n--)
 		for (let n = 0; n < retNodes.length; n++) if (retNodes[n] instanceof OperatorNode && (!(retNodes[n] as OperatorNode).processed) && "&|" .includes((retNodes[n] as OperatorNode).name)) (retNodes[n] as OperatorNode).take(retNodes, n--)
 		for (let n = 0; n < retNodes.length; n++) if (retNodes[n] instanceof OperatorNode && (!(retNodes[n] as OperatorNode).processed) && [">","<",">=","<="].includes((retNodes[n] as OperatorNode).name)) (retNodes[n] as OperatorNode).take(retNodes, n--)
 		for (let n = 0; n < retNodes.length; n++) if (retNodes[n] instanceof OperatorNode && (!(retNodes[n] as OperatorNode).processed) && ["==","!="].includes((retNodes[n] as OperatorNode).name)) (retNodes[n] as OperatorNode).take(retNodes, n--)
 		for (let n = 0; n < retNodes.length; n++) if (retNodes[n] instanceof OperatorNode && (!(retNodes[n] as OperatorNode).processed) && ["&&","||"].includes((retNodes[n] as OperatorNode).name)) (retNodes[n] as OperatorNode).take(retNodes, n--)
 	}
-
-	scopePos--
 	scopeVars.pop()
 	return [retNodes, returnType]
 }
 
 export function parse(code: string): TreeNode[] {
 	const tokens = tokenize(code)
+	// console.log(tokens)
 	const tree = treeify(tokens) // Modifies `tokens`! rember
 	// console.log(tree[0])
 	return tree[0]
@@ -650,6 +702,7 @@ export function parse(code: string): TreeNode[] {
 // console.log(tokenize("\nlet ok = 0 // (10, arr(20))\n"))
 
 // TO-DO:
+//  - Fix joining different types (eg: string + integer = string)
 //  - Classes
 //  - Disallow underscores in class names (which helps us do function overloading)
 //  - Class access
@@ -663,6 +716,10 @@ export function parse(code: string): TreeNode[] {
 //  - Split "=>0" properly (no spaces screws it up)
 
 // Done:
+//  - Fix setting wrong types
+//  - Fix nested function calls
+//  - Getting global variables
+//  - Check array index type (should be i32)
 //  - Each function name ends with `__` and then a list of its arguments types separated by underscodes (eg: main(a: i32, b: i32) == main__i32_i32). This allows function overloading in languages that don't support it!
 //  - When a function is called, we prepend these rules to its name before compiling ^
 //  - Arrays
@@ -673,6 +730,7 @@ export function parse(code: string): TreeNode[] {
 //  - Make comments work
 //  - Make tokens into classes (for getting error line & column numbers)
 //  - Make soft scopes return to hard scopes.
+//  - For
 //	- While
 //	- If
 //  - Non-inferred function return types

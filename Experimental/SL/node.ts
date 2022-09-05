@@ -2,7 +2,7 @@
 import { Token, TokenRange, expandRange } from "./tokens.ts"
 import { Type, isValidName } from "./types.ts"
 import { files } from "./files.ts"
-import { StandardLibrary } from "./std.ts"
+// import { StandardLibrary } from "./std.ts"
 
 export class TreeNode {
 	type: Type = new Type()
@@ -40,9 +40,12 @@ export class BlockNode extends TreeNode { children: TreeNode[] = [] }
 
 export class TokenLiteralNode extends TreeNode {
 	tokenVal!: string
+
+	isSTDAccessor = false
+
 	static match(tokens: Token[]) { return isValidName(tokens[0].val) }
 	static make(tokens: Token[]): TokenLiteralNode {
-		// console.log("Literal matched token:", tokens[0].val)
+		console.log("Literal matched token:", tokens[0])
 		const tln = new TokenLiteralNode()
 		tln.tokenVal = expandRange(tln.range, tokens.shift()!)[0].val
 		return tln
