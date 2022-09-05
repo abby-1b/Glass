@@ -27,6 +27,7 @@ if (languageModule.StandardLibrary) out = languageModule.StandardLibrary.buildHe
 if (language == "cpp") { // g++ --std=c++11 run.cpp -o run
 	Deno.writeTextFileSync("run.cpp", out)
 } else if (language == "js") {
+	console.log(out)
 	eval(out)
 } else {
 	console.log(out)
