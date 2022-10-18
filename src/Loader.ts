@@ -3,6 +3,7 @@
 /// <reference path="Nodes/Camera.ts" />
 /// <reference path="Nodes/Scene.ts" />
 /// <reference path="Nodes/Rect.ts" />
+/// <reference path="Nodes/Button.ts" />
 
 /**
  * Loads scenes.
@@ -11,7 +12,8 @@ class Loader {
 	static nameMap: {[key: string]: typeof GlassNode} = {
 		"Rect": RectNode,
 		"Camera": Camera,
-		"Scene": Scene
+		"Scene": Scene,
+		"Button": Button
 	}
 	/** Loads a scene from a file path. */
 	static async load(path: string) {
