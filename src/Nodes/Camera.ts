@@ -9,4 +9,11 @@ class Camera extends GlassNode {
 
 	pos: Vec2 = new Vec2(0, 0)
 	centered = true
+
+	constructor(name?: string) {
+		super(name)
+
+		// If there is no active camera, just put this newly generated one in there.
+		;(!Camera.current) && (Camera.current = this)
+	}
 }
