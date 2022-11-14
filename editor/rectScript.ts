@@ -1,8 +1,5 @@
 
-/**
- * Here it is.
- * @param {number} delta
- */
-function loop(delta) {
-
+export async function loop(delta: number) {
+	console.log(delta)
 }
+loop(0)

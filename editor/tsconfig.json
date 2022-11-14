@@ -1,0 +1,17 @@
+{
+	"compilerOptions": {
+		"module": "AMD",
+		"lib": ["ESNext", "DOM"],
+		"target": "ESNext",
+		"noImplicitAny": true,
+		"removeComments": true,
+		"preserveConstEnums": true,
+		"sourceMap": true,
+		"declaration": false,
+		"strict": true,
+
+		"outDir": "public",
+		"outFile": "public/lib.js"
+	},
+	"include": ["**/*.ts"]
+}

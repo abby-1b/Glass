@@ -1,9 +1,10 @@
 /// <reference path="GlassNode.ts" />
 
 /**
- * Draws a rectangle.
+ * Draws text to the screen
  */
-class RectNode extends CanvasItem {
+class TextNode extends CanvasItem {
+	pos: Vec2 = new Vec2(0, 0)
 	size: Vec2 = new Vec2(0, 0)
 	centered = true
 

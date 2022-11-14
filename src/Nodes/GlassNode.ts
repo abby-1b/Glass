@@ -6,8 +6,9 @@ class GlassNode {
 	description?: string
 	parent?: GlassNode
 	children: GlassNode[] = []
-	name: string = "GlassNode"
-
+	name!: string
+	visible: boolean = true
+	
 	loopFn?: Function
 
 	constructor(name?: string) {
@@ -18,11 +19,23 @@ class GlassNode {
 	 * Calls each child's `draw` method recursively.
 	 */
 	draw() {
-		// console.log(this)
 		if (this.loopFn) this.loopFn.call(this)
 		for (let c = this.children.length - 1; c >= 0; c--) this.children[c].draw()
+
+		// if ((<any>this).pos) {
+		// 	WebGL.color(1, 0, 0, 1)
+		// 	if ((<any>this).size)
+		// 		WebGL.rect((<any>this).pos.x, (<any>this).pos.y, (<any>this).size.x, (<any>this).size.y)
+		// 	else
+		// 		WebGL.rect((<any>this).pos.x - 5, (<any>this).pos.y, 10, 1),
+		// 		WebGL.rect((<any>this).pos.x, (<any>this).pos.y - 5, 1, 10)
+		// }
 	}
 
+	/**
+	 * Sets this node's loop function. ***NOTE: SUBSEQUENT CALLS WILL OVERWRITE THE PREVIOUSLY SET FUNCTION***
+	 * @param loopFn 
+	 */
 	loop(loopFn: Function) {
 		if (!loopFn.hasOwnProperty("prototype")) console.log("Error: function can't be bound:", loopFn)
 		this.loopFn = loopFn
@@ -41,8 +54,51 @@ class GlassNode {
 		return this
 	}
 
+	getChild(path: string) {
+		const moves = path.split("/")
+		let node: GlassNode = this
+		while (moves.length > 0) {
+			const m = moves.shift()!
+			if (m == ".." && !node.parent) throw new Error("Node " + node + " doesn't have parent.")
+			switch (m) {
+				case "": break
+				case ".": break
+				case "..": node = node.parent!
+				default:
+					let ch = node.children.map(e => e.name)
+					if (!ch.includes(m)) throw new Error("Couldn't find child '" + m + "' in node " + node)
+					node = node.children[ch.indexOf(m)]
+			}
+		}
+		return node
+	}
+
+	/**
+	 * A heavier, less precise, more test-like way to get a child.
+	 * Keep in mind this sucks for performance.
+	 */
+	getChildByName(name: string): GlassNode | undefined {
+		if (this.name == name) return this
+		for (let i = 0; i < this.children.length; i++) {
+			let c = this.children[i].getChildByName(name)
+			if (c) return c
+		}
+	}
+
+	/** Converts this node into a string. If the name is unset (meaning it's the same as its constructor) then it's omitted. */
+	toString() {
+		return this.constructor.name + (this.name == this.constructor.name ? "" : " \"" + this.name + "\"")
+	}
+
 	getTree(): string {
-		return `${this.constructor.name} "${this.name}"${this.children.length > 0 ? "\n\t" : ""}${this.children.map(c => c.getTree().split("\n").join("\n\t")).join("\n\t")}`
+		return this.toString() + (this.children.length > 0 ? "\n\t" : "")
+			+ this.children.map(c => c.getTree().split("\n").join("\n\t")).join("\n\t")
+	}
+
+	logTree() {
+		console.groupCollapsed(this.toString())
+		this.children.map(c => c.logTree())
+		console.groupEnd()
 	}
 }
 
