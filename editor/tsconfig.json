@@ -13,5 +13,8 @@
 		"outDir": "public",
 		"outFile": "public/lib.js"
 	},
-	"include": ["**/*.ts"]
+	"include": ["**/*.ts"],
+	"files": [
+		"../public/lib.d.ts"
+	]
 }

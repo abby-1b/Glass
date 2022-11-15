@@ -1,11 +1,13 @@
-define("rectScript", ["require", "exports"], function (require, exports) {
+define("spriteScript", ["require", "exports"], function (require, exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.loop = void 0;
-    async function loop(delta) {
-        console.log(delta);
+    function loop() {
+        if (Input.keys.includes("d"))
+            (this.children[0].play("run"));
+        else
+            (this.children[0].play("ball"));
     }
     exports.loop = loop;
-    loop(0);
 });
 //# sourceMappingURL=lib.js.map
