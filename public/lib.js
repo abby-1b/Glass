@@ -1,26 +1,4 @@
 "use strict";
-const modules = {};
-function define(moduleName, passThings, module) {
-    modules[moduleName] = { e: {}, p: passThings, m: module, r: false };
-}
-function getExports(n) {
-    const m = modules[n];
-    if (m.r)
-        return m.e;
-    m.m(...m.p.map(t => {
-        let r = t == "require" ? require :
-            t == "exports" ? m.e :
-                t == "module" ? m :
-                    getExports(t);
-        return r;
-    }));
-    return m.e;
-}
-function require(moduleName, found, notFound) {
-    if (!(moduleName in modules))
-        notFound("Module `" + moduleName + "` not found!");
-    found(getExports(moduleName));
-}
 class Vec2 {
     x;
     y;
@@ -58,246 +36,19 @@ class Input {
     }
 }
 Input.init();
-class GlassNode {
-    description;
-    parent;
-    children = [];
-    name;
-    visible = true;
-    loopFn;
-    constructor(name) {
-        this.name = (name ? name : this.constructor.name);
-    }
-    draw() {
-        if (this.loopFn)
-            this.loopFn.call(this);
-        for (let c = this.children.length - 1; c >= 0; c--)
-            this.children[c].draw();
-    }
-    loop(loopFn) {
-        if (!loopFn.hasOwnProperty("prototype"))
-            console.log("Error: function can't be bound:", loopFn);
-        this.loopFn = loopFn;
-    }
-    debugDraw(extra = false) { }
-    addChild(...nodes) {
-        nodes.forEach(n => n.parent = this);
-        this.children.push(...nodes);
-        return this;
-    }
-    getChild(path) {
-        const moves = path.split("/");
-        let node = this;
-        while (moves.length > 0) {
-            const m = moves.shift();
-            if (m == ".." && !node.parent)
-                throw new Error("Node " + node + " doesn't have parent.");
-            switch (m) {
-                case "": break;
-                case ".": break;
-                case "..": node = node.parent;
-                default:
-                    let ch = node.children.map(e => e.name);
-                    if (!ch.includes(m))
-                        throw new Error("Couldn't find child '" + m + "' in node " + node);
-                    node = node.children[ch.indexOf(m)];
-            }
-        }
-        return node;
-    }
-    getChildByName(name) {
-        if (this.name == name)
-            return this;
-        for (let i = 0; i < this.children.length; i++) {
-            let c = this.children[i].getChildByName(name);
-            if (c)
-                return c;
-        }
-    }
-    toString() {
-        return this.constructor.name + (this.name == this.constructor.name ? "" : " \"" + this.name + "\"");
-    }
-    getTree() {
-        return this.toString() + (this.children.length > 0 ? "\n\t" : "")
-            + this.children.map(c => c.getTree().split("\n").join("\n\t")).join("\n\t");
-    }
-    logTree() {
-        console.groupCollapsed(this.toString());
-        this.children.map(c => c.logTree());
-        console.groupEnd();
-    }
-}
-const GlassRoot = new GlassNode("Root");
-class CanvasItem extends GlassNode {
-    visible = true;
-    pos = new Vec2(0, 0);
-    scale = new Vec2(1, 1);
-    color = [0, 0, 0, 1];
-    setColor(r, g, b, a = 1) {
-        this.color[0] = r, this.color[1] = g;
-        this.color[2] = b, this.color[3] = a;
-    }
-}
-class Camera extends GlassNode {
-    static current;
-    pos = new Vec2(0, 0);
-    centered = true;
-    constructor(name) {
-        super(name);
-        (!Camera.current) && (Camera.current = this);
-    }
-}
-class Scene extends GlassNode {
-    pos = new Vec2(0, 0);
-    loaded = true;
-    draw() {
-        if (this.loaded)
-            super.draw();
-    }
-    unload() {
-        this.children = [];
-    }
-}
-class RectNode extends CanvasItem {
-    size = new Vec2(0, 0);
-    centered = true;
-    setDimensions(x, y, width, height) {
-        this.pos.set(x, y);
-        this.size.set(width, height);
-    }
-    draw() {
-        super.draw();
-        WebGL.color(...this.color);
-        if (this.centered)
-            WebGL.rect(this.pos.x - this.size.x * 0.5, this.pos.y - this.size.y * 0.5, this.size.x, this.size.y);
-        else
-            WebGL.rect(this.pos.x, this.pos.y, this.size.x, this.size.y);
-    }
-}
-class Button extends CanvasItem {
-    pos = new Vec2(0, 0);
-    size = new Vec2(0, 0);
-    centered = true;
-    setDimensions(x, y, width, height) {
-        this.pos.set(x, y);
-        this.size.set(width, height);
-    }
-    draw() {
-        super.draw();
-        WebGL.color(...this.color);
-        if (this.centered)
-            WebGL.rect(this.pos.x - this.size.x * 0.5, this.pos.y - this.size.y * 0.5, this.size.x, this.size.y);
-        else
-            WebGL.rect(this.pos.x, this.pos.y, this.size.x, this.size.y);
-    }
-}
-class Sprite extends CanvasItem {
-    size = new Vec2(0, 0);
-    centered = true;
-    color = [1, 1, 1, 1];
-    _tex;
-    texPos = new Vec2(0, 0);
-    texSize = new Vec2(0, 0);
-    frame = 0;
-    _imgSrc;
-    set src(s) {
-        this.setSrc(s, false);
-    }
-    get src() { return this._imgSrc; }
-    async setSrc(src, setTexSize = true) {
-        this._imgSrc = src;
-        this._tex = await WebGL.newTextureFromSrc(src, setTexSize ? this.texSize : undefined);
-        if (setTexSize)
-            this.size.setVec(this.texSize);
-    }
-    setDimensions(x, y, width, height) {
-        this.pos.set(x, y), this.size.set(width, height);
-    }
-    setTextureDimensions(x, y, width, height) {
-        this.texPos.set(x, y), this.texSize.set(width, height);
-    }
-    draw() {
-        super.draw();
-        if (!this._tex)
-            return;
-        WebGL.color(this.color[0], this.color[1], this.color[2], -this.color[3]);
-        if (this.centered)
-            WebGL.texture(this._tex, this.pos.x - this.size.x * 0.5, this.pos.y - this.size.y * 0.5, this.size.x, this.size.y, this.texPos.x + this.frame * this.texSize.x, this.texPos.y, this.texSize.x, this.texSize.y);
-        else
-            WebGL.texture(this._tex, this.pos.x, this.pos.y, this.size.x, this.size.y, this.texPos.x + this.frame * this.texSize.x, this.texPos.y, this.texSize.x, this.texSize.y);
-    }
-}
-class AnimationNode extends GlassNode {
-    onTime = 0;
-    onFrame = 0;
-    actingNode;
-    property;
-    playing;
-    animations = {};
-    set(node, property) {
-        this.actingNode = node;
-        this.property = property;
-    }
-    play(name) {
-        this.playing = name;
-        this.onFrame = 0;
-        this.onTime = 0;
-    }
-    addSparseKeyframes(name, timing, keyframes, total, playOnce = false) {
-        this.animations[name] = [timing, new Array(total), playOnce];
-        for (let i = 0; i < keyframes.length; i++) {
-            this.animations[name][1][keyframes[i][0]] = keyframes[i][1];
-        }
-        let curr;
-        for (let i = 0; i < total; i++) {
-            if (this.animations[name][1][i] === undefined)
-                this.animations[name][1][i] = curr;
-            else
-                curr = this.animations[name][1][i];
-        }
-    }
-    addKeyframes(name, timing, frames, playOnce = false) {
-        this.animations[name] = [timing, frames, playOnce];
-    }
-    draw() {
-        super.draw();
-        if (!this.property || !this.playing || this.animations[this.playing][1].length == 0)
-            return;
-        this.onTime += 1;
-        if (this.onTime >= this.animations[this.playing][0]) {
-            this.onTime = this.onTime % 1;
-            if (++this.onFrame >= this.animations[this.playing][1].length) {
-                if (this.animations[this.playing][2]) {
-                    this.onTime = this.onFrame = 0;
-                    this.playing = undefined;
-                    return;
-                }
-                else {
-                    this.onFrame = 0;
-                }
-            }
-        }
-        ;
-        this.actingNode[this.property] = this.animations[this.playing][1][this.onFrame];
-    }
-}
 class Loader {
-    static nameMap = {
-        "Rect": RectNode,
-        "Camera": Camera,
-        "Scene": Scene,
-        "Button": Button,
-        "Sprite": Sprite,
-        "AnimationNode": AnimationNode
-    };
     static async load(path) {
         await fetch(path)
             .then(r => r.text())
             .catch(e => {
             console.error("Couldn't get ", path, "\n" + e);
         })
-            .then(t => { if (t)
-            GlassRoot.children.push(...DeSerializer.deSerialize(t)), console.log("Loaded", path); });
+            .then(t => {
+            if (!t)
+                return;
+            WebGL.init();
+            GlassRoot.children.push(...DeSerializer.deSerialize(t)), console.log("Loaded", path);
+        });
     }
     static init() {
         if (window.load)
@@ -307,9 +58,29 @@ class Loader {
     }
 }
 Loader.init();
-(async () => {
-    await Loader.load("../editor/scene.gs");
-})();
+Loader.load("../editor/scene.gs");
+const modules = {};
+function define(moduleName, passThings, module) {
+    modules[moduleName] = { e: {}, p: passThings, m: module, r: false };
+}
+function getExports(n) {
+    const m = modules[n];
+    if (m.r)
+        return m.e;
+    m.m(...m.p.map(t => {
+        let r = t == "require" ? require :
+            t == "exports" ? m.e :
+                t == "module" ? m :
+                    getExports(t);
+        return r;
+    }));
+    return m.e;
+}
+function require(moduleName, found, notFound) {
+    if (!(moduleName in modules))
+        notFound("Module `" + moduleName + "` not found!");
+    found(getExports(moduleName));
+}
 class Serializer {
     static defaults = {};
     static references = [];
@@ -456,18 +227,18 @@ class Signal {
 }
 ;
 (s => { s.innerHTML = "*{width:100vw;height:100vh;margin:0;padding:0}", document.querySelector("head").appendChild(s); })(document.createElement("style"));
-class WebGLInstance {
-    gl;
-    program;
-    uniforms;
-    vertexArray = new Float32Array([0, 0, 0, 1, 1, 0, 1, 1]);
-    texInfo = new Float32Array([0, 0, 0, 0, 0, 0]);
-    width = 0;
-    height = 0;
-    frameCount = 0;
-    delta = 0;
-    _bgColor = [1, 1, 1, 1];
-    constructor() {
+class WebGL {
+    static gl;
+    static program;
+    static uniforms;
+    static vertexArray = new Float32Array([0, 0, 0, 1, 1, 0, 1, 1]);
+    static texInfo = new Float32Array([0, 0, 0, 0, 0, 0]);
+    static width = 0;
+    static height = 0;
+    static frameCount = 0;
+    static delta = 0;
+    static _bgColor = [1, 1, 1, 1];
+    static init() {
         this.gl = document.body.appendChild(document.createElement("canvas")).getContext("webgl2", { antialias: false });
         this.program = this.buildSP(`#version 300 es
 			in vec2 vertex_pos;
@@ -522,12 +293,12 @@ class WebGLInstance {
         };
         frameCallback();
     }
-    frame() {
+    static frame() {
         this.gl.clearColor(...this._bgColor);
         this.gl.clear(this.gl.COLOR_BUFFER_BIT | this.gl.DEPTH_BUFFER_BIT | this.gl.STENCIL_BUFFER_BIT);
         GlassRoot.draw();
     }
-    buildSP(vert, frag) {
+    static buildSP(vert, frag) {
         function buildSS(gl, code, type) {
             const s = gl.createShader(type);
             gl.shaderSource(s, code), gl.compileShader(s);
@@ -542,7 +313,7 @@ class WebGLInstance {
             console.log("Error linking shader program:\n" + this.gl.getProgramInfoLog(program));
         return program;
     }
-    newTexture() {
+    static newTexture() {
         const tex = this.gl.createTexture();
         this.gl.bindTexture(this.gl.TEXTURE_2D, tex);
         this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_WRAP_S, this.gl.REPEAT);
@@ -551,7 +322,7 @@ class WebGLInstance {
         this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_MAG_FILTER, this.gl.NEAREST);
         return tex;
     }
-    newTextureFromSrc(src, sizeVec) {
+    static newTextureFromSrc(src, sizeVec) {
         return new Promise((resolve, reject) => {
             const tex = this.newTexture();
             const img = new Image();
@@ -568,14 +339,14 @@ class WebGLInstance {
             return tex;
         });
     }
-    bgColor(r, g, b, a = 1) {
+    static bgColor(r, g, b, a = 1) {
         this._bgColor[0] = r, this._bgColor[1] = g;
         this._bgColor[2] = b, this._bgColor[3] = a;
     }
-    color(r, g, b, a = 1) {
+    static color(r, g, b, a = 1) {
         this.gl.uniform4f(this.uniforms.color, r, g, b, a);
     }
-    rect(x, y, width, height) {
+    static rect(x, y, width, height) {
         this.vertexArray[0] = x, this.vertexArray[1] = y;
         this.vertexArray[2] = x + width, this.vertexArray[3] = y;
         this.vertexArray[4] = x, this.vertexArray[5] = y + height;
@@ -583,7 +354,7 @@ class WebGLInstance {
         this.gl.bufferData(this.gl.ARRAY_BUFFER, this.vertexArray, this.gl.DYNAMIC_DRAW);
         this.gl.drawArrays(this.gl.TRIANGLE_STRIP, 0, 4);
     }
-    texture(texture, x, y, width, height, tx, ty, tw, th) {
+    static texture(texture, x, y, width, height, tx, ty, tw, th) {
         if (!texture.loaded)
             return;
         this.gl.bindTexture(this.gl.TEXTURE_2D, texture);
@@ -602,7 +373,226 @@ class WebGLInstance {
         this.gl.drawArrays(this.gl.TRIANGLE_STRIP, 0, 4);
     }
 }
-const WebGL = new WebGLInstance();
+class GlassNode {
+    description;
+    parent;
+    children = [];
+    name;
+    visible = true;
+    _module;
+    _moduleName;
+    set module(n) {
+        this._moduleName = n;
+        this._module = modules[n].e;
+    }
+    get module() { return this._moduleName; }
+    constructor(name) {
+        this.name = (name ? name : this.constructor.name);
+    }
+    draw() {
+        this.module;
+        if (this._module && this._module.loop)
+            this._module.loop(this);
+        for (let c = this.children.length - 1; c >= 0; c--)
+            this.children[c].draw();
+    }
+    debugDraw(extra = false) { }
+    addChild(...nodes) {
+        nodes.forEach(n => n.parent = this);
+        this.children.push(...nodes);
+        return this;
+    }
+    getChild(path) {
+        const moves = path.split("/");
+        let node = this;
+        while (moves.length > 0) {
+            const m = moves.shift();
+            if (m == ".." && !node.parent)
+                throw new Error("Node " + node + " doesn't have parent.");
+            switch (m) {
+                case "": break;
+                case ".": break;
+                case "..": node = node.parent;
+                default:
+                    let ch = node.children.map(e => e.name);
+                    if (!ch.includes(m))
+                        throw new Error("Couldn't find child '" + m + "' in node " + node);
+                    node = node.children[ch.indexOf(m)];
+            }
+        }
+        return node;
+    }
+    getChildByName(name) {
+        if (this.name == name)
+            return this;
+        for (let i = 0; i < this.children.length; i++) {
+            let c = this.children[i].getChildByName(name);
+            if (c)
+                return c;
+        }
+    }
+    toString() {
+        return this.constructor.name + (this.name == this.constructor.name ? "" : " \"" + this.name + "\"");
+    }
+    getTree() {
+        return this.toString() + (this.children.length > 0 ? "\n\t" : "")
+            + this.children.map(c => c.getTree().split("\n").join("\n\t")).join("\n\t");
+    }
+    logTree() {
+        console.groupCollapsed(this.toString());
+        this.children.map(c => c.logTree());
+        console.groupEnd();
+    }
+}
+const GlassRoot = new GlassNode("Root");
+class AnimationNode extends GlassNode {
+    onTime = 0;
+    onFrame = 0;
+    actingNode;
+    property;
+    playing;
+    animations = {};
+    set(node, property) {
+        this.actingNode = node;
+        this.property = property;
+    }
+    play(name) {
+        this.playing = name;
+        this.onFrame = 0;
+        this.onTime = 0;
+    }
+    addSparseKeyframes(name, timing, keyframes, total, playOnce = false) {
+        this.animations[name] = [timing, new Array(total), playOnce];
+        for (let i = 0; i < keyframes.length; i++) {
+            this.animations[name][1][keyframes[i][0]] = keyframes[i][1];
+        }
+        let curr;
+        for (let i = 0; i < total; i++) {
+            if (this.animations[name][1][i] === undefined)
+                this.animations[name][1][i] = curr;
+            else
+                curr = this.animations[name][1][i];
+        }
+    }
+    addKeyframes(name, timing, frames, playOnce = false) {
+        this.animations[name] = [timing, frames, playOnce];
+    }
+    draw() {
+        super.draw();
+        if (!this.property || !this.playing || this.animations[this.playing][1].length == 0)
+            return;
+        this.onTime += 1;
+        if (this.onTime >= this.animations[this.playing][0]) {
+            this.onTime = this.onTime % 1;
+            if (++this.onFrame >= this.animations[this.playing][1].length) {
+                if (this.animations[this.playing][2]) {
+                    this.onTime = this.onFrame = 0;
+                    this.playing = undefined;
+                    return;
+                }
+                else {
+                    this.onFrame = 0;
+                }
+            }
+        }
+        ;
+        this.actingNode[this.property] = this.animations[this.playing][1][this.onFrame];
+    }
+}
+class CanvasItem extends GlassNode {
+    visible = true;
+    pos = new Vec2(0, 0);
+    scale = new Vec2(1, 1);
+    color = [0, 0, 0, 1];
+    setColor(r, g, b, a = 1) {
+        this.color[0] = r, this.color[1] = g;
+        this.color[2] = b, this.color[3] = a;
+    }
+}
+class Button extends CanvasItem {
+    pos = new Vec2(0, 0);
+    size = new Vec2(0, 0);
+    centered = true;
+    setDimensions(x, y, width, height) {
+        this.pos.set(x, y);
+        this.size.set(width, height);
+    }
+    draw() {
+        super.draw();
+        WebGL.color(...this.color);
+        if (this.centered)
+            WebGL.rect(this.pos.x - this.size.x * 0.5, this.pos.y - this.size.y * 0.5, this.size.x, this.size.y);
+        else
+            WebGL.rect(this.pos.x, this.pos.y, this.size.x, this.size.y);
+    }
+}
+class Camera extends GlassNode {
+    static current;
+    pos = new Vec2(0, 0);
+    centered = true;
+    constructor(name) {
+        super(name);
+        (!Camera.current) && (Camera.current = this);
+    }
+}
+class RectNode extends CanvasItem {
+    size = new Vec2(0, 0);
+    centered = true;
+    setDimensions(x, y, width, height) {
+        this.pos.set(x, y);
+        this.size.set(width, height);
+    }
+    draw() {
+        super.draw();
+        WebGL.color(...this.color);
+        if (this.centered)
+            WebGL.rect(this.pos.x - this.size.x * 0.5, this.pos.y - this.size.y * 0.5, this.size.x, this.size.y);
+        else
+            WebGL.rect(this.pos.x, this.pos.y, this.size.x, this.size.y);
+    }
+}
+class Scene extends GlassNode {
+    pos = new Vec2(0, 0);
+    loaded = true;
+    draw() {
+        if (this.loaded)
+            super.draw();
+    }
+    unload() {
+        this.children = [];
+    }
+}
+class Sprite extends CanvasItem {
+    size = new Vec2(0, 0);
+    centered = true;
+    color = [1, 1, 1, 1];
+    _tex;
+    texPos = new Vec2(0, 0);
+    texSize = new Vec2(0, 0);
+    frame = 0;
+    _imgSrc;
+    set src(s) {
+        this._imgSrc = s;
+        WebGL.newTextureFromSrc(s).then(t => this._tex = t);
+    }
+    get src() { return this._imgSrc; }
+    setDimensions(x, y, width, height) {
+        this.pos.set(x, y), this.size.set(width, height);
+    }
+    setTextureDimensions(x, y, width, height) {
+        this.texPos.set(x, y), this.texSize.set(width, height);
+    }
+    draw() {
+        super.draw();
+        if (!this._tex)
+            return;
+        WebGL.color(this.color[0], this.color[1], this.color[2], -this.color[3]);
+        if (this.centered)
+            WebGL.texture(this._tex, this.pos.x - this.size.x * 0.5, this.pos.y - this.size.y * 0.5, this.size.x, this.size.y, this.texPos.x + this.frame * this.texSize.x, this.texPos.y, this.texSize.x, this.texSize.y);
+        else
+            WebGL.texture(this._tex, this.pos.x, this.pos.y, this.size.x, this.size.y, this.texPos.x + this.frame * this.texSize.x, this.texPos.y, this.texSize.x, this.texSize.y);
+    }
+}
 class TextNode extends CanvasItem {
     pos = new Vec2(0, 0);
     size = new Vec2(0, 0);
