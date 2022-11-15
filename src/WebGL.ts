@@ -3,28 +3,28 @@
 type Color = [number, number, number, number]
 type LoadableWebGLTexture = WebGLTexture & { loaded?: boolean, width?: number, height?: number }
 
-class WebGLInstance {
-	gl: WebGL2RenderingContext
-	program: WebGLProgram
-	uniforms: {
+class WebGL {
+	static gl: WebGL2RenderingContext
+	static program: WebGLProgram
+	static uniforms: {
 		color: WebGLUniformLocation,
 		texInfo: WebGLUniformLocation,
 		screenScale: WebGLUniformLocation,
 		translate: WebGLUniformLocation
 	}
 
-	private vertexArray = new Float32Array([ 0, 0, 0, 1, 1, 0, 1, 1 ])
-	private texInfo = new Float32Array([ 0, 0, 0, 0, 0, 0 ])
+	private static vertexArray = new Float32Array([ 0, 0, 0, 1, 1, 0, 1, 1 ])
+	private static texInfo = new Float32Array([ 0, 0, 0, 0, 0, 0 ])
 
-	width: number = 0
-	height: number = 0
-	frameCount: number = 0
+	static width: number = 0
+	static height: number = 0
+	static frameCount: number = 0
 	/** How long the last frame took to render. 1 means the game is running at 60fps, while 0.5 means it's running at 30fps. */
-	delta: number = 0
+	static delta: number = 0
 
-	private _bgColor: [number, number, number, number] = [1, 1, 1, 1]
+	private static _bgColor: [number, number, number, number] = [1, 1, 1, 1]
 
-	constructor() {
+	static init() {
 		this.gl = document.body.appendChild(document.createElement("canvas")).getContext("webgl2", {antialias: false})!
 		this.program = this.buildSP(
 			`#version 300 es
@@ -85,14 +85,14 @@ class WebGLInstance {
 		frameCallback()
 	}
 
-	private frame() {
+	private static frame() {
 		this.gl.clearColor(...this._bgColor)
 		this.gl.clear(this.gl.COLOR_BUFFER_BIT | this.gl.DEPTH_BUFFER_BIT | this.gl.STENCIL_BUFFER_BIT)
 
 		GlassRoot.draw()
 	}
 
-	private buildSP(vert: string, frag: string) {
+	private static buildSP(vert: string, frag: string) {
 		function buildSS(gl: WebGL2RenderingContext, code: string, type: number) {
 			const s = gl.createShader(type)!
 			gl.shaderSource(s, code), gl.compileShader(s)
@@ -107,7 +107,7 @@ class WebGLInstance {
 	}
 
 	/** Creates a new texture. */
-	newTexture() {
+	static newTexture() {
 		const tex = this.gl.createTexture()!
 		this.gl.bindTexture(this.gl.TEXTURE_2D, tex)
 		this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_WRAP_S, this.gl.REPEAT)
@@ -123,7 +123,7 @@ class WebGLInstance {
 	 * @param sizeVec A vector passed as a reference to put the image's width and height into.
 	 * @returns The created texture. Note that this image is not yet initialized and must wait to be returned.
 	 */
-	newTextureFromSrc(src: string, sizeVec?: Vec2): Promise<LoadableWebGLTexture> {
+	static newTextureFromSrc(src: string, sizeVec?: Vec2): Promise<LoadableWebGLTexture> {
 		return new Promise((resolve, reject) => {
 			const tex: LoadableWebGLTexture = this.newTexture()
 			const img = new Image()
@@ -148,7 +148,7 @@ class WebGLInstance {
 	 * @param b Amount of blue as a floating point value from 0 to 1
 	 * @param a Alpha value as a floating point value from 0 to 1
 	 */
-	bgColor(r: number, g: number, b: number, a: number = 1) {
+	static bgColor(r: number, g: number, b: number, a: number = 1) {
 		this._bgColor[0] = r, this._bgColor[1] = g
 		this._bgColor[2] = b, this._bgColor[3] = a
 	}
@@ -160,7 +160,7 @@ class WebGLInstance {
 	 * @param b Amount of blue as a floating point value from 0 to 1
 	 * @param a Alpha value as a floating point value from 0 to 1
 	 */
-	color(r: number, g: number, b: number, a: number = 1) {
+	static color(r: number, g: number, b: number, a: number = 1) {
 		this.gl.uniform4f(this.uniforms.color, r, g, b, a)
 	}
 
@@ -171,7 +171,7 @@ class WebGLInstance {
 	 * @param width 
 	 * @param height 
 	 */
-	rect(x: number, y: number, width: number, height: number) {
+	static rect(x: number, y: number, width: number, height: number) {
 		this.vertexArray[0] = x, this.vertexArray[1] = y
 		this.vertexArray[2] = x + width, this.vertexArray[3] = y
 		this.vertexArray[4] = x, this.vertexArray[5] = y + height
@@ -180,7 +180,7 @@ class WebGLInstance {
 		this.gl.drawArrays(this.gl.TRIANGLE_STRIP, 0, 4)
 	}
 
-	texture(texture: LoadableWebGLTexture, x: number, y: number, width: number, height: number, tx: number, ty: number, tw: number, th: number) {
+	static texture(texture: LoadableWebGLTexture, x: number, y: number, width: number, height: number, tx: number, ty: number, tw: number, th: number) {
 		if (!texture.loaded) return
 		this.gl.bindTexture(this.gl.TEXTURE_2D, texture)
 
@@ -201,8 +201,3 @@ class WebGLInstance {
 		this.gl.drawArrays(this.gl.TRIANGLE_STRIP, 0, 4)
 	}
 }
-
-// This is an instance instead of a static class PURELY to be able to run multiple games with a single script in the future.
-// Keep in mind this probably won't work because of rendering issues... but it's a possibility.
-// Besides, this doesn't have much of a performance impact over doing a static class, right?
-const WebGL = new WebGLInstance()
