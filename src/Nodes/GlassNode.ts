@@ -9,7 +9,13 @@ class GlassNode {
 	name!: string
 	visible: boolean = true
 	
-	loopFn?: Function
+	private _module?: {[key: string]: any}
+	private _moduleName?: string
+	set module(n: string | undefined) {
+		this._moduleName = n
+		this._module = modules[n as string].e
+	}
+	get module() { return this._moduleName }
 
 	constructor(name?: string) {
 		this.name = (name ? name : this.constructor.name)
@@ -19,26 +25,9 @@ class GlassNode {
 	 * Calls each child's `draw` method recursively.
 	 */
 	draw() {
-		if (this.loopFn) this.loopFn.call(this)
+		this.module
+		if (this._module && this._module.loop) this._module.loop(this)
 		for (let c = this.children.length - 1; c >= 0; c--) this.children[c].draw()
-
-		// if ((<any>this).pos) {
-		// 	WebGL.color(1, 0, 0, 1)
-		// 	if ((<any>this).size)
-		// 		WebGL.rect((<any>this).pos.x, (<any>this).pos.y, (<any>this).size.x, (<any>this).size.y)
-		// 	else
-		// 		WebGL.rect((<any>this).pos.x - 5, (<any>this).pos.y, 10, 1),
-		// 		WebGL.rect((<any>this).pos.x, (<any>this).pos.y - 5, 1, 10)
-		// }
-	}
-
-	/**
-	 * Sets this node's loop function. ***NOTE: SUBSEQUENT CALLS WILL OVERWRITE THE PREVIOUSLY SET FUNCTION***
-	 * @param loopFn 
-	 */
-	loop(loopFn: Function) {
-		if (!loopFn.hasOwnProperty("prototype")) console.log("Error: function can't be bound:", loopFn)
-		this.loopFn = loopFn
 	}
 
 	/**

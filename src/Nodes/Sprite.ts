@@ -1,7 +1,7 @@
 /// <reference path="GlassNode.ts" />
 
 /**
- * Draws a rectangle.
+ * Draws a sprite.
  */
 class Sprite extends CanvasItem {
 	size: Vec2 = new Vec2(0, 0)
@@ -17,16 +17,11 @@ class Sprite extends CanvasItem {
 	frame = 0
 
 	private _imgSrc?: string
-	private set src(s: string | undefined) {
-		this.setSrc(s as string, false)
+	set src(s: string | undefined) {
+		this._imgSrc = s
+		WebGL.newTextureFromSrc(s as string).then(t => this._tex = t)
 	}
-	private get src(): string | undefined { return this._imgSrc }
-
-	async setSrc(src: string, setTexSize = true) {
-		this._imgSrc = src
-		this._tex = await WebGL.newTextureFromSrc(src, setTexSize ? this.texSize : undefined)
-		if (setTexSize) this.size.setVec(this.texSize)
-	}
+	get src(): string | undefined { return this._imgSrc }
 
 	setDimensions(x: number, y: number, width: number, height: number) {
 		this.pos.set(x, y), this.size.set(width, height)
