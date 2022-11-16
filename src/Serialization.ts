@@ -140,9 +140,3 @@ class DeSerializer {
 		return f[0]
 	}
 }
-
-// setTimeout(() => {
-// 	let d = Serializer.serialize(GlassRoot.children)
-// 	console.log(d)
-// 	DeSerializer.deSerialize(d)
-// }, 300)
