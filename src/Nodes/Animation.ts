@@ -14,7 +14,7 @@ class AnimationNode extends GlassNode {
 	private animations: {[key: string]: [number, any[], boolean]} = {} // Stores [timing, frames]
 
 	/** Sets the node to be animated. NOTE: subsequent calls to this function will overwrite any previous call. */
-	set(node: GlassNode, property: string) {
+	animate(node: GlassNode, property: string) {
 		this.actingNode = node
 		this.property = property
 	}
