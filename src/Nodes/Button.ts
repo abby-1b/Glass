@@ -8,11 +8,6 @@ class Button extends CanvasItem {
 	size: Vec2 = new Vec2(0, 0)
 	centered = true
 
-	setDimensions(x: number, y: number, width: number, height: number) {
-		this.pos.set(x, y)
-		this.size.set(width, height)
-	}
-
 	draw() {
 		super.draw()
 		WebGL.color(...this.color)
