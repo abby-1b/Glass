@@ -23,22 +23,14 @@ class Sprite extends CanvasItem {
 	}
 	get src(): string | undefined { return this._imgSrc }
 
-	setDimensions(x: number, y: number, width: number, height: number) {
-		this.pos.set(x, y), this.size.set(width, height)
-	}
-
-	setTextureDimensions(x: number, y: number, width: number, height: number) {
-		this.texPos.set(x, y), this.texSize.set(width, height)
-	}
-
 	draw() {
 		super.draw()
 		if (!this._tex) return
 		WebGL.color(this.color[0], this.color[1], this.color[2], -this.color[3])
-
-		if (this.centered)
-			WebGL.texture(this._tex, this.pos.x - this.size.x * 0.5, this.pos.y - this.size.y * 0.5, this.size.x, this.size.y, this.texPos.x + this.frame * this.texSize.x, this.texPos.y, this.texSize.x, this.texSize.y)
-		else
-			WebGL.texture(this._tex, this.pos.x                    , this.pos.y                    , this.size.x, this.size.y, this.texPos.x + this.frame * this.texSize.x, this.texPos.y, this.texSize.x, this.texSize.y)
+		WebGL.rect(this.pos.x - this.size.x * 0.5, this.pos.y - this.size.y * 0.5, this.size.x, this.size.y)
+		// if (this.centered)
+		// 	WebGL.texture(this._tex, this.pos.x - this.size.x * 0.5, this.pos.y - this.size.y * 0.5, this.size.x, this.size.y, this.texPos.x + this.frame * this.texSize.x, this.texPos.y, this.texSize.x, this.texSize.y, this.rot)
+		// else
+		// 	WebGL.texture(this._tex, this.pos.x                    , this.pos.y                    , this.size.x, this.size.y, this.texPos.x + this.frame * this.texSize.x, this.texPos.y, this.texSize.x, this.texSize.y, this.rot)
 	}
 }
