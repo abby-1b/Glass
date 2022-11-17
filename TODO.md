@@ -10,6 +10,8 @@ Tasks:
 		[x] Shapes
 		[x] Load textures
 		[x] Display textures
+		[x] Shape rotation
+		[ ] Texture rotation
 		[ ] Camera
 	[x] General save/load (unlike JSON, this allows for cyclic or self-referencing objects)
 		[x] Turn a node into a list of object along with a JSON-like object organizing these objects in a tree structure.
@@ -19,6 +21,7 @@ Tasks:
 		[ ] Timer node (fires a signal after a certain amount of time)
 	[x] Signals! (Godot-like)
 	[ ] Script-loading
+		[ ] The scripts must load before the scene is loaded to avoid needing a class from these scripts during deserialisation.
 	[ ] UI
 		[ ] Button
 			[x] Display
