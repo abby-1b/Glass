@@ -37,6 +37,7 @@ class WebGL {
 	static shaders: {[key: string]: GlassShader} = {}
 	/** A 3x3 matrix containing all the draw transformations. */
 	static transform: FastMatrix = new Float32Array([1, 0, 0, 0, 1, 0, 0, 0, 1])
+	static stack: string[] = []
 
 	static init() {
 		this.gl = document.body.appendChild(document.createElement("canvas")).getContext("webgl2", {antialias: false})!
@@ -97,7 +98,19 @@ class WebGL {
 		this.transform[3] = 0, this.transform[4] = 1, this.transform[5] = 0
 		this.transform[6] = 0, this.transform[7] = 0, this.transform[8] = 1
 
+		// this.translate(100, 100)
+		// this.rotate(this.frameCount / 100)
+		// this.rect(50, 80, 50, 50)
+		// this.rect(150, 90, 50, 50)
+		// this.rect(10, 20, 50, 50)
+
+		// this.stack = []
+		if (this.frameCount > 10) (<any>GlassRoot.children[0]).rot += 0.01
+		GlassRoot.loop()
 		GlassRoot.draw()
+		// if (this.frameCount == 10) {
+		// 	console.log(this.stack)
+		// }
 	}
 
 	/** Compiles a shader and adds it to a dictionary for later use. Compiled programs can be found at `this.shaders`. */
@@ -132,20 +145,23 @@ class WebGL {
 
 	static translate(x: number, y: number) {
 		FastMatrixHelper.multiply3x3InPlace(this.transform, [
-			1, 0, y,
-			0, 1, x,
+			1, 0, x,
+			0, 1, y,
 			0, 0, 1
 		])
+		this.stack.push(`translate(${x},${y})`)
 	}
 
 	/** Rotate by some amount in radians. */
 	static rotate(r: number) {
+		if (r == 0) return
 		const c = Math.cos(r), s = Math.sin(r)
 		FastMatrixHelper.multiply3x3InPlace(this.transform, [
 			c,-s, 0,
 			s, c, 0,
 			0, 0, 1
 		])
+		this.stack.push(`rotate(${r})`)
 	}
 
 	static scale(x: number, y: number) {
@@ -154,6 +170,7 @@ class WebGL {
 			0, y, 0,
 			0, 0, 1
 		])
+		this.stack.push(`scale(${x},${y})`)
 	}
 
 	/** Creates a new texture. */
