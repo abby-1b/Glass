@@ -98,16 +98,16 @@ class WebGL {
 		this.transform[3] = 0, this.transform[4] = 1, this.transform[5] = 0
 		this.transform[6] = 0, this.transform[7] = 0, this.transform[8] = 1
 
-		// this.translate(100, 100)
-		// this.rotate(this.frameCount / 100)
-		// this.rect(50, 80, 50, 50)
-		// this.rect(150, 90, 50, 50)
-		// this.rect(10, 20, 50, 50)
+		this.rotate(this.frameCount / 100)
+		this.translate(100, 100)
+		this.rect(50, 80, 50, 50)
+		this.rect(150, 90, 50, 50)
+		this.rect(10, 20, 50, 50)
 
 		// this.stack = []
-		if (this.frameCount > 10) (<any>GlassRoot.children[0]).rot += 0.01
-		GlassRoot.loop()
-		GlassRoot.draw()
+		// if (this.frameCount > 10) (<any>GlassRoot.children[0]).rot += 0.01
+		// GlassRoot.loop()
+		// GlassRoot.draw()
 		// if (this.frameCount == 10) {
 		// 	console.log(this.stack)
 		// }
