@@ -11,7 +11,7 @@ Tasks:
 		[x] Load textures
 		[x] Display textures
 		[x] Shape rotation
-		[ ] Texture rotation
+		[x] Texture rotation
 		[ ] Camera
 	[x] General save/load (unlike JSON, this allows for cyclic or self-referencing objects)
 		[x] Turn a node into a list of object along with a JSON-like object organizing these objects in a tree structure.
@@ -29,7 +29,9 @@ Tasks:
 		[ ] Text display
 		[ ] Generic container
 	[ ] Pause system
-		[ ] Separate draw from process
+		[x] Separate draw from process
+		[ ] Actually pause
+		[ ] Un-pause
 	[ ] Random generation (perlin noise, anything really.)
 		[ ] Generate smooth noise
 		[ ] Put noise into texture
