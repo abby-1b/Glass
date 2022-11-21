@@ -57,9 +57,8 @@ class AnimationNode extends GlassNode {
 	}
 
 	draw() {
-		super.draw()
 		if (!this.property || !this.playing || this.animations[this.playing][1].length == 0) return
-		this.onTime += 1 //WebGL.delta
+		this.onTime += WebGL.delta
 		if (this.onTime >= this.animations[this.playing][0]) {
 			this.onTime = this.onTime % 1
 			if (++this.onFrame >= this.animations[this.playing][1].length) {
@@ -73,5 +72,6 @@ class AnimationNode extends GlassNode {
 			}
 		}
 		;(<any>this.actingNode)[this.property] = this.animations[this.playing][1][this.onFrame]
+		super.draw()
 	}
 }
