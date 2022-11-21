@@ -8,6 +8,9 @@ type GlassShader = {
 	attributes: {[key: string]: number, vertex_pos: number}
 }
 
+let t = 0
+let n = 0
+
 /**
  * The main class used to interface with the WebGL2 canvas.
  * If the platform, WebGL version, or any other drawing aspect is changed, only this file should need to be edited.
@@ -17,7 +20,7 @@ class WebGL {
 	private static vertexBuffer: WebGLBuffer
 	private static vertexArray = new Float32Array([ 0, 0, 0, 1, 1, 0, 1, 1 ])
 	private static texCoordBuffer: WebGLBuffer
-	private static texCoordArray = new Float32Array(9)
+	private static texCoordArray = new Float32Array(8)
 	// static uniforms: {
 	// 	color: WebGLUniformLocation,
 	// 	texInfo: WebGLUniformLocation,
@@ -37,11 +40,13 @@ class WebGL {
 	static shaders: {[key: string]: GlassShader} = {}
 	/** A 3x3 matrix containing all the draw transformations. */
 	static transform: FastMatrix = new Float32Array([1, 0, 0, 0, 1, 0, 0, 0, 1])
-	static stack: string[] = []
 
 	static init() {
-		this.gl = document.body.appendChild(document.createElement("canvas")).getContext("webgl2", {antialias: false})!
+		// TODO: make antialias selectable by user
+		// this.gl = document.body.appendChild(document.createElement("canvas")).getContext("webgl2", {antialias: false})!
+		this.gl = document.body.appendChild(document.createElement("canvas")).getContext("webgl2")!
 		this.vertexBuffer = this.gl.createBuffer()!
+		this.texCoordBuffer = this.gl.createBuffer()!
 		this.addShader("shape",
 			`void main() {
 				gl_Position = vec4((vec3(vertex_pos, 1) * transform).xy * screen_scale - vec2(1.0, -1.0), 0.0, 1.0);
@@ -54,14 +59,15 @@ class WebGL {
 			`in vec2 tex_coord;
 			out vec2 tex_pos;
 			void main() {
+				gl_Position = vec4((vec3(vertex_pos, 1) * transform).xy * screen_scale - vec2(1.0, -1.0), 0.0, 1.0);
 				tex_pos = tex_coord;
-				gl_Position = vec4(vertex_pos - vec2(1.0, -1.0), 0.0, 1.0);
 			}`,
 			`in vec2 tex_pos;
 			uniform sampler2D the_tex;
 			uniform vec4 tint;
 			void main() {
-				out_color = texture(the_tex, floor(tex_pos) + 0.5) * vec4(tint.r, tint.g, tint.b, tint.a);
+				// out_color = texture(the_tex, floor(tex_pos) + 0.5) * vec4(tint.r, tint.g, tint.b, tint.a);
+				out_color = texture(the_tex, tex_pos);
 			}`, ["the_tex", "tint"], ["tex_coord"])
 		
 		window.addEventListener("resize", _ => {
@@ -98,19 +104,16 @@ class WebGL {
 		this.transform[3] = 0, this.transform[4] = 1, this.transform[5] = 0
 		this.transform[6] = 0, this.transform[7] = 0, this.transform[8] = 1
 
-		this.rotate(this.frameCount / 100)
-		this.translate(100, 100)
-		this.rect(50, 80, 50, 50)
-		this.rect(150, 90, 50, 50)
-		this.rect(10, 20, 50, 50)
+		// this.rotate(this.frameCount / 100)
+		// this.translate(100, 100)
+		// this.translate(100, 100)
+		// this.rect(-25, -25, 50, 50)
+		// this.rect(-25, -25, 50, 50)
+		// this.rect(10, 20, 50, 50)
 
-		// this.stack = []
 		// if (this.frameCount > 10) (<any>GlassRoot.children[0]).rot += 0.01
-		// GlassRoot.loop()
-		// GlassRoot.draw()
-		// if (this.frameCount == 10) {
-		// 	console.log(this.stack)
-		// }
+		GlassRoot.loop()
+		GlassRoot.draw()
 	}
 
 	/** Compiles a shader and adds it to a dictionary for later use. Compiled programs can be found at `this.shaders`. */
@@ -144,33 +147,30 @@ class WebGL {
 	}
 
 	static translate(x: number, y: number) {
-		FastMatrixHelper.multiply3x3InPlace(this.transform, [
+		FastMat.mult33x33InPlace(this.transform,
 			1, 0, x,
-			0, 1, y,
+			0, 1, x,
 			0, 0, 1
-		])
-		this.stack.push(`translate(${x},${y})`)
+		)
 	}
 
 	/** Rotate by some amount in radians. */
 	static rotate(r: number) {
 		if (r == 0) return
 		const c = Math.cos(r), s = Math.sin(r)
-		FastMatrixHelper.multiply3x3InPlace(this.transform, [
+		FastMat.mult33x33InPlace(this.transform,
 			c,-s, 0,
 			s, c, 0,
 			0, 0, 1
-		])
-		this.stack.push(`rotate(${r})`)
+		)
 	}
 
 	static scale(x: number, y: number) {
-		FastMatrixHelper.multiply3x3InPlace(this.transform, [
+		FastMat.mult33x33InPlace(this.transform,
 			x, 0, 0,
 			0, y, 0,
 			0, 0, 1
-		])
-		this.stack.push(`scale(${x},${y})`)
+		)
 	}
 
 	/** Creates a new texture. */
@@ -260,10 +260,18 @@ class WebGL {
 		this.gl.drawArrays(this.gl.TRIANGLE_STRIP, 0, 4)
 	}
 
-	static texture(texture: LoadableWebGLTexture, x: number, y: number, width: number, height: number, tx: number, ty: number, tw: number, th: number, rotation: number) {
+	static texture(texture: LoadableWebGLTexture, x: number, y: number, width: number, height: number, tx: number, ty: number, tw: number, th: number) {
 		if (!texture.loaded) return
+		this.gl.useProgram(this.shaders.texture.program)
 		this.gl.bindTexture(this.gl.TEXTURE_2D, texture)
 
+		// SAME-SETTING EFFECTS
+		// on  off: 0.006043956338704287
+		// on  on : 0.004819276616002934
+		// off off: 0.0041618497385455
+		// off on : [TODO: do test]
+
+		const ct = performance.now()
 		this.vertexArray[0] = x
 		this.vertexArray[1] = y
 		this.vertexArray[2] = x + width
@@ -272,7 +280,29 @@ class WebGL {
 		this.vertexArray[5] = y + height
 		this.vertexArray[6] = x + width
 		this.vertexArray[7] = y + height
+
+		this.texCoordArray[0] = tx / texture.width!
+		this.texCoordArray[1] = ty / texture.height!
+		this.texCoordArray[2] = this.texCoordArray[0] + tw / texture.width!
+		this.texCoordArray[3] = ty / texture.height!
+		this.texCoordArray[4] = tx / texture.width!
+		this.texCoordArray[5] = this.texCoordArray[1] + th / texture.height!
+		this.texCoordArray[6] = this.texCoordArray[0] + tw / texture.width!
+		this.texCoordArray[7] = this.texCoordArray[1] + th / texture.height!
+
+		t += performance.now() - ct
+		n++
+		
+		this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.vertexBuffer)
+		this.gl.vertexAttribPointer(this.shaders.texture.attributes.vertex_pos, 2, this.gl.FLOAT, false, 0, 0)
 		this.gl.bufferData(this.gl.ARRAY_BUFFER, this.vertexArray, this.gl.DYNAMIC_DRAW)
+
+		this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.texCoordBuffer)
+		this.gl.vertexAttribPointer(this.shaders.texture.attributes.tex_coord, 2, this.gl.FLOAT, false, 0, 0)
+		this.gl.bufferData(this.gl.ARRAY_BUFFER, this.texCoordArray, this.gl.DYNAMIC_DRAW)
+		this.gl.enableVertexAttribArray(this.shaders.texture.attributes.tex_coord)
+
+		this.gl.uniformMatrix3fv(this.shaders.texture.uniforms.transform, false, this.transform)
 
 		// this.texInfo[0] = x
 		// this.texInfo[1] = y
@@ -283,5 +313,7 @@ class WebGL {
 		// this.gl.uniform1fv(this.uniforms.texInfo, this.texInfo)
 
 		this.gl.drawArrays(this.gl.TRIANGLE_STRIP, 0, 4)
+		
+		this.gl.disableVertexAttribArray(this.shaders.texture.attributes.tex_coord)
 	}
 }
