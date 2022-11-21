@@ -20,15 +20,28 @@ class GlassNode {
 	constructor(name?: string) {
 		this.name = (name ? name : this.constructor.name)
 	}
+	
+	/**
+	 * Calls each child's `loop` method recursively.
+	 */
+	loop() {
+		if (this._module && this._module.loop) this._module.loop(this)
+		for (let c = this.children.length - 1; c >= 0; c--) this.children[c].loop()
+	}
 
 	/**
 	 * Calls each child's `draw` method recursively.
 	 */
 	draw() {
-		this.module
-		if (this._module && this._module.loop) this._module.loop(this)
-		for (let c = this.children.length - 1; c >= 0; c--) this.children[c].draw()
+		for (let c = this.children.length - 1; c >= 0; c--) {
+			this.children[c].transform(true)
+			this.children[c].draw()
+			this.children[c].transform(false)
+		}
 	}
+
+	/** Changes this node's position, rotation, and other transformations. */
+	transform(_forward: boolean) {}
 
 	/**
 	 * Gets called when the node is being drawn in a debug context.

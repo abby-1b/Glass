@@ -6,10 +6,21 @@
 class CanvasItem extends GlassNode {
 	visible = true
 	pos: Vec2 = new Vec2(0, 0)
+	rot = 0
 
 	/** Size to multiply the item with. Separate from size. */
 	scale: Vec2 = new Vec2(1, 1)
 	color: [number, number, number, number] = [0, 0, 0, 1]
+
+	transform(forward: boolean) {
+		if (forward) {
+			WebGL.rotate(this.rot)
+			WebGL.translate(this.pos.x, this.pos.y)
+		} else {
+			WebGL.translate(-this.pos.x, -this.pos.y)
+			WebGL.rotate(-this.rot)
+		}
+	}
 
 	/**
 	 * Sets the item's color.
