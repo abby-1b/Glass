@@ -3,6 +3,7 @@
 /**
  * A node that draws to the canvas.
  */
+@node
 class CanvasItem extends GlassNode {
 	visible = true
 	pos: Vec2 = new Vec2(0, 0)

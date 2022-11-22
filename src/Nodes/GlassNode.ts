@@ -1,13 +1,21 @@
 
+function node(constructor: typeof GlassNode) {
+	// console.log("Added node type to list:", constructor)
+	;(<any>globalThis)[constructor.name] = constructor
+}
+
 /**
  * The base Glass Node class.
  */
+@node
 class GlassNode {
 	description?: string
 	parent?: GlassNode
 	children: GlassNode[] = []
 	name!: string
 	visible: boolean = true
+
+	paused = false
 	
 	private _module?: {[key: string]: any}
 	private _moduleName?: string
@@ -25,6 +33,7 @@ class GlassNode {
 	 * Calls each child's `loop` method recursively.
 	 */
 	loop() {
+		if (this.paused) return
 		if (this._module && this._module.loop) this._module.loop(this)
 		for (let c = this.children.length - 1; c >= 0; c--) this.children[c].loop()
 	}

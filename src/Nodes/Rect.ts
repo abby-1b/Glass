@@ -3,6 +3,7 @@
 /**
  * Draws a rectangle.
  */
+@node
 class RectNode extends CanvasItem {
 	size: Vec2 = new Vec2(0, 0)
 	centered = true

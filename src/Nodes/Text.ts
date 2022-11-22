@@ -3,6 +3,7 @@
 /**
  * Draws text to the screen
  */
+@node
 class TextNode extends CanvasItem {
 	pos: Vec2 = new Vec2(0, 0)
 	size: Vec2 = new Vec2(0, 0)
