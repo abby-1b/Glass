@@ -8,9 +8,6 @@ type GlassShader = {
 	attributes: {[key: string]: number, vertex_pos: number}
 }
 
-let t = 0
-let n = 0
-
 /**
  * The main class used to interface with the WebGL2 canvas.
  * If the platform, WebGL version, or any other drawing aspect is changed, only this file should need to be edited.
@@ -250,10 +247,14 @@ class WebGL {
 		this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.vertexBuffer)
 		this.gl.vertexAttribPointer(this.shaders.shape.attributes.vertex_pos, 2, this.gl.FLOAT, false, 0, 0)
 
-		this.vertexArray[0] = x, this.vertexArray[1] = y
-		this.vertexArray[2] = x + width, this.vertexArray[3] = y
-		this.vertexArray[4] = x, this.vertexArray[5] = y + height
-		this.vertexArray[6] = x + width, this.vertexArray[7] = y + height
+		this.vertexArray[0] = x
+		this.vertexArray[1] = y
+		this.vertexArray[2] = this.vertexArray[0] + width
+		this.vertexArray[3] = this.vertexArray[1]
+		this.vertexArray[4] = this.vertexArray[0]
+		this.vertexArray[5] = this.vertexArray[1] + height
+		this.vertexArray[6] = this.vertexArray[2]
+		this.vertexArray[7] = this.vertexArray[5]
 		// console.log(this.vertexArray)
 		this.gl.bufferData(this.gl.ARRAY_BUFFER, this.vertexArray, this.gl.DYNAMIC_DRAW)
 
@@ -265,33 +266,23 @@ class WebGL {
 		this.gl.useProgram(this.shaders.texture.program)
 		this.gl.bindTexture(this.gl.TEXTURE_2D, texture)
 
-		// SAME-SETTING EFFECTS
-		// on  off: 0.006043956338704287
-		// on  on : 0.004819276616002934
-		// off off: 0.0041618497385455
-		// off on : [TODO: do test]
-
-		const ct = performance.now()
 		this.vertexArray[0] = x
 		this.vertexArray[1] = y
-		this.vertexArray[2] = x + width
-		this.vertexArray[3] = y
-		this.vertexArray[4] = x
-		this.vertexArray[5] = y + height
-		this.vertexArray[6] = x + width
-		this.vertexArray[7] = y + height
+		this.vertexArray[2] = this.vertexArray[0] + width
+		this.vertexArray[3] = this.vertexArray[1]
+		this.vertexArray[4] = this.vertexArray[0]
+		this.vertexArray[5] = this.vertexArray[1] + height
+		this.vertexArray[6] = this.vertexArray[2]
+		this.vertexArray[7] = this.vertexArray[5]
 
 		this.texCoordArray[0] = tx / texture.width!
 		this.texCoordArray[1] = ty / texture.height!
 		this.texCoordArray[2] = this.texCoordArray[0] + tw / texture.width!
-		this.texCoordArray[3] = ty / texture.height!
-		this.texCoordArray[4] = tx / texture.width!
+		this.texCoordArray[3] = this.texCoordArray[1]
+		this.texCoordArray[4] = this.texCoordArray[0]
 		this.texCoordArray[5] = this.texCoordArray[1] + th / texture.height!
-		this.texCoordArray[6] = this.texCoordArray[0] + tw / texture.width!
-		this.texCoordArray[7] = this.texCoordArray[1] + th / texture.height!
-
-		t += performance.now() - ct
-		n++
+		this.texCoordArray[6] = this.texCoordArray[2]
+		this.texCoordArray[7] = this.texCoordArray[5]
 		
 		this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.vertexBuffer)
 		this.gl.vertexAttribPointer(this.shaders.texture.attributes.vertex_pos, 2, this.gl.FLOAT, false, 0, 0)
