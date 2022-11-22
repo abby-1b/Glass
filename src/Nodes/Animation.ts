@@ -1,6 +1,7 @@
 /// <reference path="GlassNode.ts" />
 
 /** Animates a property on a node. NOTE: putting the node to be animated as a children of this node causes a one-frame delay in its animation. */
+@node
 class AnimationNode extends GlassNode {
 	private onTime = 0
 	private onFrame = 0
@@ -56,7 +57,7 @@ class AnimationNode extends GlassNode {
 		this.animations[name] = [timing, frames, playOnce]
 	}
 
-	draw() {
+	loop() {
 		if (!this.property || !this.playing || this.animations[this.playing][1].length == 0) return
 		this.onTime += WebGL.delta
 		if (this.onTime >= this.animations[this.playing][0]) {
@@ -72,6 +73,6 @@ class AnimationNode extends GlassNode {
 			}
 		}
 		;(<any>this.actingNode)[this.property] = this.animations[this.playing][1][this.onFrame]
-		super.draw()
+		super.loop()
 	}
 }
