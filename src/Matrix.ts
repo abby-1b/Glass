@@ -31,8 +31,26 @@ class FastMat {
 		const a = mat[0], b = mat[1]
 			, c = mat[2], d = mat[3]
 			, e = mat[4], f = mat[5]
-			, g = mat21[0], h = mat21[0]
+			, g = mat21[0], h = mat21[1]
 		mat21[0] = g * a + h * b + c
 		mat21[1] = g * d + h * e + f
+	}
+
+	static getInverse33(mat: FastMatrix) {
+		const det = mat[0] * mat[4] * mat[8] + mat[1] * mat[5] * mat[6] + mat[2] * mat[3] * mat[7] - (mat[2] * mat[4] * mat[6] + mat[1] * mat[3] * mat[8] + mat[0] * mat[5] * mat[7])
+		const a = (mat[4] * mat[8] - mat[5] * mat[7]) / det
+			, b =-(mat[3] * mat[8] - mat[5] * mat[6]) / det
+			, c = (mat[3] * mat[7] - mat[4] * mat[6]) / det
+			, d =-(mat[1] * mat[8] - mat[2] * mat[7]) / det
+			, e = (mat[0] * mat[8] - mat[2] * mat[6]) / det
+			, f =-(mat[0] * mat[7] - mat[1] * mat[6]) / det
+			, g = (mat[1] * mat[5] - mat[2] * mat[4]) / det
+			, h =-(mat[0] * mat[5] - mat[3] * mat[2]) / det
+			, i = (mat[0] * mat[4] - mat[1] * mat[3]) / det
+		return new Float32Array([
+			a, d, g,
+			b, e, h,
+			c, f, i,
+		])
 	}
 }
