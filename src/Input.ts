@@ -1,9 +1,9 @@
 /// <reference path="Vec.ts" />
 
 const enum MouseButtons {
-	RIGHT = 1,
+	LEFT = 1,
 	MIDDLE = 2,
-	LEFT = 4
+	RIGHT = 4,
 }
 
 class Input {
@@ -11,9 +11,9 @@ class Input {
 	static mouseButtons = 0
 	static keys: string[] = []
 	static init() {
-		window.addEventListener("mousemove", e => { this.mousePos.set(e.clientX, e.clientY) })
-		window.addEventListener("mousedown", e => { this.mouseButtons |=   2 ** e.button  })
-		window.addEventListener("mouseup"  , e => { this.mouseButtons &= ~(2 ** e.button) })
+		window.addEventListener("mousemove", e => { this.mousePos.set(e.clientX, e.clientY), Signal.trigger("mouseMoved", GlassRoot) })
+		window.addEventListener("mousedown", e => { this.mouseButtons |=   2 ** e.button,    Signal.trigger("mouseDown", GlassRoot) })
+		window.addEventListener("mouseup"  , e => { this.mouseButtons &= ~(2 ** e.button),   Signal.trigger("mouseUp",   GlassRoot) })
 		document.addEventListener("contextmenu", event => event.preventDefault())
 		// window.addEventListener("keydown", e => {})
 		window.addEventListener("keydown", e => { (!this.keys.includes(e.key)) && this.keys.push(e.key) })
