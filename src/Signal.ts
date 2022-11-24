@@ -13,9 +13,9 @@ class Signal {
 	}
 
 	/** Triggers a signal by name. */
-	static trigger(signalName: string, n: GlassNode) {
-		if (!(signalName in this.list)) return
-		for (let i = 0; i < this.list[signalName].length; i++)
-			this.list[signalName][i](n)
+	static trigger(signalName: string | undefined, n: GlassNode) {
+		if (!(signalName! in this.list)) return
+		for (let i = 0; i < this.list[signalName!].length; i++)
+			this.list[signalName!][i](n)
 	}
 }
