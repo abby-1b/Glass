@@ -1,4 +1,4 @@
-/// <reference path="GlassNode.ts" />
+/// <reference path="CanvasItem.ts" />
 
 /**
  * Draws a rectangle.
