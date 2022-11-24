@@ -15,11 +15,11 @@ class CanvasItem extends GlassNode {
 
 	transform(forward: boolean) {
 		if (forward) {
-			WebGL.rotate(this.rot)
 			WebGL.translate(this.pos.x, this.pos.y)
+			WebGL.rotate(this.rot)
 		} else {
-			WebGL.translate(-this.pos.x, -this.pos.y)
 			WebGL.rotate(-this.rot)
+			WebGL.translate(-this.pos.x, -this.pos.y)
 		}
 	}
 
