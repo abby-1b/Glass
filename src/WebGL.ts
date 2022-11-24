@@ -13,7 +13,7 @@ type GlassShader = {
  * If the platform, WebGL version, or any other drawing aspect is changed, only this file should need to be edited.
  */
 class WebGL {
-	static gl: WebGL2RenderingContext
+	private static gl: WebGL2RenderingContext
 	private static vertexBuffer: WebGLBuffer
 	private static vertexArray = new Float32Array([ 0, 0, 0, 1, 1, 0, 1, 1 ])
 	private static texCoordBuffer: WebGLBuffer
@@ -226,6 +226,7 @@ class WebGL {
 	 */
 	static color(r: number, g: number, b: number, a: number = 1) {
 		// this.gl.uniform4f(this.uniforms.color, r, g, b, a)
+		// this.gl.uniform4f(this.shaders.shape.uniforms.color, r, g, b, a)
 	}
 
 	/**
