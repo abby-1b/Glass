@@ -1,19 +1,38 @@
 /// <reference path="CanvasItem.ts" />
+/// <reference path="../Signal.ts" />
+/// <reference path="../Matrix.ts" />
 
-/**
- * When clicked, emits an event.
- */
-class Button extends CanvasItem {
-	pos: Vec2 = new Vec2(0, 0)
+/** Emits a signal when clicked. */
+@node
+class ButtonNode extends CanvasItem {
 	size: Vec2 = new Vec2(0, 0)
 	centered = true
 
+	signal?: string
+	private checkClick = 0
+
+	constructor() {
+		super()
+		Signal.addListener("mouseDown", () => {
+			this.checkClick = Input.mouseButtons
+		})
+	}
+
 	draw() {
-		WebGL.color(...this.color)
+		// WebGL.color(...this.color)
+		if (this.checkClick > 0) {
+			const pos: [number, number] = [Input.mousePos.x, Input.mousePos.y]
+			FastMat.mult21x33InPlace(pos, FastMat.getInverse33(WebGL.transform))
+
+			if (this.centered) pos[0] += this.size.x * 0.5, pos[1] += this.size.y * 0.5
+			if (pos[0] >= 0 && pos[0] < this.size.x && pos[1] >= 0 && pos[1] <= this.size.y)
+				Signal.trigger(this.signal, this)
+			this.checkClick = 0
+		}
 		if (this.centered)
-			WebGL.rect(this.pos.x - this.size.x * 0.5, this.pos.y - this.size.y * 0.5, this.size.x, this.size.y)
+			WebGL.rect(-this.size.x * 0.5, -this.size.y * 0.5, this.size.x, this.size.y)
 		else
-			WebGL.rect(this.pos.x, this.pos.y, this.size.x, this.size.y)
+			WebGL.rect(0, 0, this.size.x, this.size.y)
 		super.draw()
 	}
 }
