@@ -1,4 +1,3 @@
-
 function minifyTxt(txt: string) {
 	const letts = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_$"
 	let ret = "", inStr: string | 0 = 0
@@ -15,15 +14,3 @@ function minifyTxt(txt: string) {
 	}
 	return ret
 }
-
-// const t = `if (objType == "String") return '"' + obj.replace(/"/g, "\\\\\\"") + '"'`
-// const m = minifyTxt(t)
-// console.log(t)
-// console.log(m)
-
-const t = Deno.readTextFileSync("../public/lib.js")
-const m = minifyTxt(t)
-Deno.writeTextFileSync("out.js", m)
-console.log("Original:", t.length)
-console.log("Minified:", m.length)
-console.log("Shrunk:", m.length / t.length)

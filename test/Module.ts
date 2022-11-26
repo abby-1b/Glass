@@ -29,3 +29,4 @@ function require(moduleName: string, found: Function, notFound: Function) {
 	if (!(moduleName in modules)) notFound("Module `" + moduleName + "` not found!")
 	found(getExports(moduleName))
 }
+
