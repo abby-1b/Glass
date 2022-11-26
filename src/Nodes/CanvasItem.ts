@@ -1,9 +1,9 @@
 /// <reference path="GlassNode.ts" />
+/// <reference path="../Vec.ts" />
 
 /**
  * A node that draws to the canvas.
  */
-@node
 class CanvasItem extends GlassNode {
 	visible = true
 	pos: Vec2 = new Vec2(0, 0)
@@ -15,11 +15,11 @@ class CanvasItem extends GlassNode {
 
 	transform(forward: boolean) {
 		if (forward) {
-			WebGL.translate(this.pos.x, this.pos.y)
-			WebGL.rotate(this.rot)
+			GL.translate(this.pos.x, this.pos.y)
+			GL.rotate(this.rot)
 		} else {
-			WebGL.rotate(-this.rot)
-			WebGL.translate(-this.pos.x, -this.pos.y)
+			GL.rotate(-this.rot)
+			GL.translate(-this.pos.x, -this.pos.y)
 		}
 	}
 

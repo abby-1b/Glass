@@ -3,7 +3,6 @@
 /**
  * Controls the loading and unloading of a scene.
  */
-@node
 class Scene extends CanvasItem {
 	loaded = true
 

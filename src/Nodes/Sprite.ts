@@ -1,9 +1,8 @@
-/// <reference path="GlassNode.ts" />
+/// <reference path="CanvasItem.ts" />
 
 /**
  * Draws a sprite.
  */
-@node
 class Sprite extends CanvasItem {
 	size: Vec2 = new Vec2(0, 0)
 	centered = true
@@ -20,16 +19,16 @@ class Sprite extends CanvasItem {
 	private _imgSrc?: string
 	set src(s: string | undefined) {
 		this._imgSrc = s
-		WebGL.newTextureFromSrc(s as string).then(t => this._tex = t)
+		GL.newTextureFromSrc(s as string).then(t => this._tex = t)
 	}
 	get src(): string | undefined { return this._imgSrc }
 
 	draw() {
 		if (this._tex) {
 			if (this.centered)
-				WebGL.texture(this._tex, -this.size.x * 0.5, -this.size.y * 0.5, this.size.x, this.size.y, this.texPos.x + this.frame * this.texSize.x, this.texPos.y, this.texSize.x, this.texSize.y)
+				GL.texture(this._tex, -this.size.x * 0.5, -this.size.y * 0.5, this.size.x, this.size.y, this.texPos.x + this.frame * this.texSize.x, this.texPos.y, this.texSize.x, this.texSize.y)
 			else
-				WebGL.texture(this._tex, 0                 , 0                 , this.size.x, this.size.y, this.texPos.x + this.frame * this.texSize.x, this.texPos.y, this.texSize.x, this.texSize.y)
+				GL.texture(this._tex, 0                 , 0                 , this.size.x, this.size.y, this.texPos.x + this.frame * this.texSize.x, this.texPos.y, this.texSize.x, this.texSize.y)
 		}
 		super.draw()
 	}

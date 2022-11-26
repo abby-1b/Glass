@@ -1,7 +1,6 @@
 /// <reference path="GlassNode.ts" />
 
 /** Animates a property on a node. NOTE: putting the node to be animated as a children of this node causes a one-frame delay in its animation. */
-@node
 class TimerNode extends GlassNode {
 	/** The signal to be fired when the timer is completed. */
 	signal?: string

@@ -1,13 +1,7 @@
-
-function node(constructor: typeof GlassNode) {
-	// console.log("Added node type to list:", constructor)
-	;(<any>globalThis)[constructor.name] = constructor
-}
-
+/// <reference path="../GL.d.ts" />
 /**
  * The base Glass Node class.
  */
-@node
 class GlassNode {
 	description?: string
 	parent?: GlassNode
@@ -17,13 +11,13 @@ class GlassNode {
 
 	paused = false
 	
-	private _module?: {[key: string]: any}
-	private _moduleName?: string
-	set module(n: string | undefined) {
-		this._moduleName = n
-		this._module = modules[n as string].e
-	}
-	get module() { return this._moduleName }
+	// private _module?: {[key: string]: any}
+	// private _moduleName?: string
+	// set module(n: string | undefined) {
+	// 	this._moduleName = n
+	// 	this._module = modules[n as string].e
+	// }
+	// get module() { return this._moduleName }
 
 	constructor(name?: string) {
 		this.name = (name ? name : this.constructor.name)
@@ -34,7 +28,7 @@ class GlassNode {
 	 */
 	loop() {
 		if (this.paused) return
-		if (this._module && this._module.loop) this._module.loop(this)
+		// if (this._module && this._module.loop) this._module.loop(this)
 		for (let c = this.children.length - 1; c >= 0; c--) this.children[c].loop()
 	}
 

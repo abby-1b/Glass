@@ -3,7 +3,6 @@
 /// <reference path="../Matrix.ts" />
 
 /** Emits a signal when clicked. */
-@node
 class ButtonNode extends CanvasItem {
 	size: Vec2 = new Vec2(0, 0)
 	centered = true
@@ -22,7 +21,7 @@ class ButtonNode extends CanvasItem {
 		// WebGL.color(...this.color)
 		if (this.checkClick > 0) {
 			const pos: [number, number] = [Input.mousePos.x, Input.mousePos.y]
-			FastMat.mult21x33InPlace(pos, FastMat.getInverse33(WebGL.transform))
+			FastMat.mult21x33InPlace(pos, FastMat.getInverse33(GL.transform))
 
 			if (this.centered) pos[0] += this.size.x * 0.5, pos[1] += this.size.y * 0.5
 			if (pos[0] >= 0 && pos[0] < this.size.x && pos[1] >= 0 && pos[1] <= this.size.y)
@@ -30,9 +29,9 @@ class ButtonNode extends CanvasItem {
 			this.checkClick = 0
 		}
 		if (this.centered)
-			WebGL.rect(-this.size.x * 0.5, -this.size.y * 0.5, this.size.x, this.size.y)
+			GL.rect(-this.size.x * 0.5, -this.size.y * 0.5, this.size.x, this.size.y)
 		else
-			WebGL.rect(0, 0, this.size.x, this.size.y)
+			GL.rect(0, 0, this.size.x, this.size.y)
 		super.draw()
 	}
 }

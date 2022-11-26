@@ -3,7 +3,6 @@
 /**
  * Takes control of where screen elements are drawn.
  */
-@node
 class Camera extends GlassNode {
 	/** The currently active camera. */
 	static current?: Camera
