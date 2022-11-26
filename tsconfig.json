@@ -1,20 +1,9 @@
 {
 	"compilerOptions": {
-		"lib": [
-			"ESNext",
-			"DOM"
-		],
 		"module": "AMD",
-		"target": "ESNext",
+		"target": "es2020",
 		"noImplicitAny": true,
-		"removeComments": true,
-		"preserveConstEnums": true,
-		"sourceMap": true,
-		"declaration": true,
-		"strict": true,
-
-		"outDir": "public",
-		"outFile": "public/lib.js"
+		"strict": true
 	},
 	"include": ["src/**/*"]
 }
