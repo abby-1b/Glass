@@ -1,0 +1,2 @@
+
+Loader.set("scene.gs")

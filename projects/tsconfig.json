@@ -1,0 +1,15 @@
+// Note: this is only here to provide intellisense, and shouldn't be used for building.
+{
+	"compilerOptions": {
+		"module": "AMD",
+		"lib": ["ESNext"],
+		"target": "ES2020",
+		"noImplicitAny": true,
+		"strict": true,
+	},
+	"include": [
+		"../libOutputs/util.ts",
+		"../libOutputs/lib.ts",
+		"**/*.ts"
+	]
+}
