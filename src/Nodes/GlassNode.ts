@@ -1,4 +1,5 @@
 /// <reference path="../GL.d.ts" />
+
 /**
  * The base Glass Node class.
  */
