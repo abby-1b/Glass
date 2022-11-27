@@ -1,0 +1,21 @@
+{
+	"compilerOptions": {
+		"module": "AMD",
+		"lib": ["ESNext", "DOM"],
+		"target": "ESNext",
+		"noImplicitAny": true,
+		"removeComments": true,
+		"preserveConstEnums": true,
+		"declaration": false,
+		"strict": true,
+		"outFile": "lib.js"
+	},
+	"files": [
+		"../../libOutputs/util.ts"
+	],
+	"include": [
+		"../../libOutputs/util.ts",
+		"src/**/*.ts",
+		"../../libOutputs/lib.ts",
+	]
+}

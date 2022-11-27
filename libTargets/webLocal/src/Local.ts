@@ -1,0 +1,6 @@
+
+class Local {
+	getText() {
+		
+	}
+}
