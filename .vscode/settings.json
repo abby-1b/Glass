@@ -9,5 +9,8 @@
 		"**/CVS": true,
 		"**/.DS_Store": true,
 		"**/Thumbs.db": true,
-	}
+		"**/__pycache__": true,
+	},
+
+	"python.analysis.typeCheckingMode": "strict",
 }

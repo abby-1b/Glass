@@ -6,3 +6,5 @@ Cargo.toml
 target
 pkg
 _comp*.rs
+**/__pycache__
+libOutputs
