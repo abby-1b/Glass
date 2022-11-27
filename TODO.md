@@ -18,20 +18,37 @@ Tasks:
 		[x] Turn a string of the saved file into the original object it came from
 	[x] Extra nodes
 		[x] Animation node (takes a node + a property and animates it over time)
-		[ ] Timer node (fires a signal after a certain amount of time)
+		[x] Timer node (fires a signal after a certain amount of time)
 	[x] Signals! (Godot-like)
-	[ ] Script-loading
-		[ ] The scripts must load before the scene is loaded to avoid needing a class from these scripts during deserialisation.
+	[x] Fix compilation system re-work
+		[x] Library compilation
+			[x] Read all files in `src`
+			[x] Sort them by the order they're needed (using the top "/// <reference>")
+			[x] Find any circular dependencies
+			[x] Separate main library from utilities
+			[x] Combine all of them and put them in `libOutputs/lib.ts`
+		[x] Target compilation
+			[x] Start a small cli tool
+			[x] When compiling, this will ask what target to compile to
+			[x] Each target has its own build system. This is identified as `target/build.py`
+			[x] Run the target's build system
+		[x] Make web build (previously the only option)
+	[x] Script-loading
+		[x] The scripts must load before the scene is loaded to avoid needing a class from these scripts during deserialisation.
 	[ ] UI
-		[ ] Button
+		[x] Button
 			[x] Display
-			[ ] Emit signals when clicked
+			[x] Emit signals when clicked
 		[ ] Text display
-		[ ] Generic container
-	[ ] Pause system
+		[ ] Generic container (like a div)
+	[x] Pause system
 		[x] Separate draw from process
-		[ ] Actually pause
-		[ ] Un-pause
+		[x] Actually pause
+		[x] Un-pause
+	[ ] A node editing system (in editor, not main library!)
+		[ ] Create nodes
+		[ ] Change properties
+		[ ] Save using save system
 	[ ] Random generation (perlin noise, anything really.)
 		[ ] Generate smooth noise
 		[ ] Put noise into texture
