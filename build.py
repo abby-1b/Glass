@@ -2,7 +2,7 @@
 
 # Import necessary libraries
 from typing import List, Tuple, Set
-from os import listdir, chdir
+from os import listdir, chdir, EX_SOFTWARE
 from os.path import exists
 
 err_col = "\033[91m"
@@ -197,11 +197,12 @@ def get_target():
 if __name__ == "__main__":
 	# Get the wanted target
 	t = get_target()
-	build_file = "build"
+	build_file_name = "build"
+	build_file = t + "/" + build_file_name + ".py"
 
 	# Check if it has a build file
-	if not exists(t + "/" + build_file + ".py"):
-		print(err_col + "ERROR:", build_file, "not found in", t)
+	if not exists(build_file):
+		print(err_col + "ERROR:", build_file_name, "not found in", t)
 		exit()
 	
 	# Compile the library (into `.ts`!)
@@ -213,5 +214,12 @@ if __name__ == "__main__":
 	chdir(t)
 	t = t[2::].split("/")
 
-	getattr(__import__(".".join(t) + "." + build_file), t[1]).build.compile("../../projects/test")
-	# Keep in mind this path is relative to the changed directory.
+	md = getattr(__import__(".".join(t) + "." + build_file_name), t[1]).build
+	if not ("compile" in dir(md)):
+		print(err_col + "compile function not found in " + build_file)
+		exit(EX_SOFTWARE)
+	if md.compile("../../projects/test"): # Keep in mind this path is relative to the changed directory.
+		print("Done.")
+	else:
+		print(err_col + "Error")
+		exit(EX_SOFTWARE)

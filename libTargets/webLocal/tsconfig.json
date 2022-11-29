@@ -6,9 +6,10 @@
 		"noImplicitAny": true,
 		"removeComments": true,
 		"preserveConstEnums": true,
-		"declaration": false,
 		"strict": true,
-		"outFile": "lib.js"
+		"outFile": "../../libOutputs/webLocal/lib.js",
+		"declaration": false,
+		"inlineSourceMap": true
 	},
 	"files": [
 		"../../libOutputs/util.ts"
