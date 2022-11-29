@@ -18,13 +18,6 @@ class GL {
 	private static vertexArray = new Float32Array([ 0, 0, 0, 1, 1, 0, 1, 1 ])
 	private static texCoordBuffer: WebGLBuffer
 	private static texCoordArray = new Float32Array(8)
-	// static uniforms: {
-	// 	color: WebGLUniformLocation,
-	// 	texInfo: WebGLUniformLocation,
-	// 	screenScale: WebGLUniformLocation,
-	// 	translate: WebGLUniformLocation
-	// }
-	// private static texInfo = new Float32Array([ 0, 0, 0, 0, 0, 0 ])
 
 	static width: number = 0
 	static height: number = 0
