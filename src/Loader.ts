@@ -11,13 +11,14 @@ class Loader {
 	 */
 	private static async load(path: string) {
 		await Local.getText(path)
-			.catch(e => {
-				console.error("Couldn't get ", path, "\n" + e)
-			})
 			.then(t => {
+				console.log("Got:", t)
 				if (!t) return
 				GL.init()
 				GlassRoot.children.push(...DeSerializer.deSerialize(t)), console.log("Loaded", path)
+			})
+			.catch(e => {
+				console.error("Couldn't get ", path + "\n", e)
 			})
 	}
 
