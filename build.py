@@ -191,7 +191,7 @@ def get_target():
 		for t, i in zip(targets, range(len(targets))):
 			print(" [" + str(i) + "]", t)
 		
-		i = input(" [?]", )
+		i = input(" [?] ")
 		return d + "/" + targets[int(i)]
 
 if __name__ == "__main__":
