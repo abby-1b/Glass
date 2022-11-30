@@ -94,13 +94,6 @@ class GL {
 		this.transform[3] = 0, this.transform[4] = 1, this.transform[5] = 0
 		this.transform[6] = 0, this.transform[7] = 0, this.transform[8] = 1
 
-		// this.rotate(this.frameCount / 100)
-		// this.translate(100, 100)
-		// this.translate(100, 100)
-		// this.rect(-25, -25, 50, 50)
-		// this.rect(-25, -25, 50, 50)
-		// this.rect(10, 20, 50, 50)
-
 		// if (this.frameCount > 10) (<any>GlassRoot.children[0]).rot += 0.01
 		GlassRoot.loop()
 		GlassRoot.draw()
@@ -193,7 +186,7 @@ class GL {
 				sizeVec && sizeVec.set(img.width, img.height)
 			}
 			img.onerror = e => { console.error("Image", src, "not found."), reject() }
-			img.src = src
+			img.src = Local.projectOffset + src
 			return tex
 		})
 	}
@@ -288,14 +281,6 @@ class GL {
 		this.gl.enableVertexAttribArray(this.shaders.texture.attributes.tex_coord)
 
 		this.gl.uniformMatrix3fv(this.shaders.texture.uniforms.transform, false, this.transform)
-
-		// this.texInfo[0] = x
-		// this.texInfo[1] = y
-		// this.texInfo[2] = tw / texture.width! / width
-		// this.texInfo[3] = th / texture.height! / height
-		// this.texInfo[4] = tx / texture.width!
-		// this.texInfo[5] = ty / texture.height!
-		// this.gl.uniform1fv(this.uniforms.texInfo, this.texInfo)
 
 		this.gl.drawArrays(this.gl.TRIANGLE_STRIP, 0, 4)
 		

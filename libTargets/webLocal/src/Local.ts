@@ -1,7 +1,7 @@
 
 class Local {
-	private static projectOffset = ""
-	
+	static projectOffset = ""
+
 	static async getText(path: string): Promise<string> {
 		return fetch(this.projectOffset + path).then(r => {
 			if (r.ok == false) throw r
