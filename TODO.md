@@ -1,4 +1,9 @@
-Tasks:
+Build Tasks:
+	[x] Make a watch script that builds any target automatically.
+	[x] Find a way to run Javascript natively (without V8, it's really heavy)
+	[ ] Run OpenGL/GLFW from this native
+
+Library Tasks:
 	[x] Define class structure
 	[x] Load scenes
 		[x] Make `Loader` class
