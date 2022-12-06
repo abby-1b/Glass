@@ -2,13 +2,16 @@
 
 # Import necessary libraries
 from typing import List, Tuple, Set
-from os import listdir, chdir, EX_SOFTWARE
+from os import listdir, chdir, getcwd, EX_SOFTWARE
 from os.path import exists
 
 err_col = "\033[91m"
 
 # Compiles the library into a single file
 def compile_lib(util_name: str = "util", lib_name: str = "lib"):
+	originalDir = getcwd()
+	chdir("../../")
+
 	# Gets all the files in the main library (a.k.a. the `src` directory)
 	def get_files(path: str = "") -> List[str]:
 		# List of files to return
@@ -177,6 +180,8 @@ def compile_lib(util_name: str = "util", lib_name: str = "lib"):
 	with open("./libOutputs/" + lib_name + ".ts", "w+") as o:
 		o.write(compile(f[1]))
 
+	chdir(originalDir)
+
 # Gets the wanted compilation target from the user
 def get_target():
 	d = "./libTargets"
@@ -204,9 +209,6 @@ if __name__ == "__main__":
 	if not exists(build_file):
 		print(err_col + "ERROR:", build_file_name, "not found in", t)
 		exit()
-	
-	# Compile the library (into `.ts`!)
-	compile_lib()
 
 	# Run the target's build script
 	import sys
@@ -214,11 +216,14 @@ if __name__ == "__main__":
 	chdir(t)
 	t = t[2::].split("/")
 
+	# Get target module
 	md = getattr(__import__(".".join(t) + "." + build_file_name), t[1]).build
 	if not ("compile" in dir(md)):
 		print(err_col + "compile function not found in " + build_file)
 		exit(EX_SOFTWARE)
-	if md.compile("../../projects/test"): # Keep in mind this path is relative to the changed directory.
+
+	# Pass the library compilation function to the project, basically letting it compile if it wants to.
+	if md.compile("../../projects/test", compile_lib): # Keep in mind this path is relative to the changed directory.
 		print("Done.")
 	else:
 		print(err_col + "Error")

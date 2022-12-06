@@ -192,6 +192,16 @@ class GL {
 	}
 
 	/**
+	 * Sets the width and height of a texture.
+	 * @param w New width of the texture
+	 * @param h New height of the texture
+	 */
+	static setTextureSize(tex: WebGLTexture, w: number, h: number) {
+		this.gl.bindTexture(this.gl.TEXTURE_2D, tex)
+		this.gl.texImage2D(this.gl.TEXTURE_2D, 0, this.gl.RGBA, w, h, 0, this.gl.RGBA, this.gl.UNSIGNED_BYTE, null)
+	}
+
+	/**
 	 * Sets the background color.
 	 * @param r Amount of red as a floating point value from 0 to 1
 	 * @param g Amount of green as a floating point value from 0 to 1

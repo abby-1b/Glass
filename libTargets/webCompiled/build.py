@@ -1,5 +1,9 @@
+from typing import Callable
+
 # Compile a project path
-def compile(path: str):
+def compile(path: str, compLib: Callable[[], None]):
+	compLib()
+
 	from os import system, remove
 
 	# Stores if everything went nicely.
@@ -19,13 +23,15 @@ def compile(path: str):
 
 # Watch for file changes at a path
 def watch(path: str):
+	poll_rate = 1
+
 	from time import sleep, time
 	from os import listdir
 	from os.path import getmtime
 
 	print("Watching for changes to", path)
 	while True:
-		sleep(2)
+		sleep(poll_rate)
 		listdir(path)
 
 		t = time()
@@ -33,8 +39,9 @@ def watch(path: str):
 			m = getmtime(path + "/" + f)
 
 			# Check if it was saved less than two seconds ago
-			if t - m < 2:
-				compile(path)
+			if t - m < poll_rate:
+				print("Changes found.")
+				compile(path, lambda: None)
 				break
 
 # If it's not being ran as a module, start the watch process
