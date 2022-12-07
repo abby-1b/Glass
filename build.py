@@ -185,7 +185,7 @@ def compile_lib(util_name: str = "util", lib_name: str = "lib"):
 # Gets the wanted compilation target from the user
 def get_target():
 	d = "./libTargets"
-	targets = [a for a in listdir(d) if a[0] != "_"]
+	targets = [a for a in listdir(d) if a[0] != "_" and not "." in a]
 
 	if len(targets) == 0:
 		print(err_col + "No targets available!")
