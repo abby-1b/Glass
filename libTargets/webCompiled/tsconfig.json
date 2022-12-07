@@ -7,7 +7,7 @@
 		"removeComments": true,
 		"preserveConstEnums": true,
 		"strict": true,
-		"outFile": "../../libOutputs/webLocal/lib.js",
+		"outFile": "../../libOutputs/webCompiled/lib.js",
 		"declaration": false,
 		"inlineSourceMap": true
 	},
