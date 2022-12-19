@@ -5,9 +5,17 @@ def compile(path: str, compLib: Callable[[], None]):
 	compLib()
 
 	from os import system, remove
+	from os.path import exists
+	from shutil import copytree, rmtree, ignore_patterns, copyfile
 
-	# Stores if everything went nicely.
-	good = True
+	# Remove export path if it exists
+	if exists("../../libOutputs/webCompiled"): rmtree("../../libOutputs/webCompiled")
+
+	# Move project files to output folder (not including `.ts` files)
+	copytree(path, "../../libOutputs/webCompiled", ignore=ignore_patterns("*.ts"))
+
+	# Add necessary dependencies
+	copyfile("../_dependencies/font.png", "../../libOutputs/webCompiled/font.png") # Font image
 
 	# Make temporary ts config to include file 
 	with open("./tempConfig.json", "w") as f:
@@ -16,8 +24,9 @@ def compile(path: str, compLib: Callable[[], None]):
 	good = system("tsc --project tempConfig.json") == 0 # Run `tsc` with the temporary ts config
 	remove("./tempConfig.json") # Remove the temporary config file
 
-	with open("../../libOutputs/webLocal/index.html", "w") as f:
-		f.write('<script src="./lib.js"></script><script>Local.projectOffset="' + path + '/"\nLoader.init()</script>')
+	# Make index.html
+	with open("../../libOutputs/webCompiled/index.html", "w") as f:
+		f.write('<script src="./lib.js"></script>')
 
 	return good
 
