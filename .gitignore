@@ -9,3 +9,4 @@ _comp*.rs
 **/__pycache__
 libOutputs
 **/tempConfig.json
+**/cache/*
