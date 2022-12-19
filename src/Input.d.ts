@@ -1,5 +1,5 @@
-/// <reference path="Vec.ts" />
-/// <reference path="Signal.ts" />
+/// <reference path="./Vec.ts" />
+/// <reference path="./Signal.ts" />
 
 declare class Input {
     static mousePos: Vec2;

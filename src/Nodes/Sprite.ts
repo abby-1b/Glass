@@ -1,4 +1,4 @@
-/// <reference path="CanvasItem.ts" />
+/// <reference path="./CanvasItem.ts" />
 
 /**
  * Draws a sprite.

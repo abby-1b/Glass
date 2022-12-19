@@ -1,10 +1,11 @@
-/// <reference path="Local.d.ts" />
+/// <reference path="./Local.d.ts" />
 
 /**
  * Loads a set of nodes from a file.
  */
 class Loader {
-	static toLoad?: string
+	private static toLoad?: string
+
 	/**
 	 * Loads a scene from a file path.
 	 * @param path The path to get. Must be a UTF-8 encoded text file. Should follow the `.gs` naming scheme, though it's not required.

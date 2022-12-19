@@ -37,6 +37,14 @@ declare class GL {
     static scale(x: number, y: number): void;
     static newTexture(): WebGLTexture;
     static newTextureFromSrc(src: string, sizeVec?: Vec2): Promise<LoadableWebGLTexture>;
+	
+	/**
+	 * Sets the width and height of a texture.
+	 * @param w New width of the texture
+	 * @param h New height of the texture
+	 */
+	static setTextureSize(tex: WebGLTexture, w: number, h: number): void;
+
     static bgColor(r: number, g: number, b: number, a?: number): void;
     static color(r: number, g: number, b: number, a?: number): void;
     static rect(x: number, y: number, width: number, height: number): void;

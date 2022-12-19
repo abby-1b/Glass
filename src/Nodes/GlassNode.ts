@@ -96,14 +96,9 @@ class GlassNode {
 		return this.constructor.name + (this.name == this.constructor.name ? "" : " \"" + this.name + "\"")
 	}
 
-	getTree(): string {
-		return this.toString() + (this.children.length > 0 ? "\n\t" : "")
-			+ this.children.map(c => c.getTree().split("\n").join("\n\t")).join("\n\t")
-	}
-
-	logTree() {
-		console.groupCollapsed(this.toString())
-		this.children.map(c => c.logTree())
+	logTree(prop?: string) {
+		console.groupCollapsed(this.toString(), prop ? (<any>this)[prop] : "")
+		this.children.map(c => c.logTree(prop))
 		console.groupEnd()
 	}
 }

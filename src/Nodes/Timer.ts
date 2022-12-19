@@ -1,4 +1,4 @@
-/// <reference path="GlassNode.ts" />
+/// <reference path="./GlassNode.ts" />
 
 /** Animates a property on a node. NOTE: putting the node to be animated as a children of this node causes a one-frame delay in its animation. */
 class TimerNode extends GlassNode {

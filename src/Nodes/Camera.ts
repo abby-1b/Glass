@@ -1,4 +1,4 @@
-/// <reference path="GlassNode.ts" />
+/// <reference path="./GlassNode.ts" />
 
 /**
  * Takes control of where screen elements are drawn.
