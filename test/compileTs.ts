@@ -1,6 +1,6 @@
 import { emit } from "https://deno.land/x/emit@0.0.1/mod.ts"
 
-let url = "data:text/typescript;base64," + btoa("console.log(10)")
+const url = "data:text/typescript;base64," + btoa("console.log(10)")
 
 console.log(url)
 
