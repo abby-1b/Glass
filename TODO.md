@@ -1,7 +1,14 @@
 Build Tasks:
 	[x] Make a watch script that builds any target automatically.
 	[x] Find a way to run Javascript natively (without V8, it's really heavy)
+		(I'm going to use Deno's pack feature along with some C code to interface with a graphics library.)
 	[ ] Run OpenGL/GLFW from this native
+
+Module Tasks:
+	[ ] Figure out a module system
+		Modules are individual TypeScript files loaded as modules that run individually from each other.
+		If a module is not actually used, it's still compiled in the final app (this makes dynamic module loading possible!)
+		When modules are required, they're pulled from the Loader.ts library utility.
 
 Library Tasks:
 	[x] Define class structure
