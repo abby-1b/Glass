@@ -1,5 +1,6 @@
 {
-	"deno.enable": false,
+	"deno.enablePaths": ["test"],
+	"deno.enable": true,
 	"deno.unstable": true,
 	"deno.lint": true,
 	"files.exclude": {
