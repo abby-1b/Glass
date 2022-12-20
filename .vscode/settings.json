@@ -15,4 +15,15 @@
 	},
 
 	"python.analysis.typeCheckingMode": "strict",
+
+	"jscpd.exclude": [
+		"libOutputs/**/*",
+		"**/cache/*",
+		"**/test/*",
+		"**/*.js",
+		"**/*.min.js",
+		"**/node_modules/**"
+	],
+	"jscpd.minTokens": 50,
+	"jscpd.minLines": 4
 }
