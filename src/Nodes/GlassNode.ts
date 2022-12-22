@@ -65,16 +65,15 @@ class GlassNode {
 		let node: GlassNode = this
 		while (moves.length > 0) {
 			const m = moves.shift()!
-			if (m == ".." && !node.parent) throw new Error("Node " + node + " doesn't have parent.")
-			switch (m) {
-				case "": break
-				case ".": break
-				case "..": node = node.parent!
-				default:
-					let ch = node.children.map(e => e.name)
-					if (!ch.includes(m)) throw new Error("Couldn't find child '" + m + "' in node " + node)
-					node = node.children[ch.indexOf(m)]
+			if (m == "" || m == ".") break
+			if (m == "..") {
+				if (!node.parent) throw new Error("Node " + node + " doesn't have parent.")
+				node = node.parent!
+				continue
 			}
+			let ch = node.children.map(e => e.name)
+			if (!ch.includes(m)) throw new Error("Couldn't find child '" + m + "' in node " + node)
+			node = node.children[ch.indexOf(m)]
 		}
 		return node
 	}

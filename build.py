@@ -63,19 +63,29 @@ def parse_path(path: str) -> str:
 
 # Detects circular dependencies
 def detect_circular(deps: List[Tuple[str, Set[str]]]):
+	# Store all dependency names
 	dep_names = [a[0] for a in deps]
 
+	# Loop through dependencies recursively
 	def get_deps(d: str, l: List[str] = []):
-		curr_deps = deps[dep_names.index(d)][1]
-		for c in curr_deps:
-			if c in l:
-				print(err_col + "Circular dependency found!")
-				nl = l[l.index(c)::]
-				for k, i in zip(nl, range(len(nl))):
-					print(" " + ("to" if i > 0 else "  "), err_col + k)
-				exit()
-			get_deps(c, l + [c])
+		# Loop through current dependencies
+		for c in deps[dep_names.index(d)][1]:
+			# If the current dependency hasn't been previously imported, keep searching
+			if not c in l:
+				get_deps(c, l + [c])
+				continue
 
+			# A circular dependency has been found!
+			# Warn the user
+			print(err_col + "Circular dependency found!")
+			nl = l[l.index(c)::]
+			for k, i in zip(nl, range(len(nl))):
+				print(" " + ("to" if i > 0 else "  "), err_col + k)
+
+			# Exit
+			exit()
+
+	# Start recursion
 	for d in deps:
 		get_deps(d[0])
 

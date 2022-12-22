@@ -11,7 +11,7 @@ class AnimationNode extends GlassNode {
 	playing?: string
 
 	// TODO: make this public and add documentation
-	private animations: {[key: string]: [number, any[], boolean]} = {} // Stores [timing, frames]
+	private animations: {[key: string]: [number, any[], boolean]} = {} // Stores [timing, frames, doesLoop]
 
 	/** Sets the node to be animated. NOTE: subsequent calls to this function will overwrite any previous call. */
 	animate(node: GlassNode, property: string) {
@@ -57,21 +57,38 @@ class AnimationNode extends GlassNode {
 	}
 
 	loop() {
-		if (!this.property || !this.playing || this.animations[this.playing][1].length == 0) return
-		this.onTime += GL.delta
-		if (this.onTime >= this.animations[this.playing][0]) {
+		// Break out of this if anything doesn't work.
+		notMet: {
+			if (!this.playing || !this.property || this.animations[this.playing][1].length == 0) break notMet
+			// If we're playing and a property is defined, increase the current time by the frame's delta
+			this.onTime += GL.delta
+
+			if (this.onTime < this.animations[this.playing][0]) break notMet
+			// OLD:
+			// If the animation's frame change timer has been reached, take the fractional part
+			// This is done over setting to zero because it conserves the delta from previous frames.
 			this.onTime = this.onTime % 1
-			if (++this.onFrame >= this.animations[this.playing][1].length) {
-				if (this.animations[this.playing][2]) {
-					this.onTime = this.onFrame = 0
-					this.playing = undefined
-					return
-				} else {
-					this.onFrame = 0
-				}
-			}
+
+			// NEW:
+			// If the animation's frame change timer has been reached, remove that frame's length.
+			// This is done over setting to zero because it conserves the delta from previous frames.
+			// this.onTime = this.animations[this.playing][0]
+
+			if (++this.onFrame < this.animations[this.playing][1].length) break notMet
+			// If the frame goes over the amount of frames, reset it to zero.
+			this.onFrame = 0
+
+			if (!this.animations[this.playing][2]) break notMet
+			// If the animation doesn't loop, stop playing it
+			// this.onTime = 0, this.playing = undefined
+			this.playing = undefined
 		}
-		;(<any>this.actingNode)[this.property] = this.animations[this.playing][1][this.onFrame]
+
+		// Update the property
+		if (this.playing && this.property && this.animations[this.playing][1].length != 0)
+			(<any>this.actingNode)[this.property] = this.animations[this.playing][1][this.onFrame]
+
+		// Call `super.loop`
 		super.loop()
 	}
 }
