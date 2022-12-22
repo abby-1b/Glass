@@ -3,7 +3,8 @@ from __future__ import annotations
 from http.server import SimpleHTTPRequestHandler, HTTPServer
 from typing import List, Any, Callable, Dict
 
-from subprocess import getoutput as run
+# from subprocess import getoutput as run
+from subprocess import Popen
 from base64 import b64encode
 from io import BytesIO
 from http import HTTPStatus
@@ -12,12 +13,14 @@ FILE_SYSTEM_ENCODING: str = sys.getfilesystemencoding()
 
 from math import floor
 
-from os import chdir, getcwd, listdir
+from os import chdir, getcwd, listdir, mkdir
 from os.path import getmtime
 
 from time import time
 
-import urllib
+from urllib.parse import unquote
+
+from urllib.request import urlopen
 
 # Import build
 if True:
@@ -41,17 +44,18 @@ def escape(string: str) -> str:
 # Cache transpiled files in the disk.
 CACHE_PATH = "../../libTargets/webLocal/cache/"
 cache: Dict[str, float] = {} # {file_name: last_modified, ...}
-for f in listdir(CACHE_PATH):
-	p = f.split("|")
-	cache[p[1]] = int(p[0])
-
-def transform_path(path: str):
-	return path.replace("|", "@").replace("/", "@")
+try:
+	for f in listdir(CACHE_PATH):
+		p = f.split("|")
+		cache[p[1]] = int(p[0])
+except:
+	mkdir(CACHE_PATH)
 
 # Transpile TS to JS
+transpile_server = Popen(["deno", "run", "--allow-net", "--allow-env", "--allow-read", "--allow-write", "../../libTargets/webLocal/tsCompile.ts"])
 def transpile(file_path: str, link_path: str):
 	# Transform path into a single-directory safe name
-	trans_path = transform_path(link_path)
+	trans_path = link_path.replace("|", "@").replace("/", "@")
 
 	if trans_path in cache and abs(getmtime(CACHE_PATH + str(cache[trans_path]) + "|" + trans_path) - cache[trans_path]) < 2:
 		# If it hasn't been changed, find and return the compiled file.
@@ -74,7 +78,8 @@ def transpile(file_path: str, link_path: str):
 	c = b64encode(code[refIdx:].encode("ascii")).decode("ascii")
 
 	# Transpile code
-	trans_code = run("echo \"" + escape("import{emit}from\"https://deno.land/x/emit@0.0.1/mod.ts\";let url=\"data:text/typescript;base64," + c + "\";let code=(await emit(url))[url];let i=code.length-5;while(code[i]!=',')i--;i++;let sMap=JSON.parse(atob(code.slice(i)));sMap.sources[0]=\"" + link_path + "\";console.log(code.slice(0,i)+btoa(JSON.stringify(sMap)))") + "\" | deno run -A -")
+	# trans_code = run("echo \"" + escape("import{emit}from\"https://deno.land/x/emit@0.0.1/mod.ts\";let url=\"data:text/typescript;base64," + c + "\";let code=(await emit(url))[url];let i=code.length-5;while(code[i]!=',')i--;i++;let sMap=JSON.parse(atob(code.slice(i)));sMap.sources[0]=\"" + link_path + "\";console.log(code.slice(0,i)+btoa(JSON.stringify(sMap)))") + "\" | deno run -A -")
+	trans_code = urlopen("http://localhost:1165/" + c + "?" + link_path).read().decode("ascii")
 
 	# Add to cache
 
@@ -95,8 +100,8 @@ class LocalServer(SimpleHTTPRequestHandler):
 		if path[0] == '/': path = path[1:]
 
 		# Replace encoded characters
-		try: path = urllib.parse.unquote(path, errors='surrogatepass') # type: ignore
-		except UnicodeDecodeError: path = urllib.parse.unquote(path) # type: ignore
+		try: path = unquote(path, errors='surrogatepass')
+		except UnicodeDecodeError: path = unquote(path)
 
 		# Replace "_" with ".."
 		words: List[str] = [(".." if a == "_" else a) for a in path.split('/') if len(a) > 0]
@@ -195,6 +200,7 @@ def compile(path: str, compLib: Callable[[], None]):
 		pass
 
 	webServer.server_close()
+	transpile_server.kill()
 	print("\nServer stopped.")
 
 	return True
