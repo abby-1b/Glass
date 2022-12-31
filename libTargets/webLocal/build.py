@@ -96,7 +96,7 @@ class LocalServer(SimpleHTTPRequestHandler):
 			f = sort_files(f)
 			unr, rfd = separate_unreferenced(f, "/Nodes/GlassNode.ts", True)
 			scripts += [a for a in unr if not a.endswith(".d.ts")]
-			scripts += ["/" + a[0] for a in sort_files(get_files("libTargets/webCompiled/src"))]
+			scripts += ["/" + a[0] for a in sort_files(get_files("libTargets/_web/src"))]
 			scripts += [a for a in rfd if not a.endswith(".d.ts")]
 			chdir(originalDir)
 

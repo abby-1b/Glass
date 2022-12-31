@@ -19,7 +19,7 @@ def compile(path: str, compLib: Callable[[], None]):
 
 	# Make temporary ts config to include file 
 	with open("./tempConfig.json", "w") as f:
-		f.write('{"extends":"./tsconfig.json","include":["../../libOutputs/util.ts","src/**/*.ts","../../libOutputs/lib.ts","' + path + '/**/*.ts"]}')
+		f.write('{"extends":"./tsconfig.json","include":["../../libOutputs/util.ts","../_web/src/**/*.ts","../../libOutputs/lib.ts","' + path + '/**/*.ts"]}')
 
 	good = system("tsc --project tempConfig.json") == 0 # Run `tsc` with the temporary ts config
 	remove("./tempConfig.json") # Remove the temporary config file
@@ -43,12 +43,12 @@ def watch(path: str):
 		sleep(poll_rate)
 		listdir(path)
 
-		t = time()
 		for f in listdir(path):
 			m = getmtime(path + "/" + f)
 
-			# Check if it was saved less than two seconds ago
-			if t - m < poll_rate:
+			# Check if it was saved less than `poll_rate` ago
+			# `time` is called repeatedly in case `getmtime` takes too long to execute.
+			if time() - m < poll_rate:
 				print("Changes found.")
 				compile(path, lambda: None)
 				break

@@ -3,7 +3,7 @@
 
 // Import necessary functions
 import { serve } from "https://deno.land/std@0.87.0/http/server.ts"
-import { emit } from "https://deno.land/x/emit@0.0.1/mod.ts"
+import { emit } from "https://deno.land/x/emit@0.12.0/mod.ts"
 
 // Serve forever on port 1165 (referring to 116 and 115, unicode for 'ts')
 for await (const req of serve({ port: 1165 })) {
@@ -18,7 +18,7 @@ for await (const req of serve({ port: 1165 })) {
 		, url = "data:text/typescript;base64," + ps[0].slice(1) // `slice` takes off the leading '/' character.
 
 	// Compile!
-	const code = (await emit(url))[url]
+	const code = (await emit(new URL(url)))[url]
 
 	// Extract the index of the base64 url
 	let i = code.length - 5; while (code[i] != ",") i--; i++

@@ -24,6 +24,7 @@ class GL {
 	static frameCount: number = 0
 	/** How long the last frame took to render. 1 means the game is running at 60fps, while 0.5 means it's running at 30fps. */
 	static delta: number = 0
+	static deltaCap: number = 5
 
 	private static _bgColor: [number, number, number, number] = [1, 1, 1, 1]
 
@@ -94,8 +95,7 @@ class GL {
 		this.transform[3] = 0, this.transform[4] = 1, this.transform[5] = 0
 		this.transform[6] = 0, this.transform[7] = 0, this.transform[8] = 1
 
-		// if (this.frameCount > 10) (<any>GlassRoot.children[0]).rot += 0.01
-		GlassRoot.loop()
+		if (this.delta < this.deltaCap) GlassRoot.loop()
 		GlassRoot.draw()
 	}
 
@@ -104,7 +104,11 @@ class GL {
 		function buildSS(gl: WebGL2RenderingContext, code: string, type: number) {
 			const s = gl.createShader(type)!
 			gl.shaderSource(s, code), gl.compileShader(s)
-			if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) console.log("Error compiling " + (type == gl.FRAGMENT_SHADER ? "frag" : "vert") + " shader `" + name + "`:\n" + gl.getShaderInfoLog(s))
+			if (!gl.getShaderParameter(s, gl.COMPILE_STATUS))
+				console.log(
+					"Error compiling " + (type == gl.FRAGMENT_SHADER ? "frag" : "vert")
+					+ " shader `" + name + "`:\n" + gl.getShaderInfoLog(s)
+				)
 			return s
 		}
 		const program = this.gl.createProgram()!
