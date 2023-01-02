@@ -1,7 +1,11 @@
 /// <reference path="./GlassNode.ts" />
 
-/** Animates a property on a node. NOTE: putting the node to be animated as a children of this node causes a one-frame delay in its animation. */
+/** Animates a property on a node. NOTE: putting the node to be animated as a child of this node causes a one-frame delay in its animation. */
 class AnimationNode extends GlassNode {
+	private static saveProperties = [
+		"playing", "animations"
+	]
+
 	private onTime = 0
 	private onFrame = 0
 	private actingNode?: GlassNode
@@ -10,8 +14,8 @@ class AnimationNode extends GlassNode {
 	/** The name of the currently playing animation. */
 	playing?: string
 
-	// TODO: make this public and add documentation
-	private animations: {[key: string]: [number, any[], boolean]} = {} // Stores [timing, frames, doesLoop]
+	/** Stores animations as name: information pairs. The information stored is: [timing, frames, doesLoop] */
+	public animations: {[key: string]: [number, any[], boolean]} = {}
 
 	/** Sets the node to be animated. NOTE: subsequent calls to this function will overwrite any previous call. */
 	animate(node: GlassNode, property: string) {
@@ -64,15 +68,10 @@ class AnimationNode extends GlassNode {
 			this.onTime += GL.delta
 
 			if (this.onTime < this.animations[this.playing][0]) break notMet
-			// OLD:
-			// If the animation's frame change timer has been reached, take the fractional part
-			// This is done over setting to zero because it conserves the delta from previous frames.
-			this.onTime = this.onTime % 1
-
-			// NEW:
 			// If the animation's frame change timer has been reached, remove that frame's length.
 			// This is done over setting to zero because it conserves the delta from previous frames.
-			// this.onTime = this.animations[this.playing][0]
+			// This does bring some issues when the delta is really high, but this was resolved by adding a delta cap.
+			this.onTime -= this.animations[this.playing][0]
 
 			if (++this.onFrame < this.animations[this.playing][1].length) break notMet
 			// If the frame goes over the amount of frames, reset it to zero.
