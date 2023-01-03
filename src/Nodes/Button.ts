@@ -4,6 +4,10 @@
 
 /** Emits a signal when clicked. */
 class ButtonNode extends CanvasItem {
+	protected static saveProperties = [
+		"size", "centered", "signal"
+	]
+
 	size: Vec2 = new Vec2(0, 0)
 	centered = true
 

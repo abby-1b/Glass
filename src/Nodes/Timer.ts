@@ -2,6 +2,10 @@
 
 /** Animates a property on a node. NOTE: putting the node to be animated as a children of this node causes a one-frame delay in its animation. */
 class TimerNode extends GlassNode {
+	protected static saveProperties = [
+		"signal", "totalTime", "timeLeft", "repeat"
+	]
+
 	/** The signal to be fired when the timer is completed. */
 	signal?: string
 	/** The total time (in frames) the timer should be running for. */

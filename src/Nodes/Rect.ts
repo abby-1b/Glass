@@ -4,6 +4,10 @@
  * Draws a rectangle.
  */
 class RectNode extends CanvasItem {
+	protected static saveProperties = [
+		"size", "centered"
+	]
+
 	size: Vec2 = new Vec2(0, 0)
 	centered = true
 

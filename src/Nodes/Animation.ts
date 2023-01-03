@@ -2,8 +2,8 @@
 
 /** Animates a property on a node. NOTE: putting the node to be animated as a child of this node causes a one-frame delay in its animation. */
 class AnimationNode extends GlassNode {
-	private static saveProperties = [
-		"playing", "animations"
+	protected static saveProperties = [
+		"onTime", "onFrame", "actingNode", "property", "playing", "animations"
 	]
 
 	private onTime = 0

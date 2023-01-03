@@ -4,6 +4,9 @@
  * Takes control of where screen elements are drawn.
  */
 class Camera extends GlassNode {
+	protected static saveProperties = [
+		"centered"
+	]
 	/** The currently active camera. */
 	static current?: Camera
 

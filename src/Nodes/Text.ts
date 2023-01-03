@@ -4,6 +4,10 @@
  * Draws text to the screen
  */
 class TextNode extends CanvasItem {
+	protected static saveProperties = [
+		"size", "centered", "text"
+	]
+
 	static textTexture?: WebGLTexture
 	size: Vec2 = new Vec2(0, 0)
 	centered = true

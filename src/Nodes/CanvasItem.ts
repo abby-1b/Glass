@@ -5,11 +5,15 @@
  * A node that draws to the canvas.
  */
 class CanvasItem extends GlassNode {
+	protected static saveProperties = [
+		"pos", "rot", "scale", "color"
+	]
+
 	visible = true
 	pos: Vec2 = new Vec2(0, 0)
 	rot = 0
 
-	/** Size to multiply the item with. Separate from size. */
+	/** Scalar to multiply the item with. Separate from size. */
 	scale: Vec2 = new Vec2(1, 1)
 	color: [number, number, number, number] = [0, 0, 0, 1]
 

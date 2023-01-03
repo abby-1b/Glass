@@ -4,6 +4,10 @@
  * Draws a sprite.
  */
 class Sprite extends CanvasItem {
+	protected static saveProperties = [
+		"size", "centered", "color", "texPos", "texSize", "frame", "src"
+	]
+
 	size: Vec2 = new Vec2(0, 0)
 	centered = true
 

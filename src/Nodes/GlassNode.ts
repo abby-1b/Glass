@@ -4,6 +4,10 @@
  * The base Glass Node class.
  */
 class GlassNode {
+	protected static saveProperties = [
+		"description", "parent", "children", "name", "visible", "paused", "module"
+	]
+
 	description?: string
 	parent?: GlassNode
 	children: GlassNode[] = []
@@ -14,8 +18,11 @@ class GlassNode {
 
 	private moduleName?: string
 	private currentModule?: {[key: string]: any}
-	set module(n: string) {
-		this.moduleName = require(n, (m) => this.currentModule = m, () => 0)
+	set module(n: string | undefined) {
+		this.moduleName = require(n!, (m) => this.currentModule = m, () => 0)
+	}
+	get module(): string | undefined {
+		return this.moduleName
 	}
 
 	constructor(name?: string) {
