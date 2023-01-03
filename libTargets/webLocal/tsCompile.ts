@@ -3,10 +3,11 @@
 
 // Import necessary functions
 import { serve } from "https://deno.land/std@0.87.0/http/server.ts"
-import { emit } from "https://deno.land/x/emit@0.12.0/mod.ts"
+import { transform } from "https://deno.land/x/swc@0.2.1/mod.ts"
 
 // Serve forever on port 1165 (referring to 116 and 115, unicode for 'ts')
-for await (const req of serve({ port: 1165 })) {
+const server = serve({ port: 1165 })
+for await (const req of server) {
 	if (!req.url.includes("?")) {
 		// If the url syntax is incorrect, just return.
 		req.respond({ status: 404 })
@@ -15,18 +16,44 @@ for await (const req of serve({ port: 1165 })) {
 
 	// Split parts and get the code to be compiled.
 	const ps = req.url.split("?")
-		, url = "data:text/typescript;base64," + ps[0].slice(1) // `slice` takes off the leading '/' character.
+		, preCode = ps[0].slice(1) // `slice` takes off the leading '/' character.
+
+	let isModule = false
+	if (ps[1].includes("&")) {
+		// If it's a special compilation, do that first.
+		const act = ps[1].split("&")
+		ps[1] = act[0]
+
+		if (act[1] == "mod") isModule = true
+	}
 
 	// Compile!
-	const code = (await emit(new URL(url)))[url]
+	let { code } = transform(atob(preCode), {
+		jsc: {
+			target: "es2020",
+			parser: {
+				syntax: "typescript",
+			},
+			preserveAllComments: false
+		},
+		module: isModule ? {
+			type: "amd",
+			moduleId: ps[1].replace(/^[.\/]*|(\.\.\/)+[^.]*?\/|\..+?$/g, "") // Standardizes the path
+		} : undefined,
+		sourceMaps: "inline",
+		inlineSourcesContent: false
+	})
 
 	// Extract the index of the base64 url
 	let i = code.length - 5; while (code[i] != ",") i--; i++
 
 	// Change the url from our code's base64 url to the given link
 	const sMap = JSON.parse(atob(code.slice(i)))
-	sMap.sources[0] = ps[1]
+	sMap.sources[0] = ps[1] + "?nc"
+
+	// Update the source map
+	code = code.slice(0, i) + btoa(JSON.stringify(sMap))
 
 	// Return.
-	req.respond({ body: code.slice(0, i) + btoa(JSON.stringify(sMap)) })
+	req.respond({ body: code })
 }

@@ -37,7 +37,7 @@ def escape(string: str) -> str:
 
 # Transpile TS to JS
 transpile_server = Popen(["deno", "run", "--allow-net", "--allow-env", "--allow-read", "--allow-write", "../../libTargets/webLocal/tsCompile.ts"])
-def transpile(file_path: str, link_path: str):
+def transpile(file_path: str, link_path: str, emit_module: bool = False):
 	# Get code
 	code = open(file_path, 'r').read()
 
@@ -56,15 +56,15 @@ def transpile(file_path: str, link_path: str):
 
 	# Transpile code
 	# trans_code = run("echo \"" + escape("import{emit}from\"https://deno.land/x/emit@0.0.1/mod.ts\";let url=\"data:text/typescript;base64," + c + "\";let code=(await emit(url))[url];let i=code.length-5;while(code[i]!=',')i--;i++;let sMap=JSON.parse(atob(code.slice(i)));sMap.sources[0]=\"" + link_path + "\";console.log(code.slice(0,i)+btoa(JSON.stringify(sMap)))") + "\" | deno run -A -")
-	trans_code = urlopen("http://localhost:1165/" + c + "?" + link_path).read().decode("ascii")
+	trans_code = urlopen("http://localhost:1165/" + c + "?" + link_path + ("&mod" if emit_module else "")).read().decode("ascii")
 
 	return trans_code
 
 class LocalServer(SimpleHTTPRequestHandler):
 	def translate_path(self, path: str) -> str:
 		# Remove query parameters
-		path = path.split('?',1)[0]
-		path = path.split('#',1)[0]
+		path = path.split('?', 1)[0]
+		path = path.split('#', 1)[0]
 
 		if path.startswith('./'): path = path[2:]
 		if path[0] == '/': path = path[1:]
@@ -82,6 +82,7 @@ class LocalServer(SimpleHTTPRequestHandler):
 		print(f"[{self.log_date_time_string()}]: {self.path}")
 
 		# Get file path
+		query = self.path.split('?', 1)[1] if "?" in self.path else ""
 		path = self.translate_path(self.path)
 		# print(self.path, path)
 
@@ -105,16 +106,15 @@ class LocalServer(SimpleHTTPRequestHandler):
 				"".join([f"<script src=\"_/_{s}\" defer></script>" for s in scripts])
 				+ "<script>window.addEventListener('load', () => { Loader.set('./main.gs'), Loader.init() })</script>"
 			)
-			# self.send_text("<br>".join(scripts))
 
 			# Exit
 			return
 
 		# Check if it's a typescript file
-		if path.endswith(".ts"):
+		if path.endswith(".ts") and query != "nc":
 			# If it is, send that file, compiled, to the client.
 			f = open(path, 'r').read()
-			f = transpile(path, self.path)
+			f = transpile(path, self.path.split("?")[0], query == "mod")
 			self.send_text(f, "text/javascript")
 
 			# Don't bother doing anything else.

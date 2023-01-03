@@ -13,5 +13,5 @@ declare class Local {
 	 * @param txt The text to write into the file
 	 * @param reason A reason why the text file was written (optional)
 	 */
-	static writeText(path: string, txt: string, reason?: string): Promise<void>
+	static writeText(path: string, txt: string, reason?: string): Promise<void>;
 }

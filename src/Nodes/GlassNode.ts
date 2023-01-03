@@ -11,14 +11,12 @@ class GlassNode {
 	visible: boolean = true
 
 	paused = false
-	
-	// private _module?: {[key: string]: any}
-	// private _moduleName?: string
-	// set module(n: string | undefined) {
-	// 	this._moduleName = n
-	// 	this._module = modules[n as string].e
-	// }
-	// get module() { return this._moduleName }
+
+	private moduleName?: string
+	private currentModule?: {[key: string]: any}
+	set module(n: string) {
+		this.moduleName = require(n, (m) => this.currentModule = m, () => 0)
+	}
 
 	constructor(name?: string) {
 		this.name = (name ? name : this.constructor.name)
@@ -29,7 +27,7 @@ class GlassNode {
 	 */
 	loop() {
 		if (this.paused) return
-		// if (this._module && this._module.loop) this._module.loop(this)
+		if (this.currentModule && this.currentModule.loop) this.currentModule.loop(this)
 		for (let c = this.children.length - 1; c >= 0; c--) this.children[c].loop()
 	}
 
