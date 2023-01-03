@@ -40,19 +40,9 @@ transpile_server = Popen(["deno", "run", "--allow-net", "--allow-env", "--allow-
 def transpile(file_path: str, link_path: str, emit_module: bool = False):
 	# Get code
 	code = open(file_path, 'r').read()
-
-	# Get last reference index
-	refIdx = 0
-	if "/// <reference path=\"" in code:
-		refIdx = code.index("/// <reference path=\"")
-		while True:
-			while code[refIdx] != "\n": refIdx += 1
-			refIdx += 1
-			if code[refIdx] != '/' or code[refIdx + 1] != '/' or code[refIdx + 2] != '/' or code[refIdx + 3] != ' ':
-				break
 	
-	# Remove references + encode to base64
-	c = b64encode(code[refIdx:].encode("ascii")).decode("ascii")
+	# Encode to base64
+	c = b64encode(code.encode("ascii")).decode("ascii")
 
 	# Transpile code
 	# trans_code = run("echo \"" + escape("import{emit}from\"https://deno.land/x/emit@0.0.1/mod.ts\";let url=\"data:text/typescript;base64," + c + "\";let code=(await emit(url))[url];let i=code.length-5;while(code[i]!=',')i--;i++;let sMap=JSON.parse(atob(code.slice(i)));sMap.sources[0]=\"" + link_path + "\";console.log(code.slice(0,i)+btoa(JSON.stringify(sMap)))") + "\" | deno run -A -")
