@@ -28,8 +28,11 @@ class Serializer {
 	private static serializeObject(obj: any): string {
 		let isArray = false
 
+		// If the object is the glass root, don't repeat it.
+		if (obj == GlassRoot) return "r"
+
 		// Deal with literals
-		if (obj === undefined) return "u"
+		if (obj == undefined) return "u"
 		const objType: string = obj.constructor.name
 		if (objType == "String") return '"' + obj.replace(/"/g, "\\\"") + '"'
 		else if (objType == "Boolean") return obj ? "t" : "f"
@@ -60,7 +63,6 @@ class Serializer {
 		this.references.push(obj)
 		let m = false
 		for (const k of keys) {
-			if (obj == this.references[1]) console.log(k)
 			if (obj[k] != undefined && obj[k].constructor.name == "WebGLTexture" || k[0] == '_') continue
 			ret += (isArray ? "" : (this.serializeKey(k) + ":")) + this.serializeObject(obj[k]) + ","
 			m = true
@@ -88,7 +90,7 @@ class Serializer {
 		// representation) and accurate (can be expressed as a small number and doesn't have any
 		// weird floating point inconsistencies) just save it as human-readable. Otherwise send
 		// this representation of float.
-		if ((n + "").length < ret.length + 1 && parseFloat(n + "") == n)
+		if (Number.isNaN(n) || ((n + "").length < ret.length + 1 && parseFloat(n + "") == n))
 			return n + ""
 		else
 			return "#" + ret
@@ -155,6 +157,7 @@ class DeSerializer {
 			} else if (this.data[0] == "t" || this.data[0] == "f") obj[k] = this.data[0] == "t", this.data = this.data.slice(1)
 			else if (this.data[0] == "w") obj[k] = this.makeInstance("WebGLTexture"), this.data = this.data.slice(1)
 			else if (this.data[0] == "#") obj[k] = this.stringToFloat(this.getKey().slice(1))
+			else if (this.data[0] == "r") obj[k] = GlassRoot, this.data = this.data.slice(1)
 			else obj[k] = parseFloat(this.getKey())
 			// TODO: implement serialized float to float conversion
 
@@ -180,7 +183,6 @@ class DeSerializer {
 	}
 
 	private static stringToFloat(s: string) {
-		console.log("Converting:", s)
 		const alphabet = "0123456789abcdefghijklmnopqrstuvwxyz"
 			, buf = new ArrayBuffer(8), i = new BigUint64Array(buf), f = new Float64Array(buf)
 		i[0] = Array.prototype.reduce.call(s, (acc: any, digit: string) => {
