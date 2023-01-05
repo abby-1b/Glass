@@ -15,7 +15,7 @@ type GlassShader = {
 class GL {
 	private static gl: WebGL2RenderingContext
 	private static vertexBuffer: WebGLBuffer
-	private static vertexArray = new Float32Array([ 0, 0, 0, 1, 1, 0, 1, 1 ])
+	private static vertexArray = new Float32Array(8)
 	private static texCoordBuffer: WebGLBuffer
 	private static texCoordArray = new Float32Array(8)
 
@@ -30,7 +30,7 @@ class GL {
 
 	static shaders: {[key: string]: GlassShader} = {}
 	/** A 3x3 matrix containing all the draw transformations. */
-	static transform: FastMatrix = new Float32Array([1, 0, 0, 0, 1, 0, 0, 0, 1])
+	static transform: FastMatrix = new Float32Array(9)
 
 	static init() {
 		// TODO: make antialias selectable by user
@@ -95,6 +95,7 @@ class GL {
 		this.transform[3] = 0, this.transform[4] = 1, this.transform[5] = 0
 		this.transform[6] = 0, this.transform[7] = 0, this.transform[8] = 1
 
+		if (Camera.current) (<any>Camera.current).use()
 		if (this.delta < this.deltaCap) GlassRoot.loop()
 		GlassRoot.draw()
 	}
@@ -136,7 +137,7 @@ class GL {
 	static translate(x: number, y: number) {
 		FastMat.mult33x33InPlace(this.transform,
 			1, 0, x,
-			0, 1, x,
+			0, 1, y,
 			0, 0, 1
 		)
 	}
