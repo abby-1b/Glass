@@ -1,27 +1,27 @@
+/// <reference path="./Nodes/GlassNode.ts" />
 
 /** Serializes objects into a string. */
 class Serializer {
-	private static defaults: {[key: string]: any} = {}
 	private static references: any[] = []
 
 	/** Serializes an object into JSON format. */
 	static serialize(obj: any) {
 		// Serialize the object and remove its outer syntax (it's inferrable)
-		let ret = this.serializeObject(obj).slice(3, -1)
+		let ret: string = this.serializeObject(obj).slice(3, -1)
 
 		// Serialize its reference names
 		let refStr: string[] = []
 		for (let i = 0; i < this.references.length; i++) {
 			let k = this.serializeKey(this.references[i].constructor.name)
 			const idx = refStr.indexOf(k)
-			if (idx == -1) 
+			if (idx == -1)
 				refStr.push(k)
 			else
 				refStr.push("@" + idx.toString(36))
 		}
 
 		ret = refStr.join(",") + "\n" + ret
-		this.defaults = {}, this.references = []
+		this.references = []
 		return ret
 	}
 
@@ -40,24 +40,30 @@ class Serializer {
 		if (this.references.includes(obj)) return "@" + this.references.indexOf(obj)
 
 		// Get unique keys
-		if (!(objType in this.defaults))
-			this.defaults[objType] = this.instanceOfConstructor(obj.constructor as ObjectConstructor)
-		const keys = Object.keys(obj)
-		keys.push(...Object.entries(Object.getOwnPropertyDescriptors(Reflect.getPrototypeOf(obj)))
-			.filter(e => typeof e[1].get === 'function' && e[0] !== '__proto__')
-			.map(e => e[0]))
+		const keys: Set<string> = new Set()
+		if (obj instanceof GlassNode) {
+			// If the object is a GlassNode, use its `saveProperties`
+			let c = obj.constructor
+			while (c.name != "")
+				(<any>c).saveProperties.forEach((p: string) => keys.add(p)), c = (<any>c).__proto__
+		} else {
+			// Otherwise, save every key that's
+			Object.keys(obj).forEach(p => keys.add(p))
+			Object.entries(Object
+				.getOwnPropertyDescriptors(Reflect.getPrototypeOf(obj)))
+				.filter(e => typeof e[1].get === 'function' && e[0] !== '__proto__')
+				.map(e => keys.add(e[0]))
+		}
 
 		// Put all of its properties into a single string, recursively serializing objects inside of it
 		let ret = "@" + this.references.length.toString(36) + (isArray ? "[" : "{")
 		this.references.push(obj)
 		let m = false
-		for (let i = 0; i < keys.length; i++) {
-			if (obj[keys[i]] != this.defaults[objType][keys[i]]
-				|| !(keys[i] in this.defaults[objType])) {
-				if (obj[keys[i]].constructor.name == "WebGLTexture" || keys[i][0] == '_') continue
-				ret += (isArray ? "" : (this.serializeKey(keys[i]) + ":")) + this.serializeObject(obj[keys[i]]) + ","
-				m = true
-			}
+		for (const k of keys) {
+			if (obj == this.references[1]) console.log(k)
+			if (obj[k] != undefined && obj[k].constructor.name == "WebGLTexture" || k[0] == '_') continue
+			ret += (isArray ? "" : (this.serializeKey(k) + ":")) + this.serializeObject(obj[k]) + ","
+			m = true
 		}
 
 		// If its modified, remove the last comma and close with the proper syntax.
@@ -78,16 +84,14 @@ class Serializer {
 		f[0] = n
 		const ret = i[0].toString(36)
 
-		// If the string representation is simple (a.k.a doesn't use the full extent of float), just save it as human-readable
-		// Otherwise send this representation of float.
-		if ((n + "").length * 1.2 < ret.length)
+		// If the string representation is simple (a.k.a takes up less space than the full float
+		// representation) and accurate (can be expressed as a small number and doesn't have any
+		// weird floating point inconsistencies) just save it as human-readable. Otherwise send
+		// this representation of float.
+		if ((n + "").length < ret.length + 1 && parseFloat(n + "") == n)
 			return n + ""
 		else
 			return "#" + ret
-	}
-
-	private static instanceOfConstructor(cns: typeof Object) {
-		return new cns()
 	}
 }
 
@@ -116,8 +120,9 @@ class DeSerializer {
 		this.data = (isArr ? "@0[" : "@0{") + this.data.slice(1) + (isArr ? "]" : "}")
 
 		// Then, parse the string into an object.
+		console.log(this.data)
 		this.parseObject()
-		
+
 		// Save the returned object
 		const ret = this.refs[0]
 
@@ -149,7 +154,7 @@ class DeSerializer {
 				obj[k] = s
 			} else if (this.data[0] == "t" || this.data[0] == "f") obj[k] = this.data[0] == "t", this.data = this.data.slice(1)
 			else if (this.data[0] == "w") obj[k] = this.makeInstance("WebGLTexture"), this.data = this.data.slice(1)
-			else if (this.data[0] == "#") obj[k] = this.stringToFloat(this.data.slice(1, 13)), this.data = this.data.slice(13)
+			else if (this.data[0] == "#") obj[k] = this.stringToFloat(this.getKey().slice(1))
 			else obj[k] = parseFloat(this.getKey())
 			// TODO: implement serialized float to float conversion
 
@@ -175,6 +180,7 @@ class DeSerializer {
 	}
 
 	private static stringToFloat(s: string) {
+		console.log("Converting:", s)
 		const alphabet = "0123456789abcdefghijklmnopqrstuvwxyz"
 			, buf = new ArrayBuffer(8), i = new BigUint64Array(buf), f = new Float64Array(buf)
 		i[0] = Array.prototype.reduce.call(s, (acc: any, digit: string) => {
