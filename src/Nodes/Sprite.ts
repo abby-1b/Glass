@@ -5,7 +5,7 @@
  */
 class Sprite extends CanvasItem {
 	protected static saveProperties = [
-		"size", "centered", "color", "texPos", "texSize", "frame", "src"
+		"size", "centered", "texPos", "texSize", "frame", "src"
 	]
 
 	size: Vec2 = new Vec2(0, 0)
@@ -28,11 +28,32 @@ class Sprite extends CanvasItem {
 	get src(): string | undefined { return this._imgSrc }
 
 	draw() {
+		this.rot += 0.01
 		if (this._tex) {
 			if (this.centered)
-				GL.texture(this._tex, -this.size.x * 0.5, -this.size.y * 0.5, this.size.x, this.size.y, this.texPos.x + this.frame * this.texSize.x, this.texPos.y, this.texSize.x, this.texSize.y)
+				GL.texture(
+					this._tex,
+					-this.size.x * 0.5,
+					-this.size.y * 0.5,
+					this.size.x,
+					this.size.y,
+					this.texPos.x + this.frame * this.texSize.x,
+					this.texPos.y,
+					this.texSize.x,
+					this.texSize.y
+				)
 			else
-				GL.texture(this._tex, 0                 , 0                 , this.size.x, this.size.y, this.texPos.x + this.frame * this.texSize.x, this.texPos.y, this.texSize.x, this.texSize.y)
+				GL.texture(
+					this._tex,
+					0,
+					0,
+					this.size.x,
+					this.size.y,
+					this.texPos.x + this.frame * this.texSize.x,
+					this.texPos.y,
+					this.texSize.x,
+					this.texSize.y
+				)
 		}
 		super.draw()
 	}

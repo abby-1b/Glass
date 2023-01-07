@@ -91,7 +91,7 @@ class GL {
 		this.gl.clearColor(...this._bgColor)
 		// this.gl.viewport(0, 0, this.width, this.height)
 		this.gl.clear(this.gl.COLOR_BUFFER_BIT | this.gl.DEPTH_BUFFER_BIT | this.gl.STENCIL_BUFFER_BIT)
-		this.transform[0] = 1, this.transform[1] = 0, this.transform[2] = 0,
+		this.transform[0] = 1, this.transform[1] = 0, this.transform[2] = 0
 		this.transform[3] = 0, this.transform[4] = 1, this.transform[5] = 0
 		this.transform[6] = 0, this.transform[7] = 0, this.transform[8] = 1
 
