@@ -122,7 +122,6 @@ class DeSerializer {
 		this.data = (isArr ? "@0[" : "@0{") + this.data.slice(1) + (isArr ? "]" : "}")
 
 		// Then, parse the string into an object.
-		console.log(this.data)
 		this.parseObject()
 
 		// Save the returned object
@@ -154,7 +153,8 @@ class DeSerializer {
 				let s = this.data.slice(0, this.data.indexOf('"'))
 				this.data = this.data.slice(s.length + 1)
 				obj[k] = s
-			} else if (this.data[0] == "t" || this.data[0] == "f") obj[k] = this.data[0] == "t", this.data = this.data.slice(1)
+			} else if (this.data[0] == "u") obj[k] = undefined, this.data = this.data.slice(1)
+			else if (this.data[0] == "t" || this.data[0] == "f") obj[k] = this.data[0] == "t", this.data = this.data.slice(1)
 			else if (this.data[0] == "w") obj[k] = this.makeInstance("WebGLTexture"), this.data = this.data.slice(1)
 			else if (this.data[0] == "#") obj[k] = this.stringToFloat(this.getKey().slice(1))
 			else if (this.data[0] == "r") obj[k] = GlassRoot, this.data = this.data.slice(1)
