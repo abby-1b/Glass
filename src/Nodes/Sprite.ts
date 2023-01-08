@@ -28,7 +28,6 @@ class Sprite extends CanvasItem {
 	get src(): string | undefined { return this._imgSrc }
 
 	draw() {
-		this.rot += 0.01
 		if (this._tex) {
 			if (this.centered)
 				GL.texture(
