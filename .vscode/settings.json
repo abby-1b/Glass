@@ -1,5 +1,8 @@
 {
-	"deno.enablePaths": ["test"],
+	"deno.enablePaths": [
+		"test",
+		"libTargets/webLocal/tsCompile.ts"
+	],
 	"deno.enable": true,
 	"deno.unstable": true,
 	"deno.lint": true,
