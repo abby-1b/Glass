@@ -17,7 +17,7 @@ class CanvasItem extends GlassNode {
 	scale: Vec2 = new Vec2(1, 1)
 	color: [number, number, number, number] = [0, 0, 0, 1]
 
-	transform(forward: boolean) {
+	protected transform(forward: boolean) {
 		if (forward) {
 			GL.translate(this.pos.x, this.pos.y)
 			GL.rotate(this.rot)
