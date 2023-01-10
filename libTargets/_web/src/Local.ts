@@ -30,10 +30,6 @@ class Local {
 		return fetch(this.projectOffset + path + ".ts?mod").then(r => {
 			if (r.ok == false) throw r
 			return r.text()
-		}).then(t => {
-			const ret = (1, eval)(t)
-			console.log("Loaded:", path)
-			return ret
-		})
+		}).then(t => (1, eval)(t))
 	}
 }
