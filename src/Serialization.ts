@@ -6,14 +6,23 @@ class Serializer {
 
 	/** Serializes an object into JSON format. */
 	static serialize(obj: any) {
-		// Serialize the object and remove its outer syntax (it's inferrable)
-		let ret: string = this.serializeObject(obj).slice(3, -1)
+		let ret: string
+		try {
+			// Serialize the object and remove its outer syntax (it's inferrable)
+			ret = this.serializeObject(obj).slice(3, -1)
+		} catch (e) {
+			// If something fails, clear the references before throwing the error.
+			this.references = []
+			console.log({e})
+			throw e
+		}
 
 		// Serialize its reference names
 		let refStr: string[] = []
 		for (let i = 0; i < this.references.length; i++) {
-			let k = this.serializeKey(this.references[i].constructor.name)
-			const idx = refStr.indexOf(k)
+			const r = this.references[i]
+				, k = typeof r == "string" ? r : r.constructor.name
+				, idx = refStr.indexOf(k)
 			if (idx == -1)
 				refStr.push(k)
 			else
@@ -31,6 +40,15 @@ class Serializer {
 		// If the object is the glass root, don't repeat it.
 		if (obj == GlassRoot) return "r"
 
+		// If already in reference, return that.
+		if (this.references.includes(obj)) return "@" + this.references.indexOf(obj)
+
+		// Deal with objects with special serialization
+		let originalName: string | undefined
+			, originalObject: any
+		if (obj != undefined && "serialize" in obj.constructor && typeof obj.constructor.serialize == "function")
+			originalObject = obj, originalName = obj.constructor.name, obj = obj.constructor.serialize(obj)
+
 		// Deal with literals
 		if (obj == undefined) return "u"
 		const objType: string = obj.constructor.name
@@ -38,29 +56,19 @@ class Serializer {
 		else if (objType == "Boolean") return obj ? "t" : "f"
 		else if (objType == "Number") return this.floatToString(obj)
 		else if (objType == "Array") isArray = true
-
-		// If already in reference, return that.
-		if (this.references.includes(obj)) return "@" + this.references.indexOf(obj)
+		else if (objType == "Function") { console.log(obj); throw new Error("Can't serialize functions/classes! (refer to the above log)") }
 
 		// Get unique keys
 		const keys: Set<string> = new Set()
-		if (obj instanceof GlassNode) {
-			// If the object is a GlassNode, use its `saveProperties`
-			let c = obj.constructor
-			while (c.name != "")
-				(<any>c).saveProperties.forEach((p: string) => keys.add(p)), c = (<any>c).__proto__
-		} else {
-			// Otherwise, save every key that's
-			Object.keys(obj).forEach(p => keys.add(p))
-			Object.entries(Object
-				.getOwnPropertyDescriptors(Reflect.getPrototypeOf(obj)))
-				.filter(e => typeof e[1].get === 'function' && e[0] !== '__proto__')
-				.map(e => keys.add(e[0]))
-		}
+		Object.keys(obj).forEach(p => keys.add(p))
+		Object.entries(Object
+			.getOwnPropertyDescriptors(Reflect.getPrototypeOf(obj)))
+			.filter(e => typeof e[1].get === 'function' && e[0] !== '__proto__')
+			.map(e => keys.add(e[0]))
 
 		// Put all of its properties into a single string, recursively serializing objects inside of it
 		let ret = "@" + this.references.length.toString(36) + (isArray ? "[" : "{")
-		this.references.push(obj)
+		this.references.push(originalObject ?? obj)
 		let m = false
 		for (const k of keys) {
 			if (obj[k] != undefined && obj[k].constructor.name == "WebGLTexture" || k[0] == '_') continue
@@ -128,21 +136,28 @@ class DeSerializer {
 		const ret = this.refs[0]
 
 		// Empty out the references
-		while (this.refs.length > 0) this.refs.pop()
+		this.refs = []
 
 		return ret
 	}
 
 	private static parseObject() {
-		let obj = this.refs![parseInt(this.getKey().slice(1), 36)]
-			, close = this.data[0] == "{" ? "}" : "]"
-			, isArray = close == "]"
-			, arrayIdx = 0
+		let objIdx = parseInt(this.getKey().slice(1), 36) // The index of the object being generated
+			, obj = this.refs[objIdx] // The object we're generating
+			, close = this.data[0] == "{" ? "}" : "]" // The closing bracket to look for when the object ends
+			, isArray = close == "]" // Wether or not the object is an array
+			, arrayIdx = 0 // Index of array (if the object is an array)
+			, custom: string | undefined
 		if (!"{[".includes(this.data[0])) return obj
 		this.data = this.data.slice(1)
-		let i = 0
+
+		// If the object is a string, we know it implements `deSerialize`
+		if (typeof obj == "string")
+			// Make the object a dictionary and set the `isCustom` flag
+			custom = obj, obj = {}
+
+		// Go through the data string
 		while (this.data[0] != close) {
-			if (++i > 20) throw new Error("Too deep!")
 			let k: string
 			if (isArray) k = "" + (arrayIdx++)
 			else k = this.getKey(), this.data = this.data.slice(1)
@@ -159,11 +174,15 @@ class DeSerializer {
 			else if (this.data[0] == "#") obj[k] = this.stringToFloat(this.getKey().slice(1))
 			else if (this.data[0] == "r") obj[k] = GlassRoot, this.data = this.data.slice(1)
 			else obj[k] = parseFloat(this.getKey())
-			// TODO: implement serialized float to float conversion
 
 			if (this.data[0] == ",") this.data = this.data.slice(1)
 		}
 		this.data = this.data.slice(1)
+
+		// If the object is custom, pass the keys to the class' factory
+		if (custom)
+			obj = this.makeInstance(custom, obj), this.refs[objIdx] = obj
+
 		return obj
 	}
 
@@ -176,10 +195,13 @@ class DeSerializer {
 		return ret
 	}
 
-	private static makeInstance(nm: string): Object {
+	private static makeInstance(nm: string, custom?: any): any {
 		if (!nm.match(/^[a-zA-Z0-9_]+$/)) throw new Error("ACE not allowed!")
 		if (nm == "Array") return []
-		return new (<any>eval(nm))()
+		const c = <any>eval(nm)
+		if (custom) return c.deSerialize(custom)
+		if ("deSerialize" in c) return nm
+		return new c()
 	}
 
 	private static stringToFloat(s: string) {
