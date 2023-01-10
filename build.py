@@ -37,6 +37,7 @@ def get_files(path: str = "") -> List[str]:
 		elif "." in f:
 			# If they're not typescript, but still have an extension, then throw an error.
 			print(err_col + "File", path + "/" + f, "not recognized. Get help.")
+			exit(1)
 		else:
 			# If they're a directory, loop through it and add its files to the list.
 			ret += get_files(path + "/" + f)
@@ -68,6 +69,8 @@ def detect_circular(deps: List[Tuple[str, Set[str]]]):
 
 	# Loop through dependencies recursively
 	def get_deps(d: str, l: List[str] = []):
+		if not d in dep_names:
+			print("Dependency not found:", d, deps)
 		# Loop through current dependencies
 		for c in deps[dep_names.index(d)][1]:
 			# If the current dependency hasn't been previously imported, keep searching
@@ -191,7 +194,11 @@ def compile(f_names: List[str]):
 	for f in f_names:
 		# Skip if it's a declaration file!
 		if f.endswith(".d.ts"): continue
-		with open("./src" + f, "r") as f:
+		if not exists("." + f):
+			print(f_names)
+			print(err_col + "File not found:", "." + f)
+			exit(1)
+		with open("." + f, "r") as f:
 			curr_out = f.read()
 
 			# If they have references to other files, remove these comments. They confuse `tsc` at compile time.
