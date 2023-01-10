@@ -14,12 +14,13 @@ function define(moduleName: string, passThings: string[], module: Function) {
 }
 
 async function getExports(n: string) {
-	console.log("Getting exports for:", n)
 	if (!(n in modules)) {
-		console.log("Module '" + n + "' not found!")
-		await Local.loadModule(n)
+		try {
+			await Local.loadModule(n)
+		} catch (e) {
+			return new Error("Module '" + n + "'not found")
+		}
 	}
-	console.log(modules)
 	const m = modules[n]
 	if (m.r) return m.e
 	m.m(...await Promise.all(m.p.map(async t => {
@@ -35,9 +36,7 @@ async function getExports(n: string) {
 
 function require(moduleName: string, found: (m: {[key: string]: any}) => any, notFound: (err: string) => any): string {
 	moduleName = moduleName.replace(/^[.\/]*|(\.\.\/)+[^.]*?\/|\..+?$/g, "")
-	console.log("Required:", moduleName)
-	if (!(moduleName in modules)) notFound("Module `" + moduleName + "` not found!")
-	getExports(moduleName).then(found)
+	getExports(moduleName).catch(notFound).then(found)
 	return moduleName
 }
 
