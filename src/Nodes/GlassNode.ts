@@ -5,7 +5,7 @@
  */
 class GlassNode {
 	protected static saveProperties = [
-		"description", "parent", "children", "name", "visible", "paused", "module"
+		"description", "children", "name", "visible", "paused", "module", "parent"
 	]
 
 	description?: string
@@ -19,7 +19,9 @@ class GlassNode {
 	private moduleName?: string
 	private currentModule?: {[key: string]: any}
 	set module(n: string | undefined) {
-		this.moduleName = require(n!, (m) => this.currentModule = m, () => 0)
+		if (!n) { this.currentModule = this.moduleName = n as undefined; return }
+		this.moduleName = require(n, (m) =>
+			this.currentModule = m, () => 0)
 	}
 	get module(): string | undefined {
 		return this.moduleName
@@ -50,7 +52,7 @@ class GlassNode {
 	}
 
 	/** Changes this node's position, rotation, and other transformations. */
-	transform(_forward: boolean) {}
+	protected transform(_forward: boolean) {}
 
 	/**
 	 * Gets called when the node is being drawn in a debug context.
@@ -105,6 +107,17 @@ class GlassNode {
 		this.children.map(c => c.logTree(prop))
 		console.groupEnd()
 	}
+
+	static serialize(obj: GlassNode) {
+		// Save all the property names in a set
+		const props: Set<string> = new Set()
+		let c = obj.constructor as typeof GlassNode
+		while (c.name != "")
+			c.saveProperties.forEach((p: string) => props.add(p)), c = (<any>c).__proto__
+		
+		// Return an object containing all of those properties
+		return Object.assign({}, ...[...props].map(e => ({ [e]: (<any>obj)[e] })))
+	}
 }
 
-const GlassRoot = new GlassNode("Root")
+const GlassRoot = new GlassNode("GlassRoot")
