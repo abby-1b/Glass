@@ -46,7 +46,7 @@ class GlassNode {
 	draw() {
 		for (let c = this.children.length - 1; c >= 0; c--) {
 			this.children[c].transform(true)
-			this.children[c].draw()
+			if (this.children[c].visible) this.children[c].draw()
 			this.children[c].transform(false)
 		}
 	}
