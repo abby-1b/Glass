@@ -71,7 +71,7 @@ class Serializer {
 		this.references.push(originalObject ?? obj)
 		let m = false
 		for (const k of keys) {
-			if (obj[k] != undefined && obj[k].constructor.name == "WebGLTexture" || k[0] == '_') continue
+			if (obj[k] != undefined && k[0] == '_') continue
 			ret += (isArray ? "" : (this.serializeKey(k) + ":")) + this.serializeObject(obj[k]) + ","
 			m = true
 		}
@@ -170,7 +170,6 @@ class DeSerializer {
 				obj[k] = s
 			} else if (this.data[0] == "u") obj[k] = undefined, this.data = this.data.slice(1)
 			else if (this.data[0] == "t" || this.data[0] == "f") obj[k] = this.data[0] == "t", this.data = this.data.slice(1)
-			else if (this.data[0] == "w") obj[k] = this.makeInstance("WebGLTexture"), this.data = this.data.slice(1)
 			else if (this.data[0] == "#") obj[k] = this.stringToFloat(this.getKey().slice(1))
 			else if (this.data[0] == "r") obj[k] = GlassRoot, this.data = this.data.slice(1)
 			else obj[k] = parseFloat(this.getKey())
