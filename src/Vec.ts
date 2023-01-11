@@ -20,4 +20,12 @@ class Vec2 {
 	setVec(v: Vec2) { this.x = v.x, this.y = v.y }
 
 	copy() { return new Vec2(this.x, this.y) }
+
+	/// Serialization
+	static serialize(obj: Vec2): [number, number] {
+		return [obj.x, obj.y]
+	}
+	static deSerialize(obj: [number, number]): Vec2 {
+		return new Vec2(obj[0], obj[1])
+	}
 }
