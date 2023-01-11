@@ -1,13 +1,16 @@
 declare type Color = [number, number, number, number];
-declare type LoadableWebGLTexture = WebGLTexture & {
+declare type GLTexture = {};
+declare type GLProgram = {};
+declare type GLUniformLocation = {};
+declare type LoadableGLTexture = GLTexture & {
 	loaded?: boolean;
 	width?: number;
 	height?: number;
 };
 declare type GlassShader = {
-	program: WebGLProgram;
+	program: GLProgram;
 	uniforms: {
-		[key: string]: WebGLUniformLocation;
+		[key: string]: GLUniformLocation;
 	};
 	attributes: {
 		[key: string]: number;
@@ -42,7 +45,13 @@ declare class GL {
 	/** The current transformation matrix */
 	static transform: FastMatrix;
 	static init(): void;
-	private static frame;
+	private static frame(): void;
+
+	/**
+	 * Waits for GL to load
+	 * @returns A promise that resolves around 0 to 25 milliseconds after GL is loaded
+	 */
+	static waitForLoad(): Promise<void>
 
 	/**
 	 * Adds a shader that can be used later
@@ -75,30 +84,44 @@ declare class GL {
 	static scale(x: number, y: number): void;
 
 	/**
-	 * Creates a new texture
+	 * Loads an image using async (so basically adds await support)
+	 * @param src Image source
+	 * @returns The image
 	 */
-	static newTexture(): WebGLTexture;
+	static loadImage(src: string): Promise<HTMLImageElement>;
 
 	/**
-	 * Creates a new texture and puts a source image in it
-	 * @param src The source image
-	 * @param sizeVec The size of the image
+	 * Creates a new texture
 	 */
-	static newTextureFromSrc(src: string, sizeVec?: Vec2): Promise<LoadableWebGLTexture>;
+	static newTexture(): GLTexture;
+
+	/**
+	 * Creates a new texture and places image data from a loaded image in it
+	 * @param img The loaded image to get data from
+	 * @returns The created texture
+	 */
+	static newTextureFromImage(img: HTMLImageElement): Promise<LoadableGLTexture>;
+
+	/**
+	 * Creates a new texture and places image data from a source in it
+	 * @param src The source to get the image from
+	 * @returns The created texture
+	 */
+	static newTextureFromSrc(src: string): Promise<LoadableGLTexture>;
 	
 	/**
 	 * Sets the width and height of a texture.
 	 * @param w New width of the texture
 	 * @param h New height of the texture
 	 */
-	static setTextureSize(tex: WebGLTexture, w: number, h: number): void;
+	static setTextureSize(tex: GLTexture, w: number, h: number): void;
 
 	/**
-	 * Gets data from a texture
-	 * @param src The source to get the image from
-	 * @returns 
+	 * Gets data from a loaded image
+	 * @param img The image to get data from
+	 * @returns The width, height, and pixel information from the image
 	 */
-	static getImageData(src: string): Promise<{width: number, height: number, data: number[]}>;
+	static getImageData(img: HTMLImageElement): Promise<{width: number, height: number, data: number[]}>;
 
 	/**
 	 * Sets the background color
@@ -139,5 +162,5 @@ declare class GL {
 	 * @param tw Source texture width (amount of pixels to sample starting from the top-left)
 	 * @param th Source texture height (amount of pixels to sample starting from the top-left)
 	 */
-	static texture(texture: LoadableWebGLTexture, x: number, y: number, width: number, height: number, tx: number, ty: number, tw: number, th: number): void;
+	static texture(texture: LoadableGLTexture, x: number, y: number, width: number, height: number, tx: number, ty: number, tw: number, th: number): void;
 }

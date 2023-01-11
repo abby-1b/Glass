@@ -1,7 +1,7 @@
 ;(s => { s.innerHTML = "*{width:100vw;height:100vh;margin:0;padding:0}", document.querySelector("head")!.appendChild(s) })(document.createElement("style"))
 
 type Color = [number, number, number, number]
-type LoadableWebGLTexture = WebGLTexture & { loaded?: boolean, width?: number, height?: number }
+type LoadableGLTexture = WebGLTexture & { loaded?: boolean, width?: number, height?: number }
 type GlassShader = {
 	program: WebGLProgram,
 	uniforms: {[key: string]: WebGLUniformLocation},
@@ -19,6 +19,7 @@ class GL {
 	private static texCoordBuffer: WebGLBuffer
 	private static texCoordArray = new Float32Array(8)
 
+	static loaded = false
 	static width: number = 0
 	static height: number = 0
 	static frameCount: number = 0
@@ -74,6 +75,9 @@ class GL {
 		})
 		window.dispatchEvent(new Event('resize'))
 		this.gl.enableVertexAttribArray(this.shaders.shape.attributes.vertex_pos)
+
+		// Finish load
+		this.loaded = true
 		
 		// Final setup
 		let t = 0
@@ -87,7 +91,20 @@ class GL {
 		frameCallback()
 	}
 
-	private static frame() {
+	/**
+	 * Waits for GL to load
+	 * @returns A promise that resolves around 0 to 25 milliseconds after GL is loaded
+	 */
+	static async waitForLoad(): Promise<void> {
+		if (this.loaded) return
+		return new Promise((resolve, reject) => {
+			const itv = setInterval(() => {
+				if (this.loaded) clearInterval(itv), resolve()
+			}, 25)
+		})
+	}
+
+	protected static frame() {
 		this.gl.clearColor(...this._bgColor)
 		// this.gl.viewport(0, 0, this.width, this.height)
 		this.gl.clear(this.gl.COLOR_BUFFER_BIT | this.gl.DEPTH_BUFFER_BIT | this.gl.STENCIL_BUFFER_BIT)
@@ -161,6 +178,20 @@ class GL {
 		)
 	}
 
+	/**
+	 * Loads an image using async (so basically adds await support)
+	 * @param src Image source
+	 * @returns The image
+	 */
+	static loadImage(src: string): Promise<HTMLImageElement> {
+		return new Promise((resolve, reject) => {
+			const img = new Image()
+			img.onload = () => resolve(img)
+			img.onerror = () => reject("Image " + src + " not found.")
+			img.src = Local.projectOffset + src
+		})
+	}
+
 	/** Creates a new texture. */
 	static newTexture() {
 		const tex = this.gl.createTexture()!
@@ -173,37 +204,61 @@ class GL {
 	}
 
 	/**
-	 * Creates a new texture and places image data in it.
-	 * @param src The source to get the image from.
-	 * @param sizeVec A vector passed as a reference to put the image's width and height into.
-	 * @returns The created texture. Note that this image is not yet initialized and must wait to be returned.
+	 * Creates a new texture and places image data from a loaded image in it
+	 * @param img The loaded image to get data from
+	 * @returns The created texture
 	 */
-	static newTextureFromSrc(src: string, sizeVec?: Vec2): Promise<LoadableWebGLTexture> {
-		return new Promise((resolve, reject) => {
-			const tex: LoadableWebGLTexture = this.newTexture()
-			const img = new Image()
-			img.onload = () => {
-				this.gl.bindTexture(this.gl.TEXTURE_2D, tex)
-				this.gl.texImage2D(this.gl.TEXTURE_2D, 0, this.gl.RGBA, this.gl.RGBA, this.gl.UNSIGNED_BYTE, img)
-				tex.loaded = true
-				tex.width = img.width, tex.height = img.height
-				resolve(tex)
-				sizeVec && sizeVec.set(img.width, img.height)
-			}
-			img.onerror = e => { console.error("Image", src, "not found."), reject() }
-			img.src = Local.projectOffset + src
-			return tex
-		})
+	static async newTextureFromImage(img: HTMLImageElement) {
+		await this.waitForLoad()
+		const tex: LoadableGLTexture = this.newTexture()
+		this.gl.bindTexture(this.gl.TEXTURE_2D, tex)
+		this.gl.texImage2D(this.gl.TEXTURE_2D, 0, this.gl.RGBA, this.gl.RGBA, this.gl.UNSIGNED_BYTE, img)
+		tex.loaded = true
+		tex.width = img.width, tex.height = img.height
+		return tex
 	}
 
 	/**
-	 * Sets the width and height of a texture.
+	 * Creates a new texture and places image data from a source in it
+	 * @param src The source to get the image from
+	 * @returns The created texture
+	 */
+	static async newTextureFromSrc(src: string): Promise<LoadableGLTexture> {
+		const img = await this.loadImage(src)
+		return await this.newTextureFromImage(img)
+	}
+
+	/**
+	 * Sets the width and height of a texture
 	 * @param w New width of the texture
 	 * @param h New height of the texture
 	 */
 	static setTextureSize(tex: WebGLTexture, w: number, h: number) {
 		this.gl.bindTexture(this.gl.TEXTURE_2D, tex)
 		this.gl.texImage2D(this.gl.TEXTURE_2D, 0, this.gl.RGBA, w, h, 0, this.gl.RGBA, this.gl.UNSIGNED_BYTE, null)
+	}
+
+	/**
+	 * Gets data from a loaded image
+	 * @param img The image to get data from
+	 * @returns The width, height, and pixel information from the image
+	 */
+	static async getImageData(img: HTMLImageElement) {
+		const {width, height} = img
+			, cnv = document.createElement("canvas")
+			, ctx = cnv.getContext("2d")!
+
+		// Draw image onto canvas
+		cnv.width = width, cnv.height = height
+		ctx.drawImage(img, 0, 0)
+
+		// Return an object with the image's data. This object is custom (instead of
+		// returning ctx.getImageData) for future compatibility with other GL libraries.
+		return {
+			width,
+			height,
+			data: ctx.getImageData(0, 0, width, height).data
+		}
 	}
 
 	/**
@@ -263,7 +318,7 @@ class GL {
 		this.gl.drawArrays(this.gl.TRIANGLE_STRIP, 0, 4)
 	}
 
-	static texture(texture: LoadableWebGLTexture, x: number, y: number, width: number, height: number, tx: number, ty: number, tw: number, th: number) {
+	static texture(texture: LoadableGLTexture, x: number, y: number, width: number, height: number, tx: number, ty: number, tw: number, th: number) {
 		if (!texture.loaded) return
 		this.gl.useProgram(this.shaders.texture.program)
 		this.gl.bindTexture(this.gl.TEXTURE_2D, texture)
