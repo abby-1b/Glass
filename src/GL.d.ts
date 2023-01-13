@@ -163,4 +163,15 @@ declare class GL {
 	 * @param th Source texture height (amount of pixels to sample starting from the top-left)
 	 */
 	static texture(texture: LoadableGLTexture, x: number, y: number, width: number, height: number, tx: number, ty: number, tw: number, th: number): void;
+
+	/**
+	 * Starts drawing to a texture instead of the main canvas
+	 * @param tex The texture to draw to
+	 */
+	static drawToTexture(tex: WebGLTexture, width?: number, height?: number): void;
+
+	/**
+	 * Stops drawing to a texture and continues drawing to the main canvas
+	 */
+	static stopDrawToTexture(): void;
 }
