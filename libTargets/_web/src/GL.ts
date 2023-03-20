@@ -27,16 +27,25 @@ class GL {
 	static delta: number = 0
 	static deltaCap: number = 5
 
-	private static _bgColor: [number, number, number, number] = [1, 1, 1, 1]
+	protected static _bgColor: Color = [1, 1, 1, 1]
+	protected static _drawColor: Color = [1, 0, 0, 1]
 
 	static shaders: {[key: string]: GlassShader} = {}
 	/** A 3x3 matrix containing all the draw transformations. */
 	static transform: FastMatrix = new Float32Array(9)
 
+	/** The framebuffer used to draw to textures */
+	// static textureDrawBuffer: WebGLFramebuffer
+
+	static tex: LoadableGLTexture
+
+	static paused = false
+
 	static init() {
 		// TODO: make antialias selectable by user
 		// this.gl = document.body.appendChild(document.createElement("canvas")).getContext("webgl2", {antialias: false})!
 		this.gl = document.body.appendChild(document.createElement("canvas")).getContext("webgl2")!
+		gl = this.gl
 		this.vertexBuffer = this.gl.createBuffer()!
 		this.texCoordBuffer = this.gl.createBuffer()!
 		this.addShader("shape",
@@ -63,18 +72,19 @@ class GL {
 			}`, ["the_tex", "tint"], ["tex_coord"])
 		
 		window.addEventListener("resize", _ => {
-			this.width = Math.ceil(window.innerWidth)
-			this.height = Math.ceil(window.innerHeight)
+			this.width = window.innerWidth
+			this.height = window.innerHeight
 			this.gl.canvas.width = this.width
 			this.gl.canvas.height = this.height
-			this.gl.viewport(0, 0, this.width, this.height)
-			for (const s in this.shaders) {
-				this.gl.useProgram(this.shaders[s].program)
-				this.gl.uniform2f(this.shaders[s].uniforms.screen_scale, 2 / this.width, -2 / this.height)
-			}
+			this.setSurfaceSize(window.innerWidth, window.innerHeight)
 		})
 		window.dispatchEvent(new Event('resize'))
 		this.gl.enableVertexAttribArray(this.shaders.shape.attributes.vertex_pos)
+
+		this.gl.activeTexture(this.gl.TEXTURE0)
+
+		// Setup the texture drawing buffer
+		// this.textureDrawBuffer = this.gl.createFramebuffer()!
 
 		// Finish load
 		this.loaded = true
@@ -105,16 +115,32 @@ class GL {
 	}
 
 	protected static frame() {
+		if (this.paused) return
+
 		this.gl.clearColor(...this._bgColor)
-		// this.gl.viewport(0, 0, this.width, this.height)
 		this.gl.clear(this.gl.COLOR_BUFFER_BIT | this.gl.DEPTH_BUFFER_BIT | this.gl.STENCIL_BUFFER_BIT)
 		this.transform[0] = 1, this.transform[1] = 0, this.transform[2] = 0
 		this.transform[3] = 0, this.transform[4] = 1, this.transform[5] = 0
 		this.transform[6] = 0, this.transform[7] = 0, this.transform[8] = 1
 
-		if (Camera.current) (<any>Camera.current).use()
+		if (Camera.current) (Camera.current as any).use()
 		if (this.delta < this.deltaCap) GlassRoot.loop()
 		GlassRoot.draw()
+	}
+
+	/**
+	 * Sets the percieved surface drawing size. This means the canvas sets this
+	 * when it's being drawn to, plus any textures set this when they're drawn to.
+	 * @param width The width to set
+	 * @param height The height to set
+	 */
+	static setSurfaceSize(width: number, height: number) {
+		console.log("Changing surface to:", width, height)
+		this.gl.viewport(0, 0, width, height)
+		for (const s in this.shaders) {
+			this.gl.useProgram(this.shaders[s].program)
+			this.gl.uniform2f(this.shaders[s].uniforms.screen_scale, 2 / width, -2 / height)
+		}
 	}
 
 	/** Compiles a shader and adds it to a dictionary for later use. Compiled programs can be found at `this.shaders`. */
@@ -196,10 +222,10 @@ class GL {
 	static newTexture() {
 		const tex = this.gl.createTexture()!
 		this.gl.bindTexture(this.gl.TEXTURE_2D, tex)
-		this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_WRAP_S, this.gl.REPEAT)
-		this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_WRAP_T, this.gl.REPEAT)
 		this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_MIN_FILTER, this.gl.NEAREST)
 		this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_MAG_FILTER, this.gl.NEAREST)
+		this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_WRAP_S, this.gl.REPEAT)
+		this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_WRAP_T, this.gl.REPEAT)
 		return tex
 	}
 
@@ -281,6 +307,10 @@ class GL {
 	 * @param a Alpha value as a floating point value from 0 to 1
 	 */
 	static color(r: number, g: number, b: number, a: number = 1) {
+		this._drawColor[0] = r
+		this._drawColor[1] = g
+		this._drawColor[2] = b
+		this._drawColor[3] = a
 		// this.gl.uniform4f(this.uniforms.color, r, g, b, a)
 		// this.gl.uniform4f(this.shaders.shape.uniforms.color, r, g, b, a)
 	}
@@ -298,7 +328,7 @@ class GL {
 
 		// Set transform and color
 		this.gl.uniformMatrix3fv(this.shaders.shape.uniforms.transform, false, this.transform)
-		this.gl.uniform4f(this.shaders.shape.uniforms.color, 1, 0, 0, 1)
+		this.gl.uniform4f(this.shaders.shape.uniforms.color, ...this._drawColor)
 
 		// Enable positions and bind buffer
 		this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.vertexBuffer)
@@ -312,7 +342,7 @@ class GL {
 		this.vertexArray[5] = this.vertexArray[1] + height
 		this.vertexArray[6] = this.vertexArray[2]
 		this.vertexArray[7] = this.vertexArray[5]
-		// console.log(this.vertexArray)
+
 		this.gl.bufferData(this.gl.ARRAY_BUFFER, this.vertexArray, this.gl.DYNAMIC_DRAW)
 
 		this.gl.drawArrays(this.gl.TRIANGLE_STRIP, 0, 4)
@@ -356,4 +386,104 @@ class GL {
 		
 		this.gl.disableVertexAttribArray(this.shaders.texture.attributes.tex_coord)
 	}
+
+	/**
+	 * Starts drawing to a texture instead of the main canvas
+	 * @param tex The texture to draw to
+	 */
+	static drawToTexture(tex: LoadableGLTexture, width?: number, height?: number) {
+		width = width ?? tex.width!
+		height = height ?? tex.height!
+
+		this.gl.bindTexture(this.gl.TEXTURE_2D, tex)
+
+		this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_MIN_FILTER, this.gl.LINEAR)
+		this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_WRAP_S, this.gl.REPEAT)
+		this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_WRAP_T, this.gl.REPEAT)
+
+		// this.gl.bindFramebuffer(this.gl.FRAMEBUFFER, this.textureDrawBuffer)
+		this.gl.framebufferTexture2D(
+			this.gl.FRAMEBUFFER,
+			this.gl.COLOR_ATTACHMENT0,
+			this.gl.TEXTURE_2D,
+			tex,
+			0)
+		
+		this.setSurfaceSize(width, height)
+	}
+
+	/**
+	 * Stops drawing to a texture and continues drawing to the main canvas
+	 */
+	static stopDrawToTexture() {
+		this.gl.flush()
+		this.gl.bindFramebuffer(this.gl.FRAMEBUFFER, null)
+		this.setSurfaceSize(this.width, this.height)
+		// this.gl.viewport(0, 0, this.width, this.height)
+	}
 }
+
+let gl: WebGL2RenderingContext
+
+window.addEventListener("keydown", async () => {
+	GL.paused = true
+	GL.transform[0] = 1, GL.transform[1] = 0, GL.transform[2] = 0
+	GL.transform[3] = 0, GL.transform[4] = 1, GL.transform[5] = 0
+	GL.transform[6] = 0, GL.transform[7] = 0, GL.transform[8] = 1
+
+	// Create a texture to render to
+	const targetTextureWidth = 256;
+	const targetTextureHeight = 256;
+	const targetTexture = gl.createTexture()!;
+	gl.bindTexture(gl.TEXTURE_2D, targetTexture);
+
+	{
+		// define size and format of level 0
+		const level = 0;
+		const internalFormat = gl.RGBA;
+		const border = 0;
+		const format = gl.RGBA;
+		const type = gl.UNSIGNED_BYTE;
+		const data = null;
+		gl.texImage2D(gl.TEXTURE_2D, level, internalFormat,
+					targetTextureWidth, targetTextureHeight, border,
+					format, type, data);
+		
+		// set the filtering so we don't need mips
+		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+	}
+
+	// Create and bind the framebuffer
+	const fb = gl.createFramebuffer()!;
+	gl.bindFramebuffer(gl.FRAMEBUFFER, fb);
+
+	// attach the texture as the first color attachment
+	const attachmentPoint = gl.COLOR_ATTACHMENT0;
+	const level = 0;
+	gl.framebufferTexture2D(gl.FRAMEBUFFER, attachmentPoint, gl.TEXTURE_2D, targetTexture, level);
+
+	const st = gl.checkFramebufferStatus(gl.FRAMEBUFFER)
+	console.log("FB Status:", st == gl.FRAMEBUFFER_COMPLETE ? "complete" : "unknown")
+
+	// Bind buffer
+	gl.bindFramebuffer(gl.FRAMEBUFFER, fb);
+	GL.setSurfaceSize(targetTextureWidth, targetTextureHeight)
+
+	gl.clearColor(0, 1, 0, 1);
+	gl.clear(gl.COLOR_BUFFER_BIT);
+
+	// Bind canvas
+	gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+	GL.setSurfaceSize(GL.width, GL.height)
+
+	gl.clearColor(1, .2, .1, 1);
+	gl.clear(gl.COLOR_BUFFER_BIT);
+
+	GL.texture(targetTexture, 10, 10, 256, 256, 0, 0, 256, 256)
+	GL.texture((GlassRoot.getChildByName("Sprite") as any).tex, 10, 10 + 256, 256, 256, 0, 0, 80, 80)
+	GL.color(0, 0, 1)
+	GL.rect(10 + 256, 10, 256, 256)
+
+})

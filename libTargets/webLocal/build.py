@@ -12,6 +12,7 @@ import sys
 FILE_SYSTEM_ENCODING: str = sys.getfilesystemencoding()
 
 from os import chdir, getcwd
+from os.path import exists, getsize
 
 from urllib.parse import unquote
 from urllib.request import urlopen
@@ -22,10 +23,6 @@ if True:
 	chdir("../../")
 	from build import get_files, sort_files, separate_unreferenced
 	chdir(originalDir)
-
-# Implement a server
-# Make the server compile .ts to .js (regex? maybe?) with source maps
-# Send compiled files (with generated source maps) to client
 
 # Escape a string (used for transpilation)
 def escape(string: str) -> str:
@@ -51,6 +48,16 @@ def transpile(file_path: str, link_path: str, emit_module: bool = False):
 	return trans_code
 
 class LocalServer(SimpleHTTPRequestHandler):
+	def get_mime(self, path: str) -> str:
+		ext = path.split(".")[-1]
+		d = {
+			"png": "image",
+			"jpg": "image",
+			"jpeg": "image",
+			"bmp": "image"
+		}
+		return (d[ext] if ext in d else "text") + "/" + ext
+
 	def translate_path(self, path: str) -> str:
 		# Remove query parameters
 		path = path.split('?', 1)[0]
@@ -120,6 +127,19 @@ class LocalServer(SimpleHTTPRequestHandler):
 		# 	files: List[Path] = list(Path("/".join(path.split("/")[:-1])).rglob("*.[tT][sS]"))
 		# 	self.send_text("".join([f'<script src="lib/{relpath(f)}"></script>' for f in files]))
 		# 	return
+
+		# Check the _dependencies folder
+		rp = "../../libTargets/_dependencies/" + path
+		if exists(rp):
+			# Send headers
+			self.send_response(HTTPStatus.OK)
+			self.send_header("Content-type", self.get_mime(path) + "; charset=%s" % FILE_SYSTEM_ENCODING)
+			self.send_header("Content-Length", str(getsize(rp)))
+			self.end_headers()
+
+			# Send file
+			self.copyfile(open(rp, "rb"), self.wfile)
+			return
 
 		return super().do_GET()
 

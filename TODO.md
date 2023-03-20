@@ -58,9 +58,9 @@ Library Tasks:
 	  - [x] Separate draw from process
 	  - [x] Actually pause
 	  - [x] Un-pause
-  - [ ] Make a save system for nodes
-	  - [ ] Get all the saveProperties from the node all the way up to GlassNode
-	  - [ ] Go through all the properties of the current node and save said property only if it's inside `saveProperties`
+  - [x] Make a save system for nodes
+	  - [x] Get all the saveProperties from the node all the way up to GlassNode
+	  - [x] Go through all the properties of the current node and save said property only if it's inside `saveProperties`
   - [ ] A node editing system (in editor, not main library!)
 	  - [ ] Create nodes
 	  - [ ] Change properties

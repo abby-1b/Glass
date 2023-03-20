@@ -22,7 +22,6 @@ class ButtonNode extends CanvasItem {
 	}
 
 	draw() {
-		// WebGL.color(...this.color)
 		if (this.checkClick > 0) {
 			const pos: [number, number] = [Input.mousePos.x, Input.mousePos.y]
 			FastMat.mult21x33InPlace(pos, FastMat.getInverse33(GL.transform))
